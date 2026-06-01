@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X } from "lucide-react"
 import jsPDF from "jspdf"
+import { QRCodeSVG } from "qrcode.react"
 
 interface SessionRecord {
   number: number
@@ -44,6 +45,8 @@ export default function MathQuiz() {
 
   // UI-only state
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -354,9 +357,18 @@ export default function MathQuiz() {
             </p>
           </div>
         </div>
-        <span className="mt-1 bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase flex-shrink-0">
-          BETA
-        </span>
+        <div className="flex items-center gap-2 mt-1 flex-shrink-0">
+          <button
+            onClick={() => setShowQRModal(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            Share
+          </button>
+          <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase">
+            BETA
+          </span>
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto">
@@ -676,6 +688,44 @@ export default function MathQuiz() {
           )}
         </footer>
       </div>
+
+      {/* QR CODE MODAL */}
+      {showQRModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowQRModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 w-[320px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQRModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="font-heading text-2xl font-bold text-gray-800">Share this app</h2>
+            <p className="text-sm text-gray-500">Scan to practise maths!</p>
+            <QRCodeSVG
+              value={typeof window !== "undefined" ? window.location.href : ""}
+              size={200}
+              bgColor="#ffffff"
+              fgColor="#2563eb"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href)
+                setCopiedLink(true)
+                setTimeout(() => setCopiedLink(false), 2000)
+              }}
+              className="mt-2 w-full py-2.5 rounded-xl border-2 border-blue-500 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors"
+            >
+              {copiedLink ? "Copied! ✓" : "Copy Link"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
