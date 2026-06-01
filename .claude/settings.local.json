@@ -5,7 +5,8 @@
       "Bash(npm run *)",
       "Bash(git checkout *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\harsh\\\\Documents\\\\WindSurf Projects\\\\Maths Learning Website\\\\app\" -Recurse -File)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(npm install *)"
     ]
   }
 }

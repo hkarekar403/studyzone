@@ -40,6 +40,8 @@ export default function MathQuiz() {
   const [currentRecord, setCurrentRecord] = useState<SessionRecord | null>(null)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
 
+  const [visitorCount, setVisitorCount] = useState<number>(0)
+
   // UI-only state
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -50,6 +52,26 @@ export default function MathQuiz() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
+  }, [])
+
+  useEffect(() => {
+    const trackVisit = async () => {
+      try {
+        if (!sessionStorage.getItem("visited_this_session")) {
+          const res = await fetch("/api/visitor-count", { method: "POST" })
+          const data = await res.json()
+          sessionStorage.setItem("visited_this_session", "1")
+          setVisitorCount(data.count ?? 0)
+        } else {
+          const res = await fetch("/api/visitor-count")
+          const data = await res.json()
+          setVisitorCount(data.count ?? 0)
+        }
+      } catch {
+        // KV unavailable — leave count at 0
+      }
+    }
+    trackVisit()
   }, [])
 
   useEffect(() => {
@@ -643,10 +665,15 @@ export default function MathQuiz() {
         )}
 
         {/* FOOTER */}
-        <footer className="text-center pb-6">
+        <footer className="pb-6 flex items-center justify-between flex-wrap gap-2 px-1">
           <p className="text-sm text-gray-400">
             Built with ❤️ for curious minds · Class 4 Mathematics
           </p>
+          {visitorCount > 0 && (
+            <p className="text-sm text-gray-400">
+              🎯 {visitorCount} students have practised here
+            </p>
+          )}
         </footer>
       </div>
     </div>
