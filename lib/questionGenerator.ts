@@ -492,22 +492,51 @@ export class MathQuestionGenerator {
     return b === 0 ? a : this.gcd(b, a % b);
   }
 
+  private generateTallySVG(count: number): string {
+    const LS = 8;           // px between vertical lines within a group
+    const GG = 12;          // px gap between groups
+    const PAD = 6;          // left/right padding
+    const H = 50;           // SVG height
+    const YT = 5;           // y top of vertical lines
+    const YB = 45;          // y bottom (40px tall lines)
+    const STROKE = '#2563eb';
+    const SW = 2.5;
+
+    const fullGroups = Math.floor(count / 5);
+    const partial = count % 5;
+    const lines: string[] = [];
+    let x = PAD;
+
+    for (let g = 0; g < fullGroups; g++) {
+      const gx = x;
+      for (let i = 0; i < 4; i++) {
+        lines.push(`<line x1="${gx + i * LS}" y1="${YT}" x2="${gx + i * LS}" y2="${YB}" stroke="${STROKE}" stroke-width="${SW}" stroke-linecap="round"/>`);
+      }
+      // diagonal strike-through: bottom-left to top-right across all 4 lines
+      lines.push(`<line x1="${gx - 4}" y1="${YB - 4}" x2="${gx + 3 * LS + 4}" y2="${YT + 4}" stroke="${STROKE}" stroke-width="${SW}" stroke-linecap="round"/>`);
+      x = gx + 3 * LS + GG;
+    }
+
+    for (let i = 0; i < partial; i++) {
+      lines.push(`<line x1="${x + i * LS}" y1="${YT}" x2="${x + i * LS}" y2="${YB}" stroke="${STROKE}" stroke-width="${SW}" stroke-linecap="round"/>`);
+    }
+
+    const endX = partial > 0 ? x + (partial - 1) * LS : x - GG;
+    const totalWidth = endX + PAD;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${H}" viewBox="0 0 ${totalWidth} ${H}">${lines.join('')}</svg>`;
+  }
+
   private easyTallyChart(): Question {
     const items = ['Apples', 'Oranges', 'Bananas', 'Grapes'];
     const item1 = items[Math.floor(Math.random() * items.length)];
     const count1 = Math.floor(Math.random() * 15) + 5;
-    const marks = Math.ceil(count1 / 5);
-    const tallies = '||||';
-    const partialTally = count1 % 5;
-    let tallyDisplay = tallies.repeat(marks - 1);
-    if (partialTally > 0) {
-      tallyDisplay += tallies.substring(0, partialTally);
-    }
+    const svg = this.generateTallySVG(count1);
 
     return {
-      question: `A tally chart shows:\n${item1}: ${tallyDisplay}\n\nHow many ${item1.toLowerCase()} were counted?`,
+      question: `A tally chart shows:\n${item1}:\n\n[[TALLY_SVG]]${svg}\n\nHow many ${item1.toLowerCase()} were counted?`,
       answer: count1.toString(),
-      working: `Working:\nEach group of |||| represents 5.\nYou have ${Math.floor(count1 / 5)} complete groups = ${Math.floor(count1 / 5) * 5}\nPlus ${count1 % 5} extra = ${count1}`,
+      working: `Working:\nEach group of 5 tally marks represents 5.\nYou have ${Math.floor(count1 / 5)} complete group${Math.floor(count1 / 5) !== 1 ? 's' : ''} = ${Math.floor(count1 / 5) * 5}\nPlus ${count1 % 5} extra = ${count1}`,
     };
   }
 

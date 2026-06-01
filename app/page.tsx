@@ -498,9 +498,29 @@ export default function MathQuiz() {
                     )}
                   </div>
                   <div className="min-h-[160px] flex items-center">
-                    <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
-                      {isGenerating ? "✨ Generating question..." : currentQuestion}
-                    </p>
+                    {isGenerating ? (
+                      <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        ✨ Generating question...
+                      </p>
+                    ) : currentQuestion.includes('[[TALLY_SVG]]') ? (
+                      <div className="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed w-full">
+                        {(() => {
+                          const [textBefore, svgAndAfter] = currentQuestion.split('[[TALLY_SVG]]');
+                          const svgEndIdx = svgAndAfter.indexOf('</svg>') + 6;
+                          return (
+                            <>
+                              <span className="whitespace-pre-wrap">{textBefore}</span>
+                              <div className="my-4 inline-block" dangerouslySetInnerHTML={{ __html: svgAndAfter.substring(0, svgEndIdx) }} />
+                              <span className="whitespace-pre-wrap">{svgAndAfter.substring(svgEndIdx)}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        {currentQuestion}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
