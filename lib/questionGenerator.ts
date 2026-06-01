@@ -492,6 +492,32 @@ export class MathQuestionGenerator {
     return b === 0 ? a : this.gcd(b, a % b);
   }
 
+  private generateBarChartSVG(data: { label: string; count: number }[]): string {
+    const BAR_H = 24;
+    const GAP = 16;
+    const LEFT_COL = 80;
+    const BASELINE_X = 90;
+    const SCALE = 8;
+    const SVG_W = 300;
+    const PAD_TOP = 8;
+    const PAD_BOT = 8;
+    const rowH = BAR_H + GAP;
+    const totalH = PAD_TOP + data.length * rowH - GAP + PAD_BOT;
+
+    const rows = data.map((d, i) => {
+      const y = PAD_TOP + i * rowH;
+      const barW = Math.max(d.count * SCALE, 4);
+      const labelY = y + BAR_H / 2;
+      return [
+        `<text x="${LEFT_COL - 6}" y="${labelY}" dominant-baseline="middle" text-anchor="end" font-size="13" fill="#374151" font-family="inherit">${d.label}</text>`,
+        `<rect x="${BASELINE_X}" y="${y}" width="${barW}" height="${BAR_H}" rx="4" fill="#2563eb"/>`,
+        `<text x="${BASELINE_X + barW + 6}" y="${labelY}" dominant-baseline="middle" font-size="13" fill="#1e40af" font-family="inherit">${d.count}</text>`,
+      ].join('');
+    });
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${totalH}" viewBox="0 0 ${SVG_W} ${totalH}">${rows.join('')}</svg>`;
+  }
+
   private generateTallySVG(count: number): string {
     const LS = 8;           // px between vertical lines within a group
     const GG = 12;          // px gap between groups
@@ -592,12 +618,11 @@ export class MathQuestionGenerator {
       students[cat] = Math.floor(Math.random() * 15) + 5;
     });
 
-    const graphDisplay = Object.entries(students)
-      .map(([cat, count]) => `${cat}: ${'█'.repeat(Math.floor(count / 3))} (${count})`)
-      .join('\n');
+    const data = categories.map(cat => ({ label: cat, count: students[cat] }));
+    const svg = this.generateBarChartSVG(data);
 
     return {
-      question: `Based on the bar graph:\n${graphDisplay}\n\nHow many students prefer ${category}?`,
+      question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nHow many students prefer ${category}?`,
       answer: students[category].toString(),
       working: `Working:\nLooking at the bar graph, ${category} has ${students[category]} students.`,
     };
