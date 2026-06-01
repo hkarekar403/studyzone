@@ -1,8 +1,18 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Baloo_2, Nunito } from "next/font/google"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const baloo2 = Baloo_2({
+  subsets: ["latin"],
+  variable: "--font-baloo2",
+  weight: ["400", "500", "600", "700", "800"],
+})
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  weight: ["400", "500", "600", "700", "800"],
+})
 
 export const metadata: Metadata = {
   title: "Class 4 Mathematics Practice",
@@ -16,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={`${baloo2.variable} ${nunito.variable}`}>{children}</body>
     </html>
   )
 }

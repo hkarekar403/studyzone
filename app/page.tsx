@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, XCircle, Eye, Play, Download } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp } from "lucide-react"
 import jsPDF from "jspdf"
 
 interface SessionRecord {
@@ -39,6 +39,9 @@ export default function MathQuiz() {
   const [sessionStartedAt] = useState<Date>(new Date())
   const [currentRecord, setCurrentRecord] = useState<SessionRecord | null>(null)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
+
+  // UI-only state
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -315,20 +318,41 @@ export default function MathQuiz() {
   }
 
   return (
-    <div className="min-h-screen p-6 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold text-center text-[#143a66] mb-8">
-          Class 4 Mathematics Practice
-        </h1>
+    <div className="min-h-screen p-4 md:p-8">
+      {/* HEADER */}
+      <header className="max-w-6xl mx-auto mb-6 flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-4xl animate-float inline-block">🚀</span>
+          <div>
+            <h1 className="font-heading text-4xl md:text-5xl font-bold text-blue-700 leading-tight">
+              Maths Practice
+            </h1>
+            <p className="text-gray-500 text-sm font-semibold tracking-wide mt-0.5">
+              Class 4 · Interactive Quiz
+            </p>
+          </div>
+        </div>
+        <span className="mt-1 bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase flex-shrink-0">
+          BETA
+        </span>
+      </header>
 
-        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-2xl p-6 md:p-8">
-          <div className="flex flex-col md:flex-row gap-6 mb-6">
-            <div className="flex-1">
-              <label className="block text-lg font-bold text-[#143a66] mb-2">Difficulty Level</label>
+      <div className="max-w-6xl mx-auto">
+        {/* MAIN CARD */}
+        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
+
+          {/* CONTROLS ROW */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+            {/* Difficulty selector */}
+            <div className="rounded-xl shadow-sm border-l-4 border-blue-500 bg-blue-50 p-3">
+              <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-1.5">
+                Difficulty Level
+              </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full p-3 text-lg font-semibold border-2 border-[#4aa3df] rounded-xl bg-white text-[#143a66] focus:outline-none focus:ring-2 focus:ring-[#4aa3df]"
+                className="w-full p-2 text-base font-semibold rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-blue-200 cursor-pointer"
               >
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
@@ -336,105 +360,199 @@ export default function MathQuiz() {
               </select>
             </div>
 
-            <div className="flex-1">
-              <label className="block text-lg font-bold text-[#143a66] mb-2">Topic</label>
+            {/* Topic selector */}
+            <div className="rounded-xl shadow-sm border-l-4 border-purple-500 bg-purple-50 p-3">
+              <label className="block text-xs font-bold text-purple-700 uppercase tracking-wider mb-1.5">
+                Topic
+              </label>
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="w-full p-3 text-lg font-semibold border-2 border-[#7cb342] rounded-xl bg-white text-[#143a66] focus:outline-none focus:ring-2 focus:ring-[#7cb342]"
+                className="w-full p-2 text-base font-semibold rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 border border-purple-200 cursor-pointer"
               >
                 {availableTopics.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
 
-            <div className="flex-1">
-              <div className="bg-[#dff4ff] rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-[#143a66]">
-                  Questions Generated: {questionsGenerated} | Correct Answers: {correctAnswers}
-                </p>
+            {/* Score display */}
+            <div className="rounded-xl shadow-sm bg-amber-50 border border-amber-200 p-3 flex flex-col justify-center text-center">
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Score</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="text-lg">⭐</span>
+                <span className="text-lg font-bold text-amber-700">
+                  {correctAnswers} / {questionsGenerated} correct
+                </span>
               </div>
             </div>
 
-            <div className="flex-1">
-              <div className="bg-[#fef3c7] rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-[#b22222] flex items-center justify-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Time Left: {Math.floor(timeLeft / 60).toString().padStart(2, "0")}:
+            {/* Timer with progress bar */}
+            <div className="rounded-xl shadow-sm bg-gray-50 border border-gray-200 p-3">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <span
+                  className={`text-xl font-bold tabular-nums ${
+                    timeLeft <= 10
+                      ? "text-red-600"
+                      : timeLeft <= 20
+                      ? "text-amber-600"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {Math.floor(timeLeft / 60).toString().padStart(2, "0")}:
                   {(timeLeft % 60).toString().padStart(2, "0")}
-                </p>
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                    timeLeft > 30
+                      ? "bg-green-500"
+                      : timeLeft > 15
+                      ? "bg-amber-400"
+                      : "bg-red-500"
+                  }`}
+                  style={{ width: `${(timeLeft / 60) * 100}%` }}
+                />
               </div>
             </div>
           </div>
 
+          {/* MAIN CONTENT GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="bg-[#e6f7ff] border-2 border-white rounded-2xl p-6 mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-lg font-bold text-[#143a66]">Difficulty: {difficulty}</p>
-                  {currentTopic && (
-                    <p className="text-lg font-bold text-[#7cb342] bg-[#f1f8e9] px-4 py-1 rounded-lg">
-                      Topic: {currentTopic}
-                    </p>
-                  )}
-                </div>
-                <div className="min-h-[200px] flex items-center">
-                  <p className="text-xl md:text-2xl font-semibold text-[#0f2f57] whitespace-pre-wrap">
-                    {isGenerating
-                      ? "Generating question..."
-                      : currentQuestion || "Choose a difficulty level, select a topic (or Random), and click Generate Question."}
-                  </p>
-                </div>
-              </div>
 
+            {/* LEFT: Question + Input + Feedback */}
+            <div className="lg:col-span-2">
+
+              {/* Question area */}
+              {!currentQuestion && !isGenerating ? (
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-200 rounded-2xl p-8 mb-4 flex flex-col items-center justify-center text-center min-h-[220px]">
+                  <span className="text-5xl mb-3">🎯</span>
+                  <p className="font-heading text-2xl font-bold text-blue-700 mb-1">Ready to start?</p>
+                  <p className="text-gray-500 mb-5 text-sm">
+                    Choose difficulty and topic, then click New Question!
+                  </p>
+                  <span className="text-3xl animate-bounce">👇</span>
+                </div>
+              ) : (
+                <div
+                  className={`rounded-2xl p-6 mb-4 border-l-8 transition-all ${
+                    difficulty === "Easy"
+                      ? "border-blue-400 bg-blue-50"
+                      : difficulty === "Medium"
+                      ? "border-amber-400 bg-amber-50"
+                      : "border-red-400 bg-red-50"
+                  } ${feedback === "Correct" ? "animate-celebrate" : ""}`}
+                >
+                  <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+                    <span
+                      className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        difficulty === "Easy"
+                          ? "bg-blue-200 text-blue-700"
+                          : difficulty === "Medium"
+                          ? "bg-amber-200 text-amber-700"
+                          : "bg-red-200 text-red-700"
+                      }`}
+                    >
+                      {difficulty}
+                    </span>
+                    {currentTopic && (
+                      <span className="text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+                        {currentTopic}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-h-[160px] flex items-center">
+                    <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      {isGenerating ? "✨ Generating question..." : currentQuestion}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Answer input */}
               <input
                 type="text"
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') checkAnswer() }}
-                placeholder="Write your answer here"
+                onKeyDown={(e) => { if (e.key === "Enter") checkAnswer() }}
+                placeholder="Type your answer and press Enter..."
                 disabled={questionLocked || !currentQuestion || isGenerating}
-                className="w-full p-4 text-lg font-semibold border-2 border-[#4aa3df] rounded-xl bg-white text-[#0f5132] focus:outline-none focus:ring-2 focus:ring-[#4aa3df] disabled:bg-gray-100 disabled:cursor-not-allowed mb-4"
+                className={`w-full p-4 text-lg font-semibold border-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed mb-4 shadow-sm transition-colors ${
+                  feedback.startsWith("Incorrect") && !questionLocked
+                    ? "border-red-400 focus:ring-red-300 animate-shake"
+                    : "border-blue-300 focus:ring-blue-400"
+                }`}
               />
 
+              {/* Feedback */}
               {feedback && (
-                <div className="text-center mb-4">
-                  <p
-                    className="text-3xl font-extrabold animate-pulse"
-                    style={{ color: feedbackColor }}
-                  >
-                    {feedback}
-                  </p>
+                <div className="mb-4">
+                  {feedback === "Correct" ? (
+                    <div className="flex items-center justify-center gap-3 bg-green-50 border border-green-200 rounded-2xl py-4 px-6">
+                      <span className="text-3xl">✅</span>
+                      <p className="font-heading text-2xl font-bold text-green-600">
+                        Correct! Well done!
+                      </p>
+                    </div>
+                  ) : feedback === "Time Up" ? (
+                    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-center">
+                      <p className="text-xl font-bold text-amber-700">
+                        ⏰ Time&apos;s up! Check the answer below.
+                      </p>
+                    </div>
+                  ) : feedback.startsWith("Incorrect") && !questionLocked ? (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
+                      <p className="text-lg font-bold text-red-600 mb-2">{feedback}</p>
+                      <div className="flex justify-center gap-2">
+                        {[0, 1, 2].map((i) => (
+                          <span key={i} className="text-xl">
+                            {i < currentAttempts ? "⚫" : "⚪"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                      <p className="text-lg font-bold" style={{ color: feedbackColor }}>
+                        {feedback}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Show answer panel */}
               {showAnswer && currentAnswer && (
-                <div className="bg-[#fff7d6] rounded-xl p-4 min-h-[150px]">
-                  <p className="text-lg font-bold text-[#143a66] mb-2">Answer</p>
-                  <p className="text-lg font-semibold text-[#0f5132] whitespace-pre-wrap">
-                    {difficulty === "Hard" ? `Answer: ${currentAnswer}\n\n${currentWorking}` : `Answer: ${currentAnswer}`}
+                <div className="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-5 min-h-[120px]">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2">
+                    Answer
+                  </p>
+                  <p className="text-lg font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                    {difficulty === "Hard"
+                      ? `Answer: ${currentAnswer}\n\n${currentWorking}`
+                      : `Answer: ${currentAnswer}`}
                   </p>
                 </div>
               )}
             </div>
 
+            {/* RIGHT: Action buttons */}
             <div className="flex flex-col gap-3">
               <button
                 onClick={generateQuestion}
                 disabled={isGenerating}
-                className="bg-[#1e90ff] hover:bg-[#1a7fd4] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:bg-[#9bb8c8] disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
               >
                 <Play className="w-5 h-5" />
-                {isGenerating ? "Generating..." : "Generate Question"}
+                {isGenerating ? "Generating..." : "New Question"}
               </button>
 
               <button
                 onClick={checkAnswer}
                 disabled={!currentQuestion || questionLocked || isGenerating}
-                className="bg-[#28a745] hover:bg-[#218838] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:bg-[#9bb8c8] disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
               >
                 <CheckCircle className="w-5 h-5" />
                 Check Answer
@@ -443,24 +561,93 @@ export default function MathQuiz() {
               <button
                 onClick={handleShowAnswer}
                 disabled={!currentQuestion || isGenerating}
-                className="bg-[#ff6b4a] hover:bg-[#e55a3b] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:bg-[#9bb8c8] disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
               >
                 <Eye className="w-5 h-5" />
                 Show Answer
               </button>
 
-              {sessionRecords.length > 0 && (
-                <button
-                  onClick={exportPDF}
-                  className="bg-[#4b5d6f] hover:bg-[#3a4a5a] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-                >
-                  <Download className="w-5 h-5" />
-                  Export Report
-                </button>
-              )}
+              <button
+                onClick={exportPDF}
+                disabled={sessionRecords.length === 0}
+                className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
+              >
+                <Download className="w-5 h-5" />
+                Export PDF
+              </button>
             </div>
           </div>
         </div>
+
+        {/* SESSION HISTORY — collapsible, collapsed by default */}
+        {sessionRecords.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
+            <button
+              onClick={() => setHistoryOpen(!historyOpen)}
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors"
+            >
+              <span className="font-heading text-lg font-bold text-gray-700">
+                Session History ({sessionRecords.length} question
+                {sessionRecords.length !== 1 ? "s" : ""})
+              </span>
+              {historyOpen ? (
+                <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              )}
+            </button>
+
+            {historyOpen && (
+              <div className="border-t border-gray-100">
+                {sessionRecords.map((record, idx) => (
+                  <div
+                    key={record.number}
+                    className={`flex items-center gap-3 px-5 py-3 text-sm ${
+                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
+                  >
+                    <span className="font-bold text-gray-400 w-6 text-right flex-shrink-0">
+                      #{record.number}
+                    </span>
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        record.difficulty === "Easy"
+                          ? "bg-blue-100 text-blue-700"
+                          : record.difficulty === "Medium"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {record.topic}
+                    </span>
+                    <span className="flex-1 text-gray-700 truncate min-w-0">
+                      {record.question.length > 60
+                        ? record.question.slice(0, 60) + "…"
+                        : record.question}
+                    </span>
+                    <span className="text-gray-500 flex-shrink-0 text-xs">
+                      {record.kidAnswer || "—"}
+                    </span>
+                    <span className="flex-shrink-0 text-base">
+                      {record.isCorrect === true
+                        ? "✅"
+                        : record.isCorrect === false
+                        ? "❌"
+                        : "⏳"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FOOTER */}
+        <footer className="text-center pb-6">
+          <p className="text-sm text-gray-400">
+            Built with ❤️ for curious minds · Class 4 Mathematics
+          </p>
+        </footer>
       </div>
     </div>
   )

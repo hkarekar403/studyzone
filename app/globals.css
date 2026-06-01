@@ -2,7 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: linear-gradient(135deg, #87ceeb 0%, #5ba3d9 100%);
-  min-height: 100vh;
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #7c3aed;
+  --color-accent: #f59e0b;
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --color-bg-from: #eff6ff;
+  --color-bg-to: #f5f3ff;
+  --color-card: #ffffff;
 }
+
+body {
+  background-color: #eff6ff;
+  background-image:
+    radial-gradient(circle, rgba(167, 139, 250, 0.22) 1.5px, transparent 1.5px),
+    linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  background-size: 24px 24px, 100% 100%;
+  min-height: 100vh;
+  font-family: var(--font-nunito), sans-serif;
+}
+
+.font-heading {
+  font-family: var(--font-baloo2), cursive, sans-serif;
+}
+
+@keyframes celebrate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-celebrate { animation: celebrate 0.4s ease-in-out; }
+.animate-shake { animation: shake 0.3s ease-in-out; }
+.animate-float { animation: float 3s ease-in-out infinite; }
