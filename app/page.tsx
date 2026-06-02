@@ -31,6 +31,7 @@ export default function MathQuiz() {
   const [feedback, setFeedback] = useState<string>("")
   const [feedbackColor, setFeedbackColor] = useState<string>("")
   const [timeLeft, setTimeLeft] = useState<number>(60)
+  const [timerDuration, setTimerDuration] = useState<number>(60)
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [questionsGenerated, setQuestionsGenerated] = useState<number>(0)
   const [correctAnswers, setCorrectAnswers] = useState<number>(0)
@@ -169,7 +170,9 @@ export default function MathQuiz() {
       setFeedbackColor("")
       setCurrentAttempts(0)
       setQuestionLocked(false)
-      setTimeLeft(60)
+      const timerDuration = difficulty === 'Easy' ? 45 : difficulty === 'Medium' ? 90 : 120
+      setTimerDuration(timerDuration)
+      setTimeLeft(timerDuration)
       setTimerActive(true)
 
       const newRecord: SessionRecord = {
@@ -448,7 +451,7 @@ export default function MathQuiz() {
                       ? "bg-amber-400"
                       : "bg-red-500"
                   }`}
-                  style={{ width: `${(timeLeft / 60) * 100}%` }}
+                  style={{ width: `${(timeLeft / timerDuration) * 100}%` }}
                 />
               </div>
             </div>
