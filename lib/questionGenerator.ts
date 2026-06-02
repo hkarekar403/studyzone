@@ -6,6 +6,8 @@ export interface Question {
 }
 
 export class MathQuestionGenerator {
+  private askedQuestions: Set<string> = new Set();
+
   private generators: Record<string, (() => Question)[]> = {
     Easy: [
       this.easyAddition,
@@ -108,50 +110,99 @@ export class MathQuestionGenerator {
     return Object.keys(this.topicGenerators).sort();
   }
 
+  clearSession(): void {
+    this.askedQuestions.clear();
+  }
+
   generate(difficulty: string, topic?: string): Question {
-    if (topic && topic in this.topicGenerators) {
-      const fns = this.topicGenerators[topic];
-      const fn = fns[Math.floor(Math.random() * fns.length)];
-      return { ...fn.call(this), topic };
+    let question: Question | null = null;
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      let q: Question;
+      if (topic && topic in this.topicGenerators) {
+        const fns = this.topicGenerators[topic];
+        const fn = fns[Math.floor(Math.random() * fns.length)];
+        q = { ...fn.call(this), topic };
+      } else {
+        const generators = this.generators[difficulty] || this.generators.Easy;
+        const fn = generators[Math.floor(Math.random() * generators.length)];
+        const result = fn.call(this) as Question;
+        q = { ...result, topic: this.detectTopicMap.get(fn) || "General" };
+      }
+
+      if (!this.askedQuestions.has(q.question)) {
+        question = q;
+        break;
+      }
+
+      if (attempt === 5) {
+        question = q;
+      }
     }
 
-    const generators = this.generators[difficulty] || this.generators.Easy;
-    const fn = generators[Math.floor(Math.random() * generators.length)];
-    const q = fn.call(this) as Question;
-    return { ...q, topic: this.detectTopicMap.get(fn) || "General" };
+    this.askedQuestions.add(question!.question);
+    return question!;
   }
 
   private easyAddition(): Question {
     const a = Math.floor(Math.random() * 90) + 10;
     const b = Math.floor(Math.random() * 90) + 10;
     const total = a + b;
-    return {
-      question: `Add the numbers:\n${a} + ${b} = ?`,
-      answer: total.toString(),
-      working: `Working:\n${a} + ${b} = ${total}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+    const shopItems = ['pens', 'books', 'chocolates', 'mangoes', 'apples', 'biscuits'];
+    const item = shopItems[Math.floor(Math.random() * shopItems.length)];
+    switch (t) {
+      case 0:
+        return { question: `What is ${a} + ${b}?`, answer: total.toString(), working: `Working:\n${a} + ${b} = ${total}` };
+      case 1:
+        return { question: `A shop has ${a} red ${item} and ${b} blue ${item}. How many ${item} in total?`, answer: total.toString(), working: `Working:\n${a} + ${b} = ${total}` };
+      case 2:
+        return { question: `Find the sum of ${a} and ${b}.`, answer: total.toString(), working: `Working:\n${a} + ${b} = ${total}` };
+      default:
+        return { question: `${a} students are in class A and ${b} in class B. How many students altogether?`, answer: total.toString(), working: `Working:\n${a} + ${b} = ${total}` };
+    }
   }
 
   private easySubtraction(): Question {
     const a = Math.floor(Math.random() * 91) + 30;
     const b = Math.floor(Math.random() * (a - 9)) + 10;
     const difference = a - b;
-    return {
-      question: `Subtract the numbers:\n${a} - ${b} = ?`,
-      answer: difference.toString(),
-      working: `Working:\n${a} - ${b} = ${difference}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+    const fruits = ['mangoes', 'apples', 'oranges', 'bananas'];
+    const fruit = fruits[Math.floor(Math.random() * fruits.length)];
+    const animals = ['birds', 'butterflies', 'cows', 'fish'];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    switch (t) {
+      case 0:
+        return { question: `What is ${a} - ${b}?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
+      case 1:
+        return { question: `A basket has ${a} ${fruit}. ${b} are eaten. How many are left?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
+      case 2:
+        return { question: `Find the difference between ${a} and ${b}.`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
+      default:
+        return { question: `There are ${a} ${animal} on a tree. ${b} fly away. How many remain?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
+    }
   }
 
   private easyMultiplication(): Question {
     const a = Math.floor(Math.random() * 11) + 2;
     const b = Math.floor(Math.random() * 9) + 2;
     const product = a * b;
-    return {
-      question: `Multiply:\n${a} x ${b} = ?`,
-      answer: product.toString(),
-      working: `Working:\n${a} x ${b} = ${product}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+    const rowItems = ['apples', 'mangoes', 'oranges', 'chocolates'];
+    const rowItem = rowItems[Math.floor(Math.random() * rowItems.length)];
+    const handItems = ['pencils', 'notebooks', 'books', 'pens'];
+    const handItem = handItems[Math.floor(Math.random() * handItems.length)];
+    switch (t) {
+      case 0:
+        return { question: `What is ${a} × ${b}?`, answer: product.toString(), working: `Working:\n${a} × ${b} = ${product}` };
+      case 1:
+        return { question: `A box has ${a} rows of ${b} ${rowItem}. How many ${rowItem} in total?`, answer: product.toString(), working: `Working:\n${a} rows × ${b} = ${product} ${rowItem}` };
+      case 2:
+        return { question: `Find the product of ${a} and ${b}.`, answer: product.toString(), working: `Working:\n${a} × ${b} = ${product}` };
+      default:
+        return { question: `${a} children each have ${b} ${handItem}. How many ${handItem} altogether?`, answer: product.toString(), working: `Working:\n${a} × ${b} = ${product}` };
+    }
   }
 
   private mediumWordProblem(): Question {
@@ -180,11 +231,21 @@ export class MathQuestionGenerator {
     const divisor = Math.floor(Math.random() * 7) + 3;
     const quotient = Math.floor(Math.random() * 9) + 4;
     const dividend = divisor * quotient;
-    return {
-      question: `Divide:\n${dividend} / ${divisor} = ?`,
-      answer: quotient.toString(),
-      working: `Working:\n${dividend} / ${divisor} = ${quotient}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+    const shareItems = ['chocolates', 'mangoes', 'apples', 'biscuits'];
+    const shareItem = shareItems[Math.floor(Math.random() * shareItems.length)];
+    const arrangeItems = ['books', 'notebooks', 'pencils', 'pens'];
+    const arrangeItem = arrangeItems[Math.floor(Math.random() * arrangeItems.length)];
+    switch (t) {
+      case 0:
+        return { question: `What is ${dividend} ÷ ${divisor}?`, answer: quotient.toString(), working: `Working:\n${dividend} ÷ ${divisor} = ${quotient}` };
+      case 1:
+        return { question: `${dividend} ${shareItem} are shared equally among ${divisor} children. How many does each child get?`, answer: quotient.toString(), working: `Working:\n${dividend} ÷ ${divisor} = ${quotient}` };
+      case 2:
+        return { question: `Find the quotient when ${dividend} is divided by ${divisor}.`, answer: quotient.toString(), working: `Working:\n${dividend} ÷ ${divisor} = ${quotient}` };
+      default:
+        return { question: `${dividend} ${arrangeItem} are arranged in ${divisor} equal rows. How many ${arrangeItem} per row?`, answer: quotient.toString(), working: `Working:\n${dividend} ÷ ${divisor} = ${quotient}` };
+    }
   }
 
   private hardMultiStep(): Question {
@@ -247,35 +308,33 @@ export class MathQuestionGenerator {
   }
 
   private easyFraction(): Question {
-    const types = ['comparison', 'identify'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    const t = Math.floor(Math.random() * 4);
 
-    if (type === 'comparison') {
+    if (t === 0) {
       const num1 = Math.floor(Math.random() * 8) + 1;
       const num2 = Math.floor(Math.random() * 8) + 1;
-      const denom = 10;
       if (num1 === num2) {
-        return {
-          question: `Compare: ${num1}/${denom} and ${num2}/${denom}. Which is greater?`,
-          answer: `They are equal`,
-          working: `Working:\nBoth fractions have the same denominator.\nCompare numerators: ${num1} = ${num2}\nTherefore, ${num1}/${denom} = ${num2}/${denom}`,
-        };
+        return { question: `Which fraction is greater: ${num1}/10 or ${num2}/10?`, answer: `They are equal`, working: `Working:\nBoth fractions have denominator 10.\nCompare numerators: ${num1} = ${num2}\nTherefore, ${num1}/10 = ${num2}/10` };
       }
-      const greater = num1 > num2 ? num1 : num2;
-      const lesser = num1 > num2 ? num2 : num1;
-      return {
-        question: `Compare: ${num1}/${denom} and ${num2}/${denom}. Which is greater?`,
-        answer: `${greater}/${denom}`,
-        working: `Working:\nBoth fractions have the same denominator.\nCompare numerators: ${greater} > ${lesser}\nTherefore, ${greater}/${denom} > ${lesser}/${denom}`,
-      };
+      const greater = Math.max(num1, num2);
+      const lesser = Math.min(num1, num2);
+      return { question: `Which fraction is greater: ${num1}/10 or ${num2}/10?`, answer: `${greater}/10`, working: `Working:\nBoth fractions have denominator 10.\nCompare numerators: ${greater} > ${lesser}\nTherefore, ${greater}/10 > ${lesser}/10` };
+    } else if (t === 1) {
+      const num = Math.floor(Math.random() * 7) + 1;
+      const greaterNum = num + Math.floor(Math.random() * (9 - num)) + 1;
+      return { question: `Write a fraction greater than ${num}/10.`, answer: `${greaterNum}/10`, working: `Working:\nA fraction with denominator 10 is greater if its numerator is larger.\n${num}/10 < ${greaterNum}/10 because ${num} < ${greaterNum}` };
+    } else if (t === 2) {
+      let n1 = Math.floor(Math.random() * 8) + 1;
+      let n2 = Math.floor(Math.random() * 8) + 1;
+      let n3 = Math.floor(Math.random() * 8) + 1;
+      while (n2 === n1) n2 = Math.floor(Math.random() * 8) + 1;
+      while (n3 === n1 || n3 === n2) n3 = Math.floor(Math.random() * 8) + 1;
+      const sorted = [n1, n2, n3].sort((a, b) => a - b);
+      return { question: `Arrange these fractions in ascending order:\n${n1}/10, ${n2}/10, ${n3}/10`, answer: sorted.map(n => `${n}/10`).join(', '), working: `Working:\nAll have denominator 10, so compare numerators.\nSmallest to largest: ${sorted[0]}, ${sorted[1]}, ${sorted[2]}\nAscending order: ${sorted.map(n => `${n}/10`).join(', ')}` };
     } else {
-      const whole = Math.floor(Math.random() * 3) + 1;
-      const part = Math.floor(Math.random() * 8) + 1;
-      return {
-        question: `What fraction of the shape is shaded? (${part} out of ${whole * 8} equal parts)`,
-        answer: `${part}/${whole * 8}`,
-        working: `Working:\nTotal parts = ${whole * 8}\nShaded parts = ${part}\nFraction = ${part}/${whole * 8}`,
-      };
+      const total = (Math.floor(Math.random() * 4) + 2) * (Math.floor(Math.random() * 3) + 2);
+      const part = Math.floor(Math.random() * (total - 1)) + 1;
+      return { question: `What fraction of ${total} is ${part}?`, answer: `${part}/${total}`, working: `Working:\nFraction = part ÷ total\n= ${part}/${total}` };
     }
   }
 
@@ -363,35 +422,63 @@ export class MathQuestionGenerator {
   }
 
   private mediumMoney(): Question {
-    const items = [
-      { name: 'pencil', price: Math.floor(Math.random() * 5) + 2 },
-      { name: 'pen', price: Math.floor(Math.random() * 8) + 5 },
-      { name: 'notebook', price: Math.floor(Math.random() * 20) + 10 },
-    ];
-    const item = items[Math.floor(Math.random() * items.length)];
-    const quantity = Math.floor(Math.random() * 5) + 2;
-    const total = item.price * quantity;
+    const t = Math.floor(Math.random() * 4);
+    const shopItems = ['pen', 'book', 'chocolate', 'mango', 'apple', 'biscuit'];
 
-    return {
-      question: `If one ${item.name} costs ₹${item.price}, what is the cost of ${quantity} ${item.name}s?`,
-      answer: `₹${total}`,
-      working: `Working:\nCost of 1 ${item.name} = ₹${item.price}\nCost of ${quantity} ${item.name}s = ${item.price} × ${quantity} = ₹${total}`,
-    };
+    if (t === 0) {
+      const item1 = shopItems[Math.floor(Math.random() * shopItems.length)];
+      const item2 = shopItems.filter(i => i !== item1)[Math.floor(Math.random() * (shopItems.length - 1))];
+      const a = Math.floor(Math.random() * 20) + 5;
+      const b = Math.floor(Math.random() * 30) + 10;
+      return { question: `A ${item1} costs ₹${a} and a ${item2} costs ₹${b}. How much do both cost?`, answer: `₹${a + b}`, working: `Working:\n₹${a} + ₹${b} = ₹${a + b}` };
+    } else if (t === 1) {
+      const a = Math.floor(Math.random() * 50) + 30;
+      const b = Math.floor(Math.random() * (a - 10)) + 10;
+      return { question: `You have ₹${a} and spend ₹${b}. How much is left?`, answer: `₹${a - b}`, working: `Working:\n₹${a} - ₹${b} = ₹${a - b}` };
+    } else if (t === 2) {
+      const item = shopItems[Math.floor(Math.random() * shopItems.length)];
+      const qty = Math.floor(Math.random() * 5) + 2;
+      const price = Math.floor(Math.random() * 15) + 5;
+      return { question: `Find the total cost of ${qty} ${item}s at ₹${price} each.`, answer: `₹${qty * price}`, working: `Working:\n${qty} × ₹${price} = ₹${qty * price}` };
+    } else {
+      const friends = Math.floor(Math.random() * 4) + 2;
+      const totalAmount = friends * (Math.floor(Math.random() * 10) + 5);
+      return { question: `Share ₹${totalAmount} equally among ${friends} friends. How much does each get?`, answer: `₹${totalAmount / friends}`, working: `Working:\n₹${totalAmount} ÷ ${friends} = ₹${totalAmount / friends}` };
+    }
   }
 
   private mediumTime(): Question {
-    const hour = Math.floor(Math.random() * 12) + 1;
-    const minute = (Math.floor(Math.random() * 6) * 10);
-    const addMinutes = Math.floor(Math.random() * 40) + 10;
-    const endMinute = minute + addMinutes;
-    const endHour = hour + Math.floor(endMinute / 60);
-    const finalMinute = endMinute % 60;
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `What time will it be ${addMinutes} minutes after ${hour}:${minute.toString().padStart(2, '0')}?`,
-      answer: `${endHour}:${finalMinute.toString().padStart(2, '0')}`,
-      working: `Working:\nStart time: ${hour}:${minute.toString().padStart(2, '0')}\nAdd ${addMinutes} minutes\nEnd time: ${endHour}:${finalMinute.toString().padStart(2, '0')}`,
-    };
+    if (t === 0) {
+      const h1 = Math.floor(Math.random() * 6) + 9;
+      const m1 = Math.floor(Math.random() * 6) * 10;
+      const durationMins = Math.floor(Math.random() * 90) + 30;
+      const totalMins = h1 * 60 + m1 + durationMins;
+      const h2 = Math.floor(totalMins / 60);
+      const m2 = totalMins % 60;
+      const dh = Math.floor(durationMins / 60);
+      const dm = durationMins % 60;
+      const durationStr = dh > 0 ? `${dh} hour${dh > 1 ? 's' : ''}${dm > 0 ? ` ${dm} minutes` : ''}` : `${durationMins} minutes`;
+      return { question: `A movie starts at ${h1}:${m1.toString().padStart(2, '0')} and ends at ${h2}:${m2.toString().padStart(2, '0')}. How long is it?`, answer: durationStr, working: `Working:\nEnd time: ${h2}:${m2.toString().padStart(2, '0')}\nStart time: ${h1}:${m1.toString().padStart(2, '0')}\nDuration = ${durationMins} minutes = ${durationStr}` };
+    } else if (t === 1) {
+      const h = Math.floor(Math.random() * 10) + 7;
+      const m = Math.floor(Math.random() * 6) * 10;
+      const n = Math.floor(Math.random() * 5) + 1;
+      const newH = h + n;
+      return { question: `What time is ${n} hour${n > 1 ? 's' : ''} after ${h}:${m.toString().padStart(2, '0')}?`, answer: `${newH}:${m.toString().padStart(2, '0')}`, working: `Working:\nStart: ${h}:${m.toString().padStart(2, '0')}\nAdd ${n} hour${n > 1 ? 's' : ''}\nAnswer: ${newH}:${m.toString().padStart(2, '0')}` };
+    } else if (t === 2) {
+      const n = Math.floor(Math.random() * 5) + 1;
+      return { question: `How many minutes are in ${n} hour${n > 1 ? 's' : ''}?`, answer: `${n * 60} minutes`, working: `Working:\n1 hour = 60 minutes\n${n} × 60 = ${n * 60} minutes` };
+    } else {
+      const hour = Math.floor(Math.random() * 12) + 1;
+      const minute = Math.floor(Math.random() * 6) * 10;
+      const addMinutes = Math.floor(Math.random() * 40) + 10;
+      const endMinute = minute + addMinutes;
+      const endHour = hour + Math.floor(endMinute / 60);
+      const finalMinute = endMinute % 60;
+      return { question: `A train leaves at ${hour}:${minute.toString().padStart(2, '0')} and arrives ${addMinutes} minutes later. What time does it arrive?`, answer: `${endHour}:${finalMinute.toString().padStart(2, '0')}`, working: `Working:\nLeave: ${hour}:${minute.toString().padStart(2, '0')}\nAdd ${addMinutes} minutes\nArrive: ${endHour}:${finalMinute.toString().padStart(2, '0')}` };
+    }
   }
 
   private hardFractionUnlike(): Question {

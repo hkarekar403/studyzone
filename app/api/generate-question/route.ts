@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MathQuestionGenerator } from '@/lib/questionGenerator';
-
-const generator = new MathQuestionGenerator();
+import { generator } from '@/lib/generatorSingleton';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
