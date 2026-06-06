@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
@@ -53,6 +53,11 @@ export default function MathQuiz() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [showWorksheetModal, setShowWorksheetModal] = useState(false)
+  const [worksheetLoading, setWorksheetLoading] = useState(false)
+  const [wseDifficulty, setWseDifficulty] = useState("Easy")
+  const [wseTopic, setWseTopic] = useState("Random")
+  const [wseCount, setWseCount] = useState(10)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -363,6 +368,127 @@ export default function MathQuiz() {
     })
 
     doc.save(`math_session_${endedAt.getTime()}.pdf`)
+  }
+
+  const buildWorksheetPDF = (
+    questions: { number: number; question: string; answer: string; working: string }[],
+    wsDifficulty: string,
+    wsTopic: string,
+  ) => {
+    const doc = new jsPDF()
+    const dateStr = new Date().toLocaleDateString()
+    const safeDateStr = new Date().toISOString().split('T')[0]
+    const footer = 'Maths Practice — mathsquiz.vercel.app'
+    const count = questions.length
+
+    // ── PAGE 1: Question sheet ──────────────────────────────────────
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Class 4 Mathematics Worksheet', 105, 20, { align: 'center' })
+
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Date: ${dateStr}`, 105, 30, { align: 'center' })
+
+    doc.setDrawColor(200, 200, 200)
+    doc.line(15, 34, 195, 34)
+
+    doc.text(`Name: _________________ Class: _______ Score: ___ / ${count}`, 15, 42)
+    doc.line(15, 46, 195, 46)
+
+    let y = 56
+    questions.forEach((q) => {
+      if (y > 258) { doc.addPage(); y = 20 }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${q.number}.`, 15, y)
+      doc.setFont('helvetica', 'normal')
+      const qLines = doc.splitTextToSize(q.question, 163)
+      doc.text(qLines, 24, y)
+      y += qLines.length * 6
+
+      doc.setDrawColor(210, 210, 210)
+      for (let i = 0; i < 3; i++) {
+        y += 9
+        doc.line(24, y, 190, y)
+      }
+      y += 10
+    })
+
+    doc.setFontSize(9)
+    doc.setTextColor(150, 150, 150)
+    doc.text(footer, 105, 290, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+
+    // ── PAGE 2: Answer key ─────────────────────────────────────────
+    doc.addPage()
+
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Answer Key — Class 4 Mathematics Worksheet', 105, 20, { align: 'center' })
+
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Date: ${dateStr}`, 105, 30, { align: 'center' })
+
+    doc.setDrawColor(200, 200, 200)
+    doc.line(15, 34, 195, 34)
+
+    y = 45
+    questions.forEach((q) => {
+      if (y > 265) { doc.addPage(); y = 20 }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${q.number}.`, 15, y)
+      doc.setFont('helvetica', 'normal')
+      const ansLines = doc.splitTextToSize(`Answer: ${q.answer}`, 163)
+      doc.text(ansLines, 24, y)
+      y += ansLines.length * 6 + 2
+
+      if (wsDifficulty === 'Hard' && q.working) {
+        doc.setFontSize(9)
+        doc.setTextColor(80, 80, 80)
+        const workLines = doc.splitTextToSize(q.working, 160)
+        doc.text(workLines, 27, y)
+        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(11)
+        y += workLines.length * 5 + 5
+      } else {
+        y += 4
+      }
+    })
+
+    doc.setFontSize(9)
+    doc.setTextColor(150, 150, 150)
+    doc.text(footer, 105, 290, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+
+    doc.save(`worksheet_${wsDifficulty}_${safeDateStr}.pdf`)
+  }
+
+  const generateWorksheet = async () => {
+    setWorksheetLoading(true)
+    try {
+      const response = await fetch('/api/generate-worksheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          difficulty: wseDifficulty,
+          topic: wseTopic === 'Random' ? undefined : wseTopic,
+          count: wseCount,
+        }),
+      })
+      if (!response.ok) throw new Error('Failed')
+      const data = await response.json()
+      buildWorksheetPDF(data.questions, wseDifficulty, wseTopic)
+      setShowWorksheetModal(false)
+    } catch {
+      // leave modal open so user can retry
+    } finally {
+      setWorksheetLoading(false)
+    }
   }
 
   return (
@@ -682,6 +808,14 @@ export default function MathQuiz() {
                 <Download className="w-5 h-5" />
                 Export PDF
               </button>
+
+              <button
+                onClick={() => setShowWorksheetModal(true)}
+                className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
+              >
+                <FileText className="w-5 h-5" />
+                Worksheet
+              </button>
             </div>
           </div>
         </div>
@@ -761,6 +895,107 @@ export default function MathQuiz() {
           )}
         </footer>
       </div>
+
+      {/* WORKSHEET MODAL */}
+      {showWorksheetModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => !worksheetLoading && setShowWorksheetModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5 w-[380px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowWorksheetModal(false)}
+              disabled={worksheetLoading}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <h2 className="font-heading text-xl font-bold text-gray-800">Generate Printable Worksheet</h2>
+              <p className="text-sm text-gray-500 mt-1">Creates a 2-page PDF: questions + answer key</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Difficulty</label>
+                <select
+                  value={wseDifficulty}
+                  onChange={(e) => setWseDifficulty(e.target.value)}
+                  disabled={worksheetLoading}
+                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Topic</label>
+                <select
+                  value={wseTopic}
+                  onChange={(e) => setWseTopic(e.target.value)}
+                  disabled={worksheetLoading}
+                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
+                >
+                  {availableTopics.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Number of Questions</label>
+                <select
+                  value={wseCount}
+                  onChange={(e) => setWseCount(Number(e.target.value))}
+                  disabled={worksheetLoading}
+                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
+                >
+                  <option value={5}>5 questions</option>
+                  <option value={10}>10 questions</option>
+                  <option value={15}>15 questions</option>
+                  <option value={20}>20 questions</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={generateWorksheet}
+                disabled={worksheetLoading}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {worksheetLoading ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4" />
+                    Generate &amp; Download
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowWorksheetModal(false)}
+                disabled={worksheetLoading}
+                className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR CODE MODAL */}
       {showQRModal && (
