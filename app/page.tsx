@@ -41,6 +41,7 @@ export default function MathQuiz() {
   const [sessionStartedAt] = useState<Date>(new Date())
   const [currentRecord, setCurrentRecord] = useState<SessionRecord | null>(null)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const [visitorCount, setVisitorCount] = useState<number>(0)
 
@@ -86,8 +87,8 @@ export default function MathQuiz() {
           const data = await response.json()
           setAvailableTopics(["Random", ...data.topics])
         }
-      } catch (error) {
-        console.error('Error fetching topics:', error)
+      } catch {
+        setAvailableTopics(["Random"])
       }
     }
     fetchTopics()
@@ -141,6 +142,7 @@ export default function MathQuiz() {
 
   const generateQuestion = async () => {
     setIsGenerating(true)
+    setApiError(null)
     try {
       const requestBody: any = { difficulty }
       if (topic !== "Random") {
@@ -190,10 +192,8 @@ export default function MathQuiz() {
       setCurrentRecord(newRecord)
       setSessionRecords((prev) => [...prev, newRecord])
       setQuestionsGenerated((prev) => prev + 1)
-    } catch (error) {
-      console.error('Error generating question:', error)
-      setFeedback("Failed to generate question. Please try again.")
-      setFeedbackColor("#d62828")
+    } catch {
+      setApiError("Oops! Couldn't load a question. Please tap Try Again.")
     } finally {
       setIsGenerating(false)
     }
@@ -272,10 +272,8 @@ export default function MathQuiz() {
           }
         }
       }
-    } catch (error) {
-      console.error('Error checking answer:', error)
-      setFeedback("Failed to check answer. Please try again.")
-      setFeedbackColor("#d62828")
+    } catch {
+      setApiError("Couldn't check your answer. Please try again.")
     }
   }
 
@@ -464,7 +462,21 @@ export default function MathQuiz() {
             <div className="lg:col-span-2">
 
               {/* Question area */}
-              {!currentQuestion && !isGenerating ? (
+              {apiError ? (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-8 mb-4 flex flex-col items-center justify-center text-center min-h-[220px]">
+                  <span className="text-5xl mb-3">😕</span>
+                  <p className="font-heading text-xl font-bold text-amber-800 mb-2">{apiError}</p>
+                  <button
+                    onClick={() => {
+                      setApiError(null)
+                      generateQuestion()
+                    }}
+                    className="mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-2xl text-base transition-all duration-200 shadow-md hover:scale-105"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : !currentQuestion && !isGenerating ? (
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-200 rounded-2xl p-8 mb-4 flex flex-col items-center justify-center text-center min-h-[220px]">
                   <span className="text-5xl mb-3">🎯</span>
                   <p className="font-heading text-2xl font-bold text-blue-700 mb-1">Ready to start?</p>
