@@ -206,25 +206,76 @@ export class MathQuestionGenerator {
   }
 
   private mediumWordProblem(): Question {
-    const boxes = Math.floor(Math.random() * 7) + 3;
-    const pencils = Math.floor(Math.random() * 5) + 4;
-    const total = boxes * pencils;
-    return {
-      question: `A shopkeeper has ${boxes} boxes. Each box has ${pencils} pencils.\nHow many pencils are there in all?`,
-      answer: total.toString(),
-      working: `Working:\n${boxes} boxes x ${pencils} pencils = ${total} pencils`,
-    };
+    const t = Math.floor(Math.random() * 4);
+
+    if (t === 0) {
+      const boxes = Math.floor(Math.random() * 7) + 3;
+      const pencils = Math.floor(Math.random() * 5) + 4;
+      return {
+        question: `A shopkeeper has ${boxes} boxes. Each box has ${pencils} pencils.\nHow many pencils are there in all?`,
+        answer: (boxes * pencils).toString(),
+        working: `Working:\n${boxes} boxes × ${pencils} pencils = ${boxes * pencils} pencils`,
+      };
+    } else if (t === 1) {
+      const coaches = Math.floor(Math.random() * 8) + 3;
+      const seats = Math.floor(Math.random() * 12) + 8;
+      return {
+        question: `A train has ${coaches} coaches. Each coach has ${seats} seats.\nHow many seats are there in total?`,
+        answer: (coaches * seats).toString(),
+        working: `Working:\n${coaches} coaches × ${seats} seats = ${coaches * seats} seats`,
+      };
+    } else if (t === 2) {
+      const rows = Math.floor(Math.random() * 6) + 3;
+      const perRow = Math.floor(Math.random() * 7) + 4;
+      const students = rows * perRow;
+      return {
+        question: `${students} students sit in ${rows} equal rows.\nHow many students are in each row?`,
+        answer: perRow.toString(),
+        working: `Working:\n${students} ÷ ${rows} = ${perRow} students per row`,
+      };
+    } else {
+      const rows = Math.floor(Math.random() * 6) + 3;
+      const perRow = Math.floor(Math.random() * 8) + 4;
+      const trees = rows * perRow;
+      return {
+        question: `A farmer plants ${trees} trees in ${rows} equal rows.\nHow many trees are in each row?`,
+        answer: perRow.toString(),
+        working: `Working:\n${trees} ÷ ${rows} = ${perRow} trees per row`,
+      };
+    }
   }
 
   private mediumMultiplication(): Question {
     const a = Math.floor(Math.random() * 19) + 11;
     const b = Math.floor(Math.random() * 7) + 3;
     const product = a * b;
-    return {
-      question: `Find the product:\n${a} x ${b} = ?`,
-      answer: product.toString(),
-      working: `Working:\n${a} x ${b} = ${product}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+
+    if (t === 0) {
+      return {
+        question: `Find the product:\n${a} × ${b} = ?`,
+        answer: product.toString(),
+        working: `Working:\n${a} × ${b} = ${product}`,
+      };
+    } else if (t === 1) {
+      return {
+        question: `Multiply ${a} by ${b}.`,
+        answer: product.toString(),
+        working: `Working:\n${a} × ${b} = ${product}`,
+      };
+    } else if (t === 2) {
+      return {
+        question: `A rectangle is ${a} cm long and ${b} cm wide.\nWhat is its area?`,
+        answer: `${product} cm²`,
+        working: `Working:\nArea = length × width\n= ${a} × ${b}\n= ${product} cm²`,
+      };
+    } else {
+      return {
+        question: `${a} packets each contain ${b} biscuits.\nHow many biscuits are there in total?`,
+        answer: product.toString(),
+        working: `Working:\n${a} × ${b} = ${product} biscuits`,
+      };
+    }
   }
 
   private mediumDivision(): Question {
@@ -249,15 +300,49 @@ export class MathQuestionGenerator {
   }
 
   private hardMultiStep(): Question {
-    const rows = Math.floor(Math.random() * 5) + 3;
-    const perRow = Math.floor(Math.random() * 7) + 6;
-    const extra = Math.floor(Math.random() * 16) + 10;
-    const total = rows * perRow + extra;
-    return {
-      question: `There are ${rows} rows of chairs with ${perRow} chairs in each row.\n${extra} extra chairs are added later. How many chairs are there now?`,
-      answer: total.toString(),
-      working: `Working:\nChairs in rows = ${rows} x ${perRow} = ${rows * perRow}\nAdd extra chairs = ${rows * perRow} + ${extra} = ${total}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+
+    if (t === 0) {
+      const rows = Math.floor(Math.random() * 5) + 3;
+      const perRow = Math.floor(Math.random() * 7) + 6;
+      const extra = Math.floor(Math.random() * 16) + 10;
+      const total = rows * perRow + extra;
+      return {
+        question: `There are ${rows} rows of chairs with ${perRow} chairs in each row.\n${extra} extra chairs are added later. How many chairs are there now?`,
+        answer: total.toString(),
+        working: `Working:\nChairs in rows = ${rows} × ${perRow} = ${rows * perRow}\nAdd extra chairs = ${rows * perRow} + ${extra} = ${total}`,
+      };
+    } else if (t === 1) {
+      const sold = Math.floor(Math.random() * 30) + 10;
+      const added = Math.floor(Math.random() * 20) + 5;
+      const initial = sold + Math.floor(Math.random() * 20) + 15;
+      const result = initial - sold + added;
+      return {
+        question: `A shopkeeper had ${initial} items. He sold ${sold} items and then received ${added} new ones.\nHow many items does he have now?`,
+        answer: result.toString(),
+        working: `Working:\nStart: ${initial}\nAfter selling: ${initial} - ${sold} = ${initial - sold}\nAfter receiving: ${initial - sold} + ${added} = ${result}`,
+      };
+    } else if (t === 2) {
+      const initial = Math.floor(Math.random() * 20) + 30;
+      const left = Math.floor(Math.random() * 10) + 5;
+      const joined = Math.floor(Math.random() * 10) + 5;
+      const result = initial - left + joined;
+      return {
+        question: `A class has ${initial} students. ${left} students left and then ${joined} new students joined.\nHow many students are there now?`,
+        answer: result.toString(),
+        working: `Working:\nStart: ${initial}\nAfter leaving: ${initial} - ${left} = ${initial - left}\nAfter joining: ${initial - left} + ${joined} = ${result}`,
+      };
+    } else {
+      const used = Math.floor(Math.random() * 30) + 10;
+      const added = Math.floor(Math.random() * 20) + 5;
+      const initial = used + Math.floor(Math.random() * 20) + 15;
+      const result = initial - used + added;
+      return {
+        question: `A tank holds ${initial} litres of water. ${used} litres are used, then ${added} litres are added.\nHow many litres remain in the tank?`,
+        answer: result.toString(),
+        working: `Working:\nStart: ${initial} litres\nAfter using: ${initial} - ${used} = ${initial - used} litres\nAfter adding: ${initial - used} + ${added} = ${result} litres`,
+      };
+    }
   }
 
   private hardDivisionRemainder(): Question {
@@ -286,25 +371,88 @@ export class MathQuestionGenerator {
   private easyPlaceValue(): Question {
     const num = Math.floor(Math.random() * 900000) + 100000;
     const numStr = num.toString();
-    const digitIndex = Math.floor(Math.random() * numStr.length);
-    const digit = numStr[digitIndex];
-    const placeValue = parseInt(digit) * Math.pow(10, numStr.length - digitIndex - 1);
-    return {
-      question: `What is the place value of ${digit} in the number ${num}?`,
-      answer: placeValue.toString(),
-      working: `Working:\nThe digit ${digit} is in the ${this.getPlaceName(numStr.length - digitIndex - 1)} position.\nPlace value = ${digit} × ${Math.pow(10, numStr.length - digitIndex - 1)} = ${placeValue}`,
-    };
+    const t = Math.floor(Math.random() * 4);
+
+    if (t === 0) {
+      const digitIndex = Math.floor(Math.random() * numStr.length);
+      const digit = numStr[digitIndex];
+      const placeValue = parseInt(digit) * Math.pow(10, numStr.length - digitIndex - 1);
+      return {
+        question: `What is the place value of ${digit} in the number ${num}?`,
+        answer: placeValue.toString(),
+        working: `Working:\nThe digit ${digit} is in the ${this.getPlaceName(numStr.length - digitIndex - 1)} position.\nPlace value = ${digit} × ${Math.pow(10, numStr.length - digitIndex - 1)} = ${placeValue}`,
+      };
+    } else if (t === 1) {
+      const placeIndex = Math.floor(Math.random() * numStr.length);
+      const placeName = this.getPlaceName(numStr.length - placeIndex - 1);
+      const digit = numStr[placeIndex];
+      return {
+        question: `In the number ${num}, which digit is in the ${placeName} place?`,
+        answer: digit,
+        working: `Working:\n${num} has digits: ${numStr.split('').join(', ')}\nThe digit in the ${placeName} place is ${digit}.`,
+      };
+    } else if (t === 2) {
+      const parts = numStr.split('').map((d, i) => parseInt(d) * Math.pow(10, numStr.length - i - 1)).filter(v => v > 0);
+      const answer = parts.join(' + ');
+      const workingLines = numStr.split('').map((d, i) => `${d} × ${Math.pow(10, numStr.length - i - 1)} = ${parseInt(d) * Math.pow(10, numStr.length - i - 1)}`);
+      return {
+        question: `Write the expanded form of ${num}.`,
+        answer: answer,
+        working: `Working:\n${workingLines.join('\n')}\nExpanded form = ${answer}`,
+      };
+    } else {
+      const digitIndex = Math.floor(Math.random() * numStr.length);
+      const digit = numStr[digitIndex];
+      return {
+        question: `What is the face value of ${digit} in the number ${num}?`,
+        answer: digit,
+        working: `Working:\nFace value of a digit is the digit itself, regardless of its position.\nFace value of ${digit} = ${digit}`,
+      };
+    }
   }
 
   private easyOddEven(): Question {
-    const num = Math.floor(Math.random() * 200) + 1;
-    const isOdd = num % 2 === 1;
-    const answer = isOdd ? "Odd" : "Even";
-    return {
-      question: `Is ${num} an odd or even number?`,
-      answer: answer,
-      working: `Working:\n${num} ÷ 2 = ${num / 2}${isOdd ? " with remainder 1" : " exactly"}\nTherefore, ${num} is ${answer}.`,
-    };
+    const t = Math.floor(Math.random() * 4);
+
+    if (t === 0) {
+      const num = Math.floor(Math.random() * 200) + 1;
+      const isOdd = num % 2 === 1;
+      const answer = isOdd ? "Odd" : "Even";
+      return {
+        question: `Is ${num} an odd or even number?`,
+        answer: answer,
+        working: `Working:\n${num} ÷ 2 = ${Math.floor(num / 2)}${isOdd ? " remainder 1" : " exactly"}\nTherefore, ${num} is ${answer}.`,
+      };
+    } else if (t === 1) {
+      const oddNum = Math.floor(Math.random() * 50) * 2 + 1;
+      let even1 = Math.floor(Math.random() * 50) * 2 + 2;
+      let even2 = Math.floor(Math.random() * 50) * 2 + 2;
+      while (even2 === even1) even2 = Math.floor(Math.random() * 50) * 2 + 2;
+      const nums = [oddNum, even1, even2].sort(() => Math.random() - 0.5);
+      return {
+        question: `Which of these is an odd number?\n${nums.join(', ')}`,
+        answer: oddNum.toString(),
+        working: `Working:\nA number is odd if it cannot be divided equally by 2.\n${nums.map(n => `${n}: ${n % 2 === 0 ? 'Even' : 'Odd'}`).join(', ')}\nThe odd number is ${oddNum}.`,
+      };
+    } else if (t === 2) {
+      const num = Math.floor(Math.random() * 100) + 1;
+      const nextEven = num % 2 === 0 ? num + 2 : num + 1;
+      return {
+        question: `What is the next even number after ${num}?`,
+        answer: nextEven.toString(),
+        working: `Working:\nEven numbers are multiples of 2.\n${num % 2 === 0 ? `${num} is even, so the next even number is ${num} + 2 = ${nextEven}.` : `${num} is odd, so the next even number is ${num} + 1 = ${nextEven}.`}`,
+      };
+    } else {
+      const a = Math.floor(Math.random() * 20) + 1;
+      const b = a + Math.floor(Math.random() * 10) + 5;
+      const odds = [];
+      for (let i = a + 1; i < b; i++) { if (i % 2 !== 0) odds.push(i); }
+      return {
+        question: `How many odd numbers are there between ${a} and ${b}?`,
+        answer: odds.length.toString(),
+        working: `Working:\nOdd numbers between ${a} and ${b}: ${odds.length > 0 ? odds.join(', ') : 'none'}\nCount = ${odds.length}`,
+      };
+    }
   }
 
   private easyFraction(): Question {
@@ -362,17 +510,47 @@ export class MathQuestionGenerator {
   }
 
   private mediumPrimeComposite(): Question {
-    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31];
+    const allPrimes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
     const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20];
-    const allNums = [...primes, ...composites];
-    const num = allNums[Math.floor(Math.random() * allNums.length)];
-    const isPrime = primes.includes(num);
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `Is ${num} a prime or composite number?`,
-      answer: isPrime ? "Prime" : "Composite",
-      working: `Working:\n${isPrime ? `${num} has only 2 factors: 1 and ${num}. It is PRIME.` : `${num} has more than 2 factors. It is COMPOSITE.`}`,
-    };
+    if (t === 0) {
+      const pool = [...allPrimes.slice(0, 11), ...composites];
+      const num = pool[Math.floor(Math.random() * pool.length)];
+      const isPrime = allPrimes.includes(num);
+      return {
+        question: `Is ${num} a prime or composite number?`,
+        answer: isPrime ? "Prime" : "Composite",
+        working: `Working:\n${isPrime ? `${num} has only 2 factors: 1 and ${num}. It is PRIME.` : `${num} has more than 2 factors. It is COMPOSITE.`}`,
+      };
+    } else if (t === 1) {
+      const ranges: [number, number][] = [[1, 20], [10, 30], [20, 40], [1, 15]];
+      const [a, b] = ranges[Math.floor(Math.random() * ranges.length)];
+      const inRange = allPrimes.filter(p => p > a && p < b);
+      return {
+        question: `List all prime numbers between ${a} and ${b}.`,
+        answer: inRange.join(', '),
+        working: `Working:\nPrime numbers have exactly 2 factors: 1 and themselves.\nPrimes between ${a} and ${b}: ${inRange.join(', ')}`,
+      };
+    } else if (t === 2) {
+      const startOptions = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+      const startNum = startOptions[Math.floor(Math.random() * startOptions.length)];
+      const nextPrime = allPrimes.find(p => p > startNum)!;
+      return {
+        question: `What is the smallest prime number greater than ${startNum}?`,
+        answer: nextPrime.toString(),
+        working: `Working:\nChecking numbers after ${startNum}...\n${nextPrime} has only 2 factors: 1 and ${nextPrime}.\nIt is the smallest prime greater than ${startNum}.`,
+      };
+    } else {
+      const upToOptions = [10, 15, 20, 25, 30];
+      const upTo = upToOptions[Math.floor(Math.random() * upToOptions.length)];
+      const primesUpTo = allPrimes.filter(p => p <= upTo);
+      return {
+        question: `How many prime numbers are there between 1 and ${upTo}?`,
+        answer: primesUpTo.length.toString(),
+        working: `Working:\nPrimes up to ${upTo}: ${primesUpTo.join(', ')}\nCount = ${primesUpTo.length}`,
+      };
+    }
   }
 
   private mediumSquareCube(): Question {
@@ -398,27 +576,84 @@ export class MathQuestionGenerator {
 
   private mediumFractionAddition(): Question {
     const denom = Math.floor(Math.random() * 6) + 4;
-    const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
-    const num2 = Math.floor(Math.random() * (denom - num1)) + 1;
-    const sum = num1 + num2;
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `Add the fractions:\n${num1}/${denom} + ${num2}/${denom} = ?`,
-      answer: `${sum}/${denom}`,
-      working: `Working:\nBoth fractions have the same denominator.\n${num1}/${denom} + ${num2}/${denom} = (${num1} + ${num2})/${denom} = ${sum}/${denom}`,
-    };
+    if (t === 0) {
+      const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
+      const num2 = Math.floor(Math.random() * (denom - num1)) + 1;
+      const sum = num1 + num2;
+      return {
+        question: `Add the fractions:\n${num1}/${denom} + ${num2}/${denom} = ?`,
+        answer: `${sum}/${denom}`,
+        working: `Working:\nBoth fractions have the same denominator.\n${num1}/${denom} + ${num2}/${denom} = (${num1} + ${num2})/${denom} = ${sum}/${denom}`,
+      };
+    } else if (t === 1) {
+      const bigger = Math.floor(Math.random() * (denom - 2)) + 2;
+      const smaller = Math.floor(Math.random() * (bigger - 1)) + 1;
+      const diff = bigger - smaller;
+      return {
+        question: `Subtract the fractions:\n${bigger}/${denom} - ${smaller}/${denom} = ?`,
+        answer: `${diff}/${denom}`,
+        working: `Working:\nBoth fractions have the same denominator.\n${bigger}/${denom} - ${smaller}/${denom} = (${bigger} - ${smaller})/${denom} = ${diff}/${denom}`,
+      };
+    } else if (t === 2) {
+      const num1 = Math.floor(Math.random() * Math.floor(denom / 2)) + 1;
+      const num2 = Math.floor(Math.random() * (denom - num1 - 1)) + 1;
+      const sum = num1 + num2;
+      return {
+        question: `A pizza is cut into ${denom} slices. Ravi ate ${num1} slices and Meena ate ${num2} slices.\nWhat fraction of the pizza was eaten?`,
+        answer: `${sum}/${denom}`,
+        working: `Working:\nRavi ate ${num1}/${denom}, Meena ate ${num2}/${denom}\nTotal eaten = (${num1} + ${num2})/${denom} = ${sum}/${denom}`,
+      };
+    } else {
+      const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
+      const complement = denom - num1;
+      return {
+        question: `What fraction must be added to ${num1}/${denom} to make 1 whole?`,
+        answer: `${complement}/${denom}`,
+        working: `Working:\n1 whole = ${denom}/${denom}\n${denom}/${denom} - ${num1}/${denom} = ${complement}/${denom}`,
+      };
+    }
   }
 
   private mediumPerimeter(): Question {
-    const length = Math.floor(Math.random() * 8) + 3;
-    const width = Math.floor(Math.random() * 6) + 2;
-    const perimeter = 2 * (length + width);
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `Find the perimeter of a rectangle with length ${length} cm and width ${width} cm.`,
-      answer: `${perimeter} cm`,
-      working: `Working:\nPerimeter of rectangle = 2 × (length + width)\n= 2 × (${length} + ${width})\n= 2 × ${length + width}\n= ${perimeter} cm`,
-    };
+    if (t === 0) {
+      const length = Math.floor(Math.random() * 8) + 3;
+      const width = Math.floor(Math.random() * 6) + 2;
+      const perimeter = 2 * (length + width);
+      return {
+        question: `Find the perimeter of a rectangle with length ${length} cm and width ${width} cm.`,
+        answer: `${perimeter} cm`,
+        working: `Working:\nPerimeter of rectangle = 2 × (length + width)\n= 2 × (${length} + ${width})\n= 2 × ${length + width}\n= ${perimeter} cm`,
+      };
+    } else if (t === 1) {
+      const side = Math.floor(Math.random() * 12) + 3;
+      return {
+        question: `A square has a side of ${side} cm. Find its perimeter.`,
+        answer: `${4 * side} cm`,
+        working: `Working:\nPerimeter of square = 4 × side\n= 4 × ${side}\n= ${4 * side} cm`,
+      };
+    } else if (t === 2) {
+      const width = Math.floor(Math.random() * 6) + 2;
+      const length = Math.floor(Math.random() * 8) + 3;
+      const perimeter = 2 * (length + width);
+      return {
+        question: `The perimeter of a rectangle is ${perimeter} cm and its length is ${length} cm.\nFind its width.`,
+        answer: `${width} cm`,
+        working: `Working:\nPerimeter = 2 × (length + width)\n${perimeter} = 2 × (${length} + width)\n${perimeter / 2} = ${length} + width\nwidth = ${perimeter / 2} - ${length} = ${width} cm`,
+      };
+    } else {
+      const length = Math.floor(Math.random() * 20) + 10;
+      const width = Math.floor(Math.random() * 10) + 5;
+      const perimeter = 2 * (length + width);
+      return {
+        question: `A park is ${length} m long and ${width} m wide.\nHow much fencing is needed to go all the way around it?`,
+        answer: `${perimeter} m`,
+        working: `Working:\nFencing needed = Perimeter = 2 × (length + width)\n= 2 × (${length} + ${width})\n= 2 × ${length + width}\n= ${perimeter} m`,
+      };
+    }
   }
 
   private mediumMoney(): Question {
@@ -684,35 +919,91 @@ export class MathQuestionGenerator {
       { name: 'Square', sides: 4, angles: 4 },
       { name: 'Rectangle', sides: 4, angles: 4 },
       { name: 'Pentagon', sides: 5, angles: 5 },
+      { name: 'Hexagon', sides: 6, angles: 6 },
     ];
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    const property = Math.random() > 0.5 ? 'sides' : 'angles';
-    const value = property === 'sides' ? shape.sides : shape.angles;
+    const reverseShapes = [
+      { name: 'Triangle', sides: 3 },
+      { name: 'Pentagon', sides: 5 },
+      { name: 'Hexagon', sides: 6 },
+    ];
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `How many ${property} does a ${shape.name} have?`,
-      answer: value.toString(),
-      working: `Working:\nA ${shape.name} has ${value} ${property}.`,
-    };
+    if (t === 0) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      return {
+        question: `How many sides does a ${shape.name} have?`,
+        answer: shape.sides.toString(),
+        working: `Working:\nA ${shape.name} has ${shape.sides} sides.`,
+      };
+    } else if (t === 1) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      return {
+        question: `How many angles does a ${shape.name} have?`,
+        answer: shape.angles.toString(),
+        working: `Working:\nA ${shape.name} has ${shape.angles} angles.`,
+      };
+    } else if (t === 2) {
+      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      return {
+        question: `A shape has ${shape.sides} sides. What is it called?`,
+        answer: shape.name,
+        working: `Working:\nA polygon with ${shape.sides} sides is called a ${shape.name}.`,
+      };
+    } else {
+      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      return {
+        question: `Which shape has ${shape.sides} sides and ${shape.sides} angles?`,
+        answer: shape.name,
+        working: `Working:\nA ${shape.name} has ${shape.sides} sides and ${shape.sides} angles.`,
+      };
+    }
   }
 
   private mediumBarGraph(): Question {
     const categories = ['Math', 'Science', 'English', 'Art'];
-    const category = categories[Math.floor(Math.random() * categories.length)];
     const students: Record<string, number> = {};
-
     categories.forEach(cat => {
       students[cat] = Math.floor(Math.random() * 15) + 5;
     });
-
     const data = categories.map(cat => ({ label: cat, count: students[cat] }));
     const svg = this.generateBarChartSVG(data);
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nHow many students prefer ${category}?`,
-      answer: students[category].toString(),
-      working: `Working:\nLooking at the bar graph, ${category} has ${students[category]} students.`,
-    };
+    if (t === 0) {
+      const category = categories[Math.floor(Math.random() * categories.length)];
+      return {
+        question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nHow many students prefer ${category}?`,
+        answer: students[category].toString(),
+        working: `Working:\nLooking at the bar graph, ${category} has ${students[category]} students.`,
+      };
+    } else if (t === 1) {
+      const maxCount = Math.max(...Object.values(students));
+      const mostPopular = categories.find(c => students[c] === maxCount)!;
+      return {
+        question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nWhich subject is the most popular?`,
+        answer: mostPopular,
+        working: `Working:\n${categories.map(c => `${c}: ${students[c]}`).join(', ')}\nHighest count = ${maxCount} (${mostPopular})`,
+      };
+    } else if (t === 2) {
+      let cat1 = categories[Math.floor(Math.random() * categories.length)];
+      let cat2 = categories[Math.floor(Math.random() * categories.length)];
+      while (cat2 === cat1) cat2 = categories[Math.floor(Math.random() * categories.length)];
+      const moreCat = students[cat1] >= students[cat2] ? cat1 : cat2;
+      const lessCat = students[cat1] >= students[cat2] ? cat2 : cat1;
+      const diff = students[moreCat] - students[lessCat];
+      return {
+        question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nHow many more students prefer ${moreCat} than ${lessCat}?`,
+        answer: diff.toString(),
+        working: `Working:\n${moreCat}: ${students[moreCat]} students\n${lessCat}: ${students[lessCat]} students\nDifference = ${students[moreCat]} - ${students[lessCat]} = ${diff}`,
+      };
+    } else {
+      const total = Object.values(students).reduce((sum, v) => sum + v, 0);
+      return {
+        question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nWhat is the total number of students surveyed?`,
+        answer: total.toString(),
+        working: `Working:\n${categories.map(c => `${c}: ${students[c]}`).join('\n')}\nTotal = ${Object.values(students).join(' + ')} = ${total}`,
+      };
+    }
   }
 
   private medium3DShapes(): Question {
@@ -723,15 +1014,42 @@ export class MathQuestionGenerator {
       { name: 'Cone', faces: 2, edges: 1, vertices: 1 },
       { name: 'Sphere', faces: 1, edges: 0, vertices: 0 },
     ];
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    const property = Math.random() > 0.5 ? 'faces' : (Math.random() > 0.5 ? 'edges' : 'vertices');
-    const value = shape[property as keyof typeof shape];
+    const reverseShapes = [
+      { name: 'Sphere', faces: 1 },
+      { name: 'Cone', faces: 2 },
+      { name: 'Cylinder', faces: 3 },
+    ];
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `How many ${property} does a ${shape.name} have?`,
-      answer: value.toString(),
-      working: `Working:\nA ${shape.name} has ${value} ${property}.`,
-    };
+    if (t === 0) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      return {
+        question: `How many faces does a ${shape.name} have?`,
+        answer: shape.faces.toString(),
+        working: `Working:\nA ${shape.name} has ${shape.faces} face${shape.faces !== 1 ? 's' : ''}.`,
+      };
+    } else if (t === 1) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      return {
+        question: `How many edges does a ${shape.name} have?`,
+        answer: shape.edges.toString(),
+        working: `Working:\nA ${shape.name} has ${shape.edges} edge${shape.edges !== 1 ? 's' : ''}.`,
+      };
+    } else if (t === 2) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      return {
+        question: `How many vertices does a ${shape.name} have?`,
+        answer: shape.vertices.toString(),
+        working: `Working:\nA ${shape.name} has ${shape.vertices} ${shape.vertices !== 1 ? 'vertices' : 'vertex'}.`,
+      };
+    } else {
+      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      return {
+        question: `A 3D shape has ${shape.faces} face${shape.faces !== 1 ? 's' : ''}. What is this shape called?`,
+        answer: shape.name,
+        working: `Working:\nA shape with ${shape.faces} face${shape.faces !== 1 ? 's' : ''} is a ${shape.name}.`,
+      };
+    }
   }
 
   private hardSymmetry(): Question {
