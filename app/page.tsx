@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
+import confetti from "canvas-confetti"
 
 interface SessionRecord {
   number: number
@@ -45,6 +46,9 @@ export default function MathQuiz() {
 
   const [visitorCount, setVisitorCount] = useState<number>(0)
 
+  const [streak, setStreak] = useState<number>(0)
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
+
   // UI-only state
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
@@ -57,6 +61,11 @@ export default function MathQuiz() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
+  }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('soundEnabled')
+    if (saved !== null) setSoundEnabled(saved === 'true')
   }, [])
 
   useEffect(() => {
@@ -106,6 +115,7 @@ export default function MathQuiz() {
       setFeedback("Time Up")
       setFeedbackColor("#ff5a36")
       setShowAnswer(true)
+      setStreak(0)
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -141,6 +151,9 @@ export default function MathQuiz() {
   }
 
   const generateQuestion = async () => {
+    if (questionLocked && feedback !== "Correct") {
+      setStreak(0)
+    }
     setIsGenerating(true)
     setApiError(null)
     try {
@@ -249,14 +262,22 @@ export default function MathQuiz() {
           setTimerActive(false)
           setFeedback("Correct")
           setFeedbackColor("#1f9d46")
-          playSound("correct")
+          setStreak((prev) => prev + 1)
+          if (soundEnabled) playSound("correct")
+          if (soundEnabled) confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#2563eb', '#7c3aed', '#f59e0b', '#16a34a'],
+          })
         } else {
           setCurrentAttempts((prev) => prev + 1)
           updatedRecord.isCorrect = false
           updatedRecord.attempts.push({ answer: userAnswer, result: "Incorrect" })
           setCurrentRecord(updatedRecord)
           setSessionRecords((prev) => prev.map((r) => (r.number === currentRecord.number ? updatedRecord : r)))
-          playSound("incorrect")
+          setStreak(0)
+          if (soundEnabled) playSound("incorrect")
 
           if (currentAttempts + 1 >= 3) {
             setQuestionLocked(true)
@@ -361,6 +382,17 @@ export default function MathQuiz() {
         </div>
         <div className="flex items-center gap-2 mt-1 flex-shrink-0">
           <button
+            onClick={() => {
+              const next = !soundEnabled
+              setSoundEnabled(next)
+              localStorage.setItem('soundEnabled', String(next))
+            }}
+            title="Toggle sound"
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
+          <button
             onClick={() => setShowQRModal(true)}
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
           >
@@ -421,6 +453,11 @@ export default function MathQuiz() {
                   {correctAnswers} / {questionsGenerated} correct
                 </span>
               </div>
+              {streak >= 3 && (
+                <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base animate-pulse" : "text-sm"}`}>
+                  🔥 {streak} streak!
+                </p>
+              )}
             </div>
 
             {/* Timer with progress bar */}
