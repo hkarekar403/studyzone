@@ -15,8 +15,25 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: "Class 4 Mathematics Practice",
-  description: "Interactive math practice for Class 4 students",
+  title: "Free Class 4 Maths Practice | Addition, Fractions, Geometry & More",
+  description: "Interactive maths quiz for Class 4 students. Practice addition, subtraction, multiplication, division, fractions, geometry, time, money and more. Free, instant, no login required.",
+  keywords: "class 4 maths, grade 4 mathematics, maths practice, maths quiz, primary school maths, fractions, geometry, multiplication, division, free maths practice",
+  openGraph: {
+    title: "Free Class 4 Maths Practice | Interactive Quiz",
+    description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
+    type: "website",
+    locale: "en_IN",
+    siteName: "Class 4 Maths Practice",
+  },
+  twitter: {
+    card: "summary",
+    title: "Free Class 4 Maths Practice | Interactive Quiz",
+    description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

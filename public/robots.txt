@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://math-class-4-quiz-website.vercel.app/sitemap.xml
