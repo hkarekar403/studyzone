@@ -264,7 +264,7 @@ export default function MathQuiz() {
           setFeedbackColor("#1f9d46")
           setStreak((prev) => prev + 1)
           if (soundEnabled) playSound("correct")
-          if (soundEnabled) confetti({
+          confetti({
             particleCount: 80,
             spread: 60,
             origin: { y: 0.6 },
