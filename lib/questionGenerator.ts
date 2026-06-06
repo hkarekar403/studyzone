@@ -742,7 +742,7 @@ export class MathQuestionGenerator {
       const angle2 = Math.floor(Math.random() * 70) + 20;
       const angle3 = 180 - angle1 - angle2;
       return {
-        question: `In a triangle, two angles are ${angle1}° and ${angle2}°. What is the third angle?`,
+        question: `In a triangle, two angles are ${angle1}° and ${angle2}°. What is the third angle?\n\n[[TALLY_SVG]]${this.generateShapeSVG('Triangle')}`,
         answer: `${angle3}°`,
         working: `Working:\nSum of angles in a triangle = 180°\n${angle1}° + ${angle2}° + ? = 180°\n? = 180° - ${angle1}° - ${angle2}° = ${angle3}°`,
       };
@@ -756,7 +756,7 @@ export class MathQuestionGenerator {
       const angle = Math.floor(Math.random() * 170) + 1;
       const classification = angle < 90 ? 'acute' : angle === 90 ? 'right' : angle < 180 ? 'obtuse' : 'reflex';
       return {
-        question: `Classify this angle: ${angle}°`,
+        question: `Classify this angle: ${angle}°\n\n[[TALLY_SVG]]${this.generateAngleSVG(angle)}`,
         answer: classification.charAt(0).toUpperCase() + classification.slice(1),
         working: `Working:\n${angle}° is a ${classification} angle.\n${angle < 90 ? '(Less than 90°)' : angle === 90 ? '(Exactly 90°)' : '(Between 90° and 180°)'}`,
       };
@@ -875,6 +875,73 @@ export class MathQuestionGenerator {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${H}" viewBox="0 0 ${totalWidth} ${H}">${lines.join('')}</svg>`;
   }
 
+  private generateShapeSVG(shape: string): string {
+    const fill = '#eff6ff';
+    const stroke = '#2563eb';
+    const sw = 2.5;
+    const W = 120, H = 120;
+    const cx = 60, cy = 60;
+
+    const polyPoints = (n: number, r: number): string =>
+      Array.from({ length: n }, (_, i) => {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+        return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+      }).join(' ');
+
+    let shapeEl: string;
+    switch (shape) {
+      case 'Triangle':
+        shapeEl = `<polygon points="${polyPoints(3, 52)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+        break;
+      case 'Square':
+        shapeEl = `<rect x="20" y="20" width="80" height="80" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        break;
+      case 'Rectangle':
+        shapeEl = `<rect x="10" y="30" width="100" height="60" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        break;
+      case 'Pentagon':
+        shapeEl = `<polygon points="${polyPoints(5, 50)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+        break;
+      case 'Hexagon':
+        shapeEl = `<polygon points="${polyPoints(6, 50)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+        break;
+      case 'Circle':
+        shapeEl = `<circle cx="${cx}" cy="${cy}" r="45" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        break;
+      default:
+        shapeEl = `<circle cx="${cx}" cy="${cy}" r="45" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${shapeEl}</svg>`;
+  }
+
+  private generateAngleSVG(degrees: number): string {
+    const W = 150, H = 120;
+    const ox = 75, oy = 95;
+    const rayLen = 65;
+    const arcR = 28;
+
+    const rad = (degrees * Math.PI) / 180;
+    const rayEndX = (ox + rayLen * Math.cos(rad)).toFixed(1);
+    const rayEndY = (oy - rayLen * Math.sin(rad)).toFixed(1);
+    const arcEndX = (ox + arcR * Math.cos(rad)).toFixed(1);
+    const arcEndY = (oy - arcR * Math.sin(rad)).toFixed(1);
+    const largeArc = degrees > 180 ? 1 : 0;
+
+    const halfRad = (degrees / 2) * (Math.PI / 180);
+    const labelX = (ox + (arcR + 18) * Math.cos(halfRad)).toFixed(1);
+    const labelY = (oy - (arcR + 18) * Math.sin(halfRad)).toFixed(1);
+
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      `<line x1="${ox}" y1="${oy}" x2="${ox + rayLen}" y2="${oy}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<line x1="${ox}" y1="${oy}" x2="${rayEndX}" y2="${rayEndY}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<path d="M ${ox + arcR} ${oy} A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX} ${arcEndY}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>` +
+      `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#374151" font-family="inherit">${degrees}°</text>` +
+      `</svg>`
+    );
+  }
+
   private easyTallyChart(): Question {
     const items = ['Apples', 'Oranges', 'Bananas', 'Grapes'];
     const item1 = items[Math.floor(Math.random() * items.length)];
@@ -931,14 +998,14 @@ export class MathQuestionGenerator {
     if (t === 0) {
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
       return {
-        question: `How many sides does a ${shape.name} have?`,
+        question: `How many sides does a ${shape.name} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape.name)}`,
         answer: shape.sides.toString(),
         working: `Working:\nA ${shape.name} has ${shape.sides} sides.`,
       };
     } else if (t === 1) {
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
       return {
-        question: `How many angles does a ${shape.name} have?`,
+        question: `How many angles does a ${shape.name} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape.name)}`,
         answer: shape.angles.toString(),
         working: `Working:\nA ${shape.name} has ${shape.angles} angles.`,
       };
@@ -1066,7 +1133,7 @@ export class MathQuestionGenerator {
     const lines = symmetryLines[shape];
 
     return {
-      question: `How many lines of symmetry does a ${shape} have?`,
+      question: `How many lines of symmetry does a ${shape} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape)}`,
       answer: lines === 'Infinite' ? 'Infinite' : lines.toString(),
       working: `Working:\nA ${shape} has ${lines} line(s) of symmetry.\nA line of symmetry divides a shape into two identical halves.`,
     };
