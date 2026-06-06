@@ -16,16 +16,52 @@ function stripUnits(value: string): string {
     .trim();
 }
 
+// "2:30" → "2 30", "3:00" → "3"
+// Runs before stripUnits so "2 hours 30 minutes" and "2:30" both reduce to "2 30"
+function normalizeTimeFormat(value: string): string {
+  return value.replace(/\b(\d+):(\d{2})\b/g, (_, h, m) => {
+    const minutes = parseInt(m, 10);
+    return minutes === 0 ? h : `${h} ${minutes}`;
+  });
+}
+
+// "5.00" → "5", but "5.50" stays "5.50"
+function stripTrailingZeroDecimals(value: string): string {
+  return value.replace(/\b(\d+)\.00\b/g, '$1');
+}
+
+// When the answer is a list of fractions (ascending/descending order questions),
+// sort the parts so "3/10 1/10 4/10" matches "1/10 3/10 4/10"
+function normalizeOrderedAnswer(value: string): string {
+  if (!value.includes('/')) return value;
+  const parts = value.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return value;
+  return [...parts].sort().join(' ');
+}
+
 function normalizeAnswer(value: string): string {
-  let cleaned = value.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-  cleaned = cleaned.replace('quotient =', 'quotient=').replace('remainder =', 'remainder=');
+  // Remove commas (handles "1,234" → "1234" and list separators), collapse whitespace
+  let cleaned = value.toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  // "quotient = 5 remainder = 2" and "quotient=5 remainder=2" → same form
+  cleaned = cleaned.replace(/quotient\s*=\s*/g, 'quotient=').replace(/remainder\s*=\s*/g, 'remainder=');
+  // "4 / 10" → "4/10"
+  cleaned = cleaned.replace(/(\d+)\s*\/\s*(\d+)/g, '$1/$2');
+  cleaned = normalizeTimeFormat(cleaned);
+  cleaned = stripTrailingZeroDecimals(cleaned);
   cleaned = stripUnits(cleaned);
+  cleaned = normalizeOrderedAnswer(cleaned);
   return cleaned;
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { user_answer = '', correct_answer = '' } = body;
+
+  // Open-ended questions accept any answer
+  if (correct_answer.trim().toLowerCase().startsWith('any')) {
+    return NextResponse.json({ is_correct: true });
+  }
+
   const is_correct = normalizeAnswer(user_answer) === normalizeAnswer(correct_answer);
   return NextResponse.json({ is_correct });
 }
