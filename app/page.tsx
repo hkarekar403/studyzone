@@ -445,50 +445,6 @@ export default function MathQuiz() {
     doc.text(footer, 105, 290, { align: 'center' })
     doc.setTextColor(0, 0, 0)
 
-    // ── PAGE 2: Answer key ─────────────────────────────────────────
-    doc.addPage()
-
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Answer Key — Class 4 Mathematics Worksheet', 105, 20, { align: 'center' })
-
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Date: ${dateStr}`, 105, 30, { align: 'center' })
-
-    doc.setDrawColor(200, 200, 200)
-    doc.line(15, 34, 195, 34)
-
-    y = 45
-    questions.forEach((q) => {
-      if (y > 265) { doc.addPage(); y = 20 }
-
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${q.number}.`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const ansLines = doc.splitTextToSize(sanitizeText(`Answer: ${q.answer}`), 163)
-      doc.text(ansLines, 24, y)
-      y += ansLines.length * 6 + 2
-
-      if (wsDifficulty === 'Hard' && q.working) {
-        doc.setFontSize(9)
-        doc.setTextColor(80, 80, 80)
-        const workLines = doc.splitTextToSize(sanitizeText(q.working), 160)
-        doc.text(workLines, 27, y)
-        doc.setTextColor(0, 0, 0)
-        doc.setFontSize(11)
-        y += workLines.length * 5 + 5
-      } else {
-        y += 4
-      }
-    })
-
-    doc.setFontSize(9)
-    doc.setTextColor(150, 150, 150)
-    doc.text(footer, 105, 290, { align: 'center' })
-    doc.setTextColor(0, 0, 0)
-
     doc.save(`worksheet_${wsDifficulty}_${safeDateStr}.pdf`)
   }
 
