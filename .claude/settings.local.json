@@ -11,7 +11,8 @@
       "Bash(powershell -Command \"Get-Content lib\\\\questionGenerator.ts | Select-Object -Index \\(108..118\\)\")",
       "Bash(git add *)",
       "Bash(git commit -m 'Add CBSE/ICSE/IGCSE multi-curriculum support *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node scripts/generate-icons.mjs)"
     ]
   }
 }

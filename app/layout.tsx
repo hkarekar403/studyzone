@@ -1,7 +1,8 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Baloo_2, Nunito } from "next/font/google"
 import Script from "next/script"
 import "./globals.css"
+import PWAInstall from "./components/PWAInstall"
 
 const baloo2 = Baloo_2({
   subsets: ["latin"],
@@ -19,6 +20,12 @@ export const metadata: Metadata = {
   title: "Free Class 4 Maths Practice | Addition, Fractions, Geometry & More",
   description: "Interactive maths quiz for Class 4 students. Practice addition, subtraction, multiplication, division, fractions, geometry, time, money and more. Free, instant, no login required.",
   keywords: "class 4 maths, grade 4 mathematics, maths practice, maths quiz, primary school maths, fractions, geometry, multiplication, division, free maths practice",
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'StudyZone',
+  },
   openGraph: {
     title: "Free Class 4 Maths Practice | Interactive Quiz",
     description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
@@ -37,6 +44,13 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#2563eb',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,6 +58,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className={`${baloo2.variable} ${nunito.variable}`}>
         {/* Inline script runs synchronously before first paint to prevent theme flash */}
         <Script id="theme-init" strategy="beforeInteractive">{`
@@ -54,6 +71,7 @@ export default function RootLayout({
           } catch(e) {}
         `}</Script>
         {children}
+        <PWAInstall />
       </body>
     </html>
   )
