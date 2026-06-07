@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
@@ -58,6 +58,9 @@ export default function MathQuiz() {
   const [showQRModal, setShowQRModal] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
+  const [sessionEndTime, setSessionEndTime] = useState<Date | null>(null)
+  const [copiedScore, setCopiedScore] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
   const [wseDifficulty, setWseDifficulty] = useState("Random")
@@ -1025,6 +1028,21 @@ export default function MathQuiz() {
                 <FileText className="w-5 h-5" />
                 Worksheet
               </button>
+
+              {questionsGenerated >= 3 && (
+                <button
+                  onClick={() => {
+                    const endTime = new Date()
+                    setSessionEndTime(endTime)
+                    setTimerActive(false)
+                    setShowSummary(true)
+                  }}
+                  className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
+                >
+                  <LogOut className="w-5 h-5" />
+                  End Session
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1149,6 +1167,137 @@ export default function MathQuiz() {
         </footer>
       </div>
       </div>
+
+      {/* SESSION SUMMARY MODAL */}
+      {showSummary && (() => {
+        const accuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
+        const passed = accuracy >= 70
+        const endTime = sessionEndTime ?? new Date()
+        const elapsedSecs = Math.round((endTime.getTime() - sessionStartedAt.getTime()) / 1000)
+        const mins = Math.floor(elapsedSecs / 60)
+        const secs = elapsedSecs % 60
+        const { strong, weak } = getWeaknessAnalysis()
+
+        if (passed) {
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 }, colors: ['#2563eb', '#7c3aed', '#f59e0b', '#16a34a'] })
+        }
+
+        const scoreColor = accuracy >= 70 ? 'text-green-600' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'
+        const scoreBg = accuracy >= 70 ? 'bg-green-50 border-green-200' : accuracy >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
+
+        const handleShare = () => {
+          const text = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 studyzone.co.in`
+          navigator.clipboard.writeText(text).then(() => {
+            setCopiedScore(true)
+            setTimeout(() => setCopiedScore(false), 2000)
+          })
+        }
+
+        const handleNewSession = () => {
+          setQuestionsGenerated(0)
+          setCorrectAnswers(0)
+          setStreak(0)
+          setSessionRecords([])
+          setTopicCorrect({})
+          setTopicAttempted({})
+          setCurrentQuestion("")
+          setCurrentAnswer("")
+          setCurrentWorking("")
+          setUserAnswer("")
+          setFeedback("")
+          setFeedbackColor("")
+          setQuestionLocked(false)
+          setShowAnswer(false)
+          setCurrentRecord(null)
+          setCurrentAttempts(0)
+          setTimerActive(false)
+          setShowSummary(false)
+          setSessionEndTime(null)
+        }
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8">
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex flex-col gap-6 w-full max-w-md mx-4">
+              {/* Header */}
+              <div className="text-center">
+                <h2 className="font-heading text-3xl font-bold text-gray-800 mb-1">
+                  {passed ? 'Session Complete! 🎉' : 'Good effort! 💪'}
+                </h2>
+                <p className="text-gray-500 text-sm">Here&apos;s how you did today</p>
+              </div>
+
+              {/* Score card */}
+              <div className={`rounded-2xl border-2 p-6 text-center ${scoreBg}`}>
+                <p className={`font-heading text-6xl font-bold ${scoreColor} mb-1`}>
+                  {correctAnswers} / {questionsGenerated}
+                </p>
+                <p className={`text-2xl font-bold ${scoreColor} mb-4`}>{accuracy}%</p>
+                <div className="flex justify-center gap-6 text-sm text-gray-600 flex-wrap">
+                  <span>⏱ {mins}m {secs}s</span>
+                  <span>🔥 Best streak: {streak}</span>
+                </div>
+              </div>
+
+              {/* Curriculum & difficulty badges */}
+              <div className="flex justify-center gap-2 flex-wrap">
+                <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{curriculum}</span>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  currentDifficulty === 'Easy' ? 'bg-blue-100 text-blue-700' :
+                  currentDifficulty === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                  'bg-red-100 text-red-700'
+                }`}>{difficulty === 'Random' ? `Random (${currentDifficulty})` : currentDifficulty}</span>
+              </div>
+
+              {/* Topic insights */}
+              {(strong.length > 0 || weak.length > 0) && (
+                <div className="flex flex-col gap-2">
+                  {strong.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-green-700 w-28 flex-shrink-0">💪 Strong:</span>
+                      {strong.map((t) => (
+                        <span key={t} className="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                  {weak.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-amber-700 w-28 flex-shrink-0">📚 Needs practice:</span>
+                      {weak.map((t) => (
+                        <span key={t} className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={exportPDF}
+                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  {copiedScore ? 'Copied! ✓' : 'Share Score'}
+                </button>
+                <button
+                  onClick={handleNewSession}
+                  className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  New Session
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* WORKSHEET MODAL */}
       {showWorksheetModal && (
