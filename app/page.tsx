@@ -53,6 +53,7 @@ export default function MathQuiz() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
   const [wseDifficulty, setWseDifficulty] = useState("Random")
@@ -63,6 +64,7 @@ export default function MathQuiz() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const quizRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
+  const faqRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     return () => {
@@ -519,6 +521,12 @@ export default function MathQuiz() {
               How it works
             </button>
             <button
+              onClick={() => faqRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              FAQ
+            </button>
+            <button
               onClick={() => setShowQRModal(true)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
             >
@@ -607,6 +615,41 @@ export default function MathQuiz() {
                 <p className="text-4xl mb-2">{s.emoji}</p>
                 <p className="font-bold text-blue-700 mb-1">{s.title}</p>
                 <p className="text-sm text-gray-600 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div ref={faqRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <h3 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Frequently Asked Questions</h3>
+          <p className="text-center text-sm text-gray-500 mb-6">Everything parents and teachers need to know</p>
+          <div>
+            {[
+              { q: "Is this completely free?", a: "Yes, completely free. No login, no subscription, no hidden fees. Just open and start practising." },
+              { q: "Which syllabus does this follow?", a: "The questions are aligned with the CBSE Class 4 Mathematics curriculum covering all major topics including Number System, Fractions, Geometry, Measurement, Data Handling and more." },
+              { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
+              { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
+              { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 19 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
+              { q: "What age group is this for?", a: "This app is designed for Class 4 students, typically aged 9-10 years. The Easy difficulty is suitable for beginners while Hard questions challenge advanced learners." },
+              { q: "Can I track my child's progress?", a: "Yes. The Session History panel shows every question attempted with the child's answer and whether it was correct. You can also export a full PDF report at the end of each session." },
+              { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
+            ].map((faq, idx, arr) => (
+              <div key={idx} className={idx < arr.length - 1 ? "border-b border-gray-200" : ""}>
+                <button
+                  className="w-full flex items-center justify-between py-4 text-left gap-4"
+                  onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                >
+                  <span className="font-bold text-blue-700 text-sm sm:text-base">{faq.q}</span>
+                  {openFaqIndex === idx
+                    ? <ChevronUp className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                </button>
+                <div className={`grid transition-all duration-300 ${openFaqIndex === idx ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                  <div className="overflow-hidden">
+                    <p className="text-sm text-gray-600 pb-4 leading-relaxed">{faq.a}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
