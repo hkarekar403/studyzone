@@ -61,6 +61,7 @@ export default function MathQuiz() {
   const [wseDifficulty, setWseDifficulty] = useState("Random")
   const [wseTopic, setWseTopic] = useState("Random")
   const [wseCount, setWseCount] = useState(10)
+  const [worksheetCurriculum, setWorksheetCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>(curriculum)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -392,6 +393,7 @@ export default function MathQuiz() {
     questions: { number: number; question: string; answer: string; working: string }[],
     wsDifficulty: string,
     wsTopic: string,
+    wsCurriculum: string,
   ) => {
     const doc = new jsPDF()
     const dateStr = new Date().toLocaleDateString()
@@ -430,7 +432,7 @@ export default function MathQuiz() {
 
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Time: ${totalMinutes} mins | Date: ${dateStr}`, 105, 30, { align: 'center' })
+    doc.text(`Curriculum: ${wsCurriculum} | Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Time: ${totalMinutes} mins | Date: ${dateStr}`, 105, 30, { align: 'center' })
 
     doc.setDrawColor(200, 200, 200)
     doc.line(15, 34, 195, 34)
@@ -482,7 +484,7 @@ export default function MathQuiz() {
           fetch('/api/generate-worksheet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ difficulty, topic: topicParam, count, curriculum }),
+            body: JSON.stringify({ difficulty, topic: topicParam, count, curriculum: worksheetCurriculum }),
           }).then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
 
         const [easyData, mediumData, hardData] = await Promise.all([
@@ -501,7 +503,7 @@ export default function MathQuiz() {
         const response = await fetch('/api/generate-worksheet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount, curriculum }),
+          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount, curriculum: worksheetCurriculum }),
         })
         if (!response.ok) throw new Error('Failed')
         const data = await response.json()
@@ -509,7 +511,7 @@ export default function MathQuiz() {
       }
 
       const displayDifficulty = wseDifficulty === 'Random' ? 'Mixed' : wseDifficulty
-      buildWorksheetPDF(questions, displayDifficulty, wseTopic)
+      buildWorksheetPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
       setShowWorksheetModal(false)
     } catch {
       // leave modal open so user can retry
@@ -589,7 +591,11 @@ export default function MathQuiz() {
                     Start Practising →
                   </button>
                   <button
-                    onClick={() => setShowWorksheetModal(true)}
+                    onClick={() => {
+                      quizRef.current?.scrollIntoView({ behavior: 'smooth' })
+                      setWorksheetCurriculum(curriculum)
+                      setTimeout(() => setShowWorksheetModal(true), 400)
+                    }}
                     className="bg-transparent text-white font-bold px-5 py-2.5 rounded-xl border-2 border-white hover:bg-white/10 transition-colors"
                   >
                     Get Worksheet
@@ -992,7 +998,7 @@ export default function MathQuiz() {
               </button>
 
               <button
-                onClick={() => setShowWorksheetModal(true)}
+                onClick={() => { setWorksheetCurriculum(curriculum); setShowWorksheetModal(true) }}
                 className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
               >
                 <FileText className="w-5 h-5" />
@@ -1103,6 +1109,26 @@ export default function MathQuiz() {
             </div>
 
             <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Curriculum</label>
+                <div className="flex gap-2">
+                  {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setWorksheetCurriculum(c)}
+                      disabled={worksheetLoading}
+                      className={`rounded-full px-4 py-2 font-bold text-sm transition disabled:opacity-60 ${
+                        worksheetCurriculum === c
+                          ? 'bg-[#2563eb] text-white'
+                          : 'bg-white border border-[#2563eb] text-[#2563eb]'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Difficulty</label>
                 <select
