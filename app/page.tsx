@@ -413,6 +413,23 @@ export default function MathQuiz() {
     return { strong, weak, neutral }
   }
 
+  const sanitizePDFText = (text: string) =>
+    text
+      .replace(/₹/g, 'Rs.')
+      .replace(/²/g, '2')
+      .replace(/³/g, '3')
+      .replace(/°/g, ' degrees')
+      .replace(/×/g, 'x')
+      .replace(/÷/g, '/')
+      .replace(/≤/g, '<=')
+      .replace(/≥/g, '>=')
+      .replace(/≠/g, '!=')
+      .replace(/π/g, 'pi')
+      .replace(/∞/g, 'Infinite')
+      .replace(/½/g, '1/2')
+      .replace(/¼/g, '1/4')
+      .replace(/¾/g, '3/4')
+
   const buildWorksheetPDF = (
     questions: { number: number; question: string; answer: string; working: string }[],
     wsDifficulty: string,
@@ -432,22 +449,7 @@ export default function MathQuiz() {
       1.375 // Mixed: (0.3×0.75) + (0.5×1.5) + (0.2×2)
     const totalMinutes = Math.ceil(count * perQuestionTime / 5) * 5
 
-    const sanitizeText = (text: string) =>
-      text
-        .replace(/₹/g, 'Rs.')
-        .replace(/²/g, '2')
-        .replace(/³/g, '3')
-        .replace(/°/g, ' degrees')
-        .replace(/×/g, 'x')
-        .replace(/÷/g, '/')
-        .replace(/≤/g, '<=')
-        .replace(/≥/g, '>=')
-        .replace(/≠/g, '!=')
-        .replace(/π/g, 'pi')
-        .replace(/∞/g, 'Infinite')
-        .replace(/½/g, '1/2')
-        .replace(/¼/g, '1/4')
-        .replace(/¾/g, '3/4')
+    const sanitizeText = sanitizePDFText
 
     // ── PAGE 1: Question sheet ──────────────────────────────────────
     doc.setFontSize(18)
@@ -492,7 +494,69 @@ export default function MathQuiz() {
     doc.save(`worksheet_${wsDifficulty}_${safeDateStr}.pdf`)
   }
 
-  const generateWorksheet = async () => {
+  const buildAnswerKeyPDF = (
+    questions: { number: number; question: string; answer: string; working: string }[],
+    wsDifficulty: string,
+    wsTopic: string,
+    wsCurriculum: string,
+  ) => {
+    const doc = new jsPDF()
+    const dateStr = new Date().toLocaleDateString()
+    const safeDateStr = new Date().toISOString().split('T')[0]
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Answer Key — Class 4 Mathematics Worksheet', 105, 20, { align: 'center' })
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(
+      `Curriculum: ${wsCurriculum} | Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Date: ${dateStr}`,
+      105, 30, { align: 'center' },
+    )
+
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(200, 0, 0)
+    doc.text('TEACHER COPY — NOT FOR STUDENTS', 105, 40, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+
+    doc.setDrawColor(200, 200, 200)
+    doc.line(15, 44, 195, 44)
+
+    let y = 54
+    questions.forEach((q) => {
+      if (y > 270) { doc.addPage(); y = 20 }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Q${q.number}: `, 15, y)
+      doc.setFont('helvetica', 'normal')
+      const ansLines = doc.splitTextToSize(sanitizePDFText(q.answer), 155)
+      doc.text(ansLines, 30, y)
+      y += Math.max(ansLines.length * 6, 7)
+
+      if (wsDifficulty === 'Hard' && q.working) {
+        doc.setFontSize(9)
+        doc.setTextColor(120, 120, 120)
+        const workLines = doc.splitTextToSize(sanitizePDFText(q.working), 160)
+        doc.text(workLines, 30, y)
+        doc.setTextColor(0, 0, 0)
+        y += workLines.length * 5 + 3
+      }
+
+      y += 4
+    })
+
+    doc.setFontSize(9)
+    doc.setTextColor(150, 150, 150)
+    doc.text('StudyZone — studyzone.co.in', 105, 290, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+
+    doc.save(`answer_key_${wsDifficulty}_${safeDateStr}.pdf`)
+  }
+
+  const generateWorksheet = async (withAnswerKey = false) => {
     setWorksheetLoading(true)
     try {
       type WQuestion = { number: number; question: string; answer: string; working: string }
@@ -536,6 +600,7 @@ export default function MathQuiz() {
 
       const displayDifficulty = wseDifficulty === 'Random' ? 'Mixed' : wseDifficulty
       buildWorksheetPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
+      if (withAnswerKey) buildAnswerKeyPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
       setShowWorksheetModal(false)
     } catch {
       // leave modal open so user can retry
@@ -1319,7 +1384,7 @@ export default function MathQuiz() {
 
             <div>
               <h2 className="font-heading text-xl font-bold text-gray-800">Generate Printable Worksheet</h2>
-              <p className="text-sm text-gray-500 mt-1">Creates a 2-page PDF: questions + answer key</p>
+              <p className="text-sm text-gray-500 mt-1">Download a questions PDF, or both questions and answer key</p>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -1390,7 +1455,7 @@ export default function MathQuiz() {
 
             <div className="flex flex-col gap-2">
               <button
-                onClick={generateWorksheet}
+                onClick={() => generateWorksheet(false)}
                 disabled={worksheetLoading}
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
@@ -1405,7 +1470,27 @@ export default function MathQuiz() {
                 ) : (
                   <>
                     <FileText className="w-4 h-4" />
-                    Generate &amp; Download
+                    📄 Questions PDF
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => generateWorksheet(true)}
+                disabled={worksheetLoading}
+                className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {worksheetLoading ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    🔑 Questions + Answer Key
                   </>
                 )}
               </button>
