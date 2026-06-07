@@ -874,6 +874,27 @@ export default function MathQuiz() {
                 }`}
               />
 
+              {/* Format hint — inferred from the correct answer shape */}
+              {!questionLocked && currentQuestion && (() => {
+                const ans = currentAnswer.toLowerCase();
+                if (/\bquotient\b/.test(ans)) {
+                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as: Quotient = [number], Remainder = [number]</p>;
+                }
+                if (/\bprofit\b|\bloss\b/.test(ans)) {
+                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as: Profit of Rs.[amount] or Loss of Rs.[amount]</p>;
+                }
+                if (/\d+\s+\d+\/\d+/.test(ans)) {
+                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Mixed number format: whole number then fraction, e.g. 3 2/5</p>;
+                }
+                if (ans.includes('/')) {
+                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as a fraction, e.g. 3/5</p>;
+                }
+                if (ans.includes(',') && /^[\d\s,]+$/.test(ans)) {
+                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write all numbers separated by commas, e.g. 1, 2, 3, 6</p>;
+                }
+                return null;
+              })()}
+
               {/* Feedback */}
               {feedback && (
                 <div className="mb-4">

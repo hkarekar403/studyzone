@@ -6,7 +6,12 @@
       "Bash(git checkout *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\harsh\\\\Documents\\\\WindSurf Projects\\\\Maths Learning Website\\\\app\" -Recurse -File)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(powershell -Command \"Get-Content lib\\\\questionGenerator.ts | Select-Object -First 15\")",
+      "Bash(powershell -Command \"Get-Content lib\\\\questionGenerator.ts | Select-Object -Index \\(108..118\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Add CBSE/ICSE/IGCSE multi-curriculum support *)",
+      "Bash(git push *)"
     ]
   }
 }

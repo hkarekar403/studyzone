@@ -1018,8 +1018,8 @@ export class MathQuestionGenerator {
       working = `Working:\nSomething is CERTAIN if it will always happen.\nThe sun always rises every day, so it is CERTAIN.`;
     } else if (outcome === 'impossible') {
       question = `Is it IMPOSSIBLE for a cat to fly without help?`;
-      answer = "Yes";
-      working = `Working:\nSomething is IMPOSSIBLE if it can never happen.\nCats cannot naturally fly, so it is IMPOSSIBLE.`;
+      answer = "No";
+      working = `Working:\nSomething is IMPOSSIBLE if it can never happen.\nCats cannot naturally fly, so it is IMPOSSIBLE — the answer is No, it is not possible.`;
     } else {
       question = `Is it POSSIBLE to roll a 6 on a die?`;
       answer = "Yes";
