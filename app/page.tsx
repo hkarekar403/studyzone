@@ -388,6 +388,23 @@ export default function MathQuiz() {
       1.375 // Mixed: (0.3×0.75) + (0.5×1.5) + (0.2×2)
     const totalMinutes = Math.ceil(count * perQuestionTime / 5) * 5
 
+    const sanitizeText = (text: string) =>
+      text
+        .replace(/₹/g, 'Rs.')
+        .replace(/²/g, '2')
+        .replace(/³/g, '3')
+        .replace(/°/g, ' degrees')
+        .replace(/×/g, 'x')
+        .replace(/÷/g, '/')
+        .replace(/≤/g, '<=')
+        .replace(/≥/g, '>=')
+        .replace(/≠/g, '!=')
+        .replace(/π/g, 'pi')
+        .replace(/∞/g, 'Infinite')
+        .replace(/½/g, '1/2')
+        .replace(/¼/g, '1/4')
+        .replace(/¾/g, '3/4')
+
     // ── PAGE 1: Question sheet ──────────────────────────────────────
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
@@ -411,7 +428,7 @@ export default function MathQuiz() {
       doc.setFont('helvetica', 'bold')
       doc.text(`${q.number}.`, 15, y)
       doc.setFont('helvetica', 'normal')
-      const qLines = doc.splitTextToSize(q.question, 163)
+      const qLines = doc.splitTextToSize(sanitizeText(q.question), 163)
       doc.text(qLines, 24, y)
       y += qLines.length * 6
 
@@ -450,14 +467,14 @@ export default function MathQuiz() {
       doc.setFont('helvetica', 'bold')
       doc.text(`${q.number}.`, 15, y)
       doc.setFont('helvetica', 'normal')
-      const ansLines = doc.splitTextToSize(`Answer: ${q.answer}`, 163)
+      const ansLines = doc.splitTextToSize(sanitizeText(`Answer: ${q.answer}`), 163)
       doc.text(ansLines, 24, y)
       y += ansLines.length * 6 + 2
 
       if (wsDifficulty === 'Hard' && q.working) {
         doc.setFontSize(9)
         doc.setTextColor(80, 80, 80)
-        const workLines = doc.splitTextToSize(q.working, 160)
+        const workLines = doc.splitTextToSize(sanitizeText(q.working), 160)
         doc.text(workLines, 27, y)
         doc.setTextColor(0, 0, 0)
         doc.setFontSize(11)
