@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { MathQuestionGenerator } from '@/lib/questionGenerator';
+import { NextRequest, NextResponse } from 'next/server';
+import { getGenerator } from '@/lib/generatorSingleton';
 
-const generator = new MathQuestionGenerator();
-
-export function GET() {
-  return NextResponse.json({ topics: generator.getTopics() });
+export function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const curriculum = searchParams.get('curriculum') || 'CBSE';
+  return NextResponse.json({ topics: getGenerator(curriculum).getTopics() });
 }

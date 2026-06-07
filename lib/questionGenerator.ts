@@ -7,6 +7,7 @@ export interface Question {
 
 export class MathQuestionGenerator {
   private askedQuestions: Set<string> = new Set();
+  private curriculum: string = 'CBSE';
 
   private generators: Record<string, (() => Question)[]> = {
     Easy: [
@@ -106,8 +107,56 @@ export class MathQuestionGenerator {
     [this.hardProbability, "Data Handling"],
   ]);
 
+  constructor(curriculum: 'CBSE' | 'ICSE' | 'IGCSE' = 'CBSE') {
+    this.curriculum = curriculum
+  }
+
   getTopics(): string[] {
-    return Object.keys(this.topicGenerators).sort();
+    return Object.keys(this.getTopicGenerators()).sort();
+  }
+
+  private getTopicGenerators(): Record<string, (() => Question)[]> {
+    if (this.curriculum === 'ICSE') {
+      return {
+        "Numbers": [this.icseNumbers.bind(this)],
+        "Factors & Multiples": [this.icseFactorsMultiples.bind(this)],
+        "Mixed Numbers": [this.icseMixedNumbers.bind(this)],
+        "Decimals": [this.icseDecimals.bind(this)],
+        "Word Problems": [this.icseWordProblems.bind(this)],
+        "Addition": [this.easyAddition.bind(this)],
+        "Subtraction": [this.easySubtraction.bind(this)],
+        "Multiplication": [this.mediumMultiplication.bind(this)],
+        "Division": [this.mediumDivision.bind(this)],
+        "Fractions": [this.easyFraction.bind(this), this.mediumFractionAddition.bind(this)],
+        "Geometry": [this.easy2DShapes.bind(this), this.medium3DShapes.bind(this)],
+        "Measurement": [this.hardMeasurement.bind(this)],
+        "Time": [this.mediumTime.bind(this)],
+        "Money": [this.mediumMoney.bind(this)],
+        "Data Handling": [this.easyTallyChart.bind(this), this.mediumBarGraph.bind(this)],
+        "Patterns": [this.hardPatterns.bind(this)],
+      };
+    }
+    if (this.curriculum === 'IGCSE') {
+      return {
+        "Number Sense": [this.igcseNumberSense.bind(this)],
+        "Decimals & Percentages": [this.igcseDecimals.bind(this)],
+        "Number Line": [this.igcseNumberLine.bind(this)],
+        "3D Shapes": [this.igcse3DShapes.bind(this)],
+        "Transformations": [this.igcseTransformations.bind(this)],
+        "Data & Reasoning": [this.igcseDataReasoning.bind(this)],
+        "Reasoning": [this.igcseReasoning.bind(this)],
+        "Addition": [this.easyAddition.bind(this)],
+        "Subtraction": [this.easySubtraction.bind(this)],
+        "Multiplication": [this.mediumMultiplication.bind(this)],
+        "Division": [this.mediumDivision.bind(this)],
+        "Fractions": [this.easyFraction.bind(this)],
+        "Geometry": [this.easy2DShapes.bind(this), this.hardGeometryAngles.bind(this)],
+        "Measurement": [this.hardMeasurement.bind(this)],
+        "Patterns": [this.hardPatterns.bind(this)],
+        "Algebra": [this.hardAlgebra.bind(this)],
+      };
+    }
+    return this.topicGenerators;
   }
 
   clearSession(): void {
@@ -119,8 +168,8 @@ export class MathQuestionGenerator {
 
     for (let attempt = 0; attempt < 6; attempt++) {
       let q: Question;
-      if (topic && topic in this.topicGenerators) {
-        const fns = this.topicGenerators[topic];
+      if (topic && topic in this.getTopicGenerators()) {
+        const fns = this.getTopicGenerators()[topic];
         const fn = fns[Math.floor(Math.random() * fns.length)];
         q = { ...fn.call(this), topic };
       } else {
@@ -1168,5 +1217,595 @@ export class MathQuestionGenerator {
       answer: probability,
       working: `Working:\nTotal marbles = ${totalMarbles}\n${targetColor} marbles = ${targetCount}\nProbability = ${targetCount}/${totalMarbles}`,
     };
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  private numberToWords(n: number): string {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if (n === 0) return 'Zero';
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+    if (n < 1000) {
+      const rem = n % 100;
+      return ones[Math.floor(n / 100)] + ' Hundred' + (rem !== 0 ? ' and ' + this.numberToWords(rem) : '');
+    }
+    const th = Math.floor(n / 1000);
+    const rem = n % 1000;
+    return this.numberToWords(th) + ' Thousand' + (rem !== 0 ? ' ' + this.numberToWords(rem) : '');
+  }
+
+  // ── ICSE generators ────────────────────────────────────────────────────────
+
+  private icseNumbers(): Question {
+    const t = Math.floor(Math.random() * 4);
+    if (t === 0) {
+      const num = Math.floor(Math.random() * 89999) + 10000;
+      return {
+        question: `Write the number name for ${num}.`,
+        answer: this.numberToWords(num),
+        working: `Working:\n${num} = ${this.numberToWords(num)}`,
+      };
+    } else if (t === 1) {
+      const num = Math.floor(Math.random() * 89999) + 10000;
+      const rounded = Math.round(num / 1000) * 1000;
+      const hundredsDigit = Math.floor((num % 1000) / 100);
+      return {
+        question: `Round ${num} to the nearest thousand.`,
+        answer: String(rounded),
+        working: `Working:\nHundreds digit is ${hundredsDigit}.\n${hundredsDigit >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${num} rounded to nearest thousand = ${rounded}`,
+      };
+    } else if (t === 2) {
+      const a = Math.floor(Math.random() * 89000) + 10000;
+      const b = Math.floor(Math.random() * 89000) + 10000;
+      const sym = a > b ? '>' : a < b ? '<' : '=';
+      return {
+        question: `Compare: ${a} ___ ${b}. Write >, < or =`,
+        answer: sym,
+        working: `Working:\nCompare digits from left to right.\n${a} ${sym} ${b}`,
+      };
+    } else {
+      const num = Math.floor(Math.random() * 89999) + 10000;
+      const placeNames = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands'];
+      const pos = Math.floor(Math.random() * 5);
+      const d = Math.floor(num / Math.pow(10, pos)) % 10;
+      return {
+        question: `What is the place value of ${d} in ${num}?`,
+        answer: placeNames[pos],
+        working: `Working:\nIn ${num}, the digit ${d} is in the ${placeNames[pos]} place.\nPlace value = ${placeNames[pos]}`,
+      };
+    }
+  }
+
+  private icseFactorsMultiples(): Question {
+    const t = Math.floor(Math.random() * 5);
+    if (t === 0) {
+      const candidates = [12, 15, 16, 18, 20, 24, 28, 30, 36, 40, 42, 48, 50];
+      const num = candidates[Math.floor(Math.random() * candidates.length)];
+      const factors: number[] = [];
+      for (let i = 1; i <= num; i++) { if (num % i === 0) factors.push(i); }
+      return {
+        question: `Find all factors of ${num}.`,
+        answer: factors.join(', '),
+        working: `Working:\nDivide ${num} by each whole number from 1 to ${num}.\nFactors of ${num}: ${factors.join(', ')}`,
+      };
+    } else if (t === 1) {
+      const num = Math.floor(Math.random() * 11) + 2;
+      const multiples = [1, 2, 3, 4, 5].map(i => i * num);
+      return {
+        question: `Find the first 5 multiples of ${num}.`,
+        answer: multiples.join(', '),
+        working: `Working:\n${[1, 2, 3, 4, 5].map(i => `${num} × ${i} = ${i * num}`).join('\n')}`,
+      };
+    } else if (t === 2) {
+      const pairs = [[12, 18], [15, 25], [16, 24], [18, 27], [20, 30], [24, 36], [14, 21], [8, 12], [10, 15], [6, 9]];
+      const [a, b] = pairs[Math.floor(Math.random() * pairs.length)];
+      const h = this.gcd(a, b);
+      const factorsA = Array.from({length: a}, (_, i) => i + 1).filter(i => a % i === 0);
+      const factorsB = Array.from({length: b}, (_, i) => i + 1).filter(i => b % i === 0);
+      const common = factorsA.filter(f => b % f === 0);
+      return {
+        question: `Find the HCF of ${a} and ${b}.`,
+        answer: String(h),
+        working: `Working:\nFactors of ${a}: ${factorsA.join(', ')}\nFactors of ${b}: ${factorsB.join(', ')}\nCommon factors: ${common.join(', ')}\nHCF = ${h}`,
+      };
+    } else if (t === 3) {
+      const a = Math.floor(Math.random() * 5) + 2;
+      const b = Math.floor(Math.random() * 5) + 2;
+      const l = this.lcm(a, b);
+      return {
+        question: `Find the LCM of ${a} and ${b}.`,
+        answer: String(l),
+        working: `Working:\nMultiples of ${a}: ${[1,2,3,4,5,6].map(i => i*a).join(', ')}...\nMultiples of ${b}: ${[1,2,3,4,5,6].map(i => i*b).join(', ')}...\nLCM = ${l}`,
+      };
+    } else {
+      const b = Math.floor(Math.random() * 40) + 12;
+      const isYes = Math.random() < 0.5;
+      let a: number;
+      if (isYes) {
+        const factors: number[] = [];
+        for (let i = 2; i <= b; i++) { if (b % i === 0) factors.push(i); }
+        a = factors[Math.floor(Math.random() * factors.length)] || 1;
+      } else {
+        do { a = Math.floor(Math.random() * 10) + 2; } while (b % a === 0);
+      }
+      return {
+        question: `Is ${a} a factor of ${b}? Write Yes or No.`,
+        answer: isYes ? 'Yes' : 'No',
+        working: `Working:\n${b} ÷ ${a} = ${(b / a).toFixed(b % a !== 0 ? 2 : 0)}${b % a !== 0 ? ` (remainder ${b % a})` : ''}\n${b % a === 0 ? `${a} divides ${b} exactly, so ${a} IS a factor.` : `${a} does not divide ${b} exactly, so ${a} is NOT a factor.`}`,
+      };
+    }
+  }
+
+  private icseMixedNumbers(): Question {
+    const t = Math.floor(Math.random() * 4);
+    if (t === 0) {
+      const whole = Math.floor(Math.random() * 5) + 1;
+      const den = Math.floor(Math.random() * 6) + 5;
+      const num = Math.floor(Math.random() * 4) + 1;
+      const improper = whole * den + num;
+      return {
+        question: `Convert ${whole} ${num}/${den} to an improper fraction.`,
+        answer: `${improper}/${den}`,
+        working: `Working:\n(${whole} × ${den}) + ${num} = ${improper}\nImproper fraction = ${improper}/${den}`,
+      };
+    } else if (t === 1) {
+      const den = Math.floor(Math.random() * 6) + 3;
+      const improper = Math.floor(Math.random() * (den * 3)) + den + 1;
+      const whole = Math.floor(improper / den);
+      const remainder = improper % den;
+      const answer = remainder === 0 ? String(whole) : `${whole} ${remainder}/${den}`;
+      return {
+        question: `Convert ${improper}/${den} to a mixed number.`,
+        answer,
+        working: `Working:\n${improper} ÷ ${den} = ${whole} remainder ${remainder}\nMixed number = ${answer}`,
+      };
+    } else if (t === 2) {
+      const d = Math.floor(Math.random() * 6) + 5;
+      const w1 = Math.floor(Math.random() * 4) + 1;
+      const n1 = Math.floor(Math.random() * (d - 1)) + 1;
+      const w2 = Math.floor(Math.random() * 3) + 1;
+      const n2 = Math.floor(Math.random() * (d - 1)) + 1;
+      const totalNum = n1 + n2;
+      const carry = Math.floor(totalNum / d);
+      const remNum = totalNum % d;
+      const totalWhole = w1 + w2 + carry;
+      const answer = remNum === 0 ? String(totalWhole) : `${totalWhole} ${remNum}/${d}`;
+      return {
+        question: `Add: ${w1} ${n1}/${d} + ${w2} ${n2}/${d} = ?`,
+        answer,
+        working: `Working:\nWhole: ${w1} + ${w2} = ${w1 + w2}\nFraction: ${n1}/${d} + ${n2}/${d} = ${totalNum}/${d}${carry > 0 ? ` = ${carry} ${remNum}/${d}` : ''}\nTotal = ${answer}`,
+      };
+    } else {
+      const d = Math.floor(Math.random() * 6) + 5;
+      const w1 = Math.floor(Math.random() * 3) + 1;
+      const n1 = Math.floor(Math.random() * (d - 1)) + 1;
+      const w2 = w1 + Math.floor(Math.random() * 3) + 1;
+      const n2 = Math.floor(Math.random() * (d - 1)) + 1;
+      let resNum = n2 - n1;
+      let resWhole = w2 - w1;
+      if (resNum < 0) { resNum += d; resWhole -= 1; }
+      const answer = resNum === 0 ? String(resWhole) : `${resWhole} ${resNum}/${d}`;
+      return {
+        question: `Subtract: ${w2} ${n2}/${d} - ${w1} ${n1}/${d} = ?`,
+        answer,
+        working: `Working:\nFraction: ${n2}/${d} - ${n1}/${d}${n2 < n1 ? ` (borrow 1): ${n2 + d}/${d} - ${n1}/${d}` : ''} = ${resNum}/${d}\nWhole: ${w2} - ${w1}${n2 < n1 ? ' - 1 (borrowed)' : ''} = ${resWhole}\nAnswer = ${answer}`,
+      };
+    }
+  }
+
+  private icseDecimals(): Question {
+    const t = Math.floor(Math.random() * 5);
+    if (t === 0) {
+      const num = Math.floor(Math.random() * 9) + 1;
+      return {
+        question: `Write ${num}/10 as a decimal.`,
+        answer: `0.${num}`,
+        working: `Working:\n${num}/10 = 0.${num}`,
+      };
+    } else if (t === 1) {
+      const num = Math.floor(Math.random() * 99) + 1;
+      const dec = (num / 100).toFixed(2);
+      return {
+        question: `Write ${num}/100 as a decimal.`,
+        answer: dec,
+        working: `Working:\n${num}/100 = ${dec}`,
+      };
+    } else if (t === 2) {
+      const d1 = (Math.floor(Math.random() * 9) + 1) / 10;
+      const d2 = (Math.floor(Math.random() * 9) + 1) / 10;
+      const sum = Math.round((d1 + d2) * 10) / 10;
+      return {
+        question: `Add: ${d1.toFixed(1)} + ${d2.toFixed(1)} = ?`,
+        answer: sum.toFixed(1),
+        working: `Working:\n${d1.toFixed(1)} + ${d2.toFixed(1)} = ${sum.toFixed(1)}`,
+      };
+    } else if (t === 3) {
+      const whole = Math.floor(Math.random() * 9) + 1;
+      const frac = Math.floor(Math.random() * 9) + 1;
+      const decimal = whole + frac / 10;
+      const rounded = Math.round(decimal);
+      return {
+        question: `Round ${decimal.toFixed(1)} to the nearest whole number.`,
+        answer: String(rounded),
+        working: `Working:\nDecimal part is .${frac}.\n${frac >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${decimal.toFixed(1)} ≈ ${rounded}`,
+      };
+    } else {
+      const nums = Array.from({length: 3}, () => (Math.floor(Math.random() * 9) + 1) / 10);
+      const sorted = [...nums].sort((a, b) => a - b);
+      return {
+        question: `Arrange in ascending order: ${nums.map(n => n.toFixed(1)).join(', ')}`,
+        answer: sorted.map(n => n.toFixed(1)).join(', '),
+        working: `Working:\nSmallest to largest: ${sorted.map(n => n.toFixed(1)).join(' < ')}`,
+      };
+    }
+  }
+
+  private icseWordProblems(): Question {
+    const t = Math.floor(Math.random() * 4);
+    if (t === 0) {
+      const qty = Math.floor(Math.random() * 8) + 3;
+      const price = (Math.floor(Math.random() * 18) + 2) * 5;
+      const isProfit = Math.random() < 0.5;
+      const change = (Math.floor(Math.random() * 5) + 1) * 5;
+      const sell = isProfit ? price + change : price - change;
+      const diff = Math.abs(sell - price) * qty;
+      const label = isProfit ? 'Profit' : 'Loss';
+      return {
+        question: `A shopkeeper bought ${qty} items at Rs.${price} each and sold them at Rs.${sell} each. Find his ${label.toLowerCase()}.`,
+        answer: `${label} of Rs.${diff}`,
+        working: `Working:\nCost price = ${qty} × Rs.${price} = Rs.${price * qty}\nSelling price = ${qty} × Rs.${sell} = Rs.${sell * qty}\n${label} = Rs.${diff}`,
+      };
+    } else if (t === 1) {
+      const speed = (Math.floor(Math.random() * 8) + 3) * 10;
+      const hours = Math.floor(Math.random() * 4) + 2;
+      return {
+        question: `A train travels at ${speed} km per hour. How far does it travel in ${hours} hours?`,
+        answer: `${speed * hours} km`,
+        working: `Working:\nDistance = Speed × Time\n= ${speed} × ${hours} = ${speed * hours} km`,
+      };
+    } else if (t === 2) {
+      const l = Math.floor(Math.random() * 16) + 5;
+      const w = Math.floor(Math.random() * 10) + 3;
+      const rate = Math.floor(Math.random() * 9) + 2;
+      const perimeter = 2 * (l + w);
+      return {
+        question: `A rectangular garden is ${l}m long and ${w}m wide. Find the cost of fencing it at Rs.${rate} per metre.`,
+        answer: `Rs.${perimeter * rate}`,
+        working: `Working:\nPerimeter = 2 × (${l} + ${w}) = 2 × ${l + w} = ${perimeter} m\nCost = ${perimeter} × Rs.${rate} = Rs.${perimeter * rate}`,
+      };
+    } else {
+      const size = Math.floor(Math.random() * 8) + 3;
+      const groups = Math.floor(Math.random() * 9) + 3;
+      const leftover = Math.floor(Math.random() * (size - 1));
+      const total = groups * size + leftover;
+      return {
+        question: `${total} students are divided into groups of ${size}. How many complete groups are there and how many students are left over?`,
+        answer: `${groups} groups, ${leftover} left over`,
+        working: `Working:\n${total} ÷ ${size} = ${groups} remainder ${leftover}\n${groups} complete groups, ${leftover} students left over`,
+      };
+    }
+  }
+
+  // ── IGCSE generators ───────────────────────────────────────────────────────
+
+  private igcseNumberSense(): Question {
+    const t = Math.floor(Math.random() * 5);
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 900) + 100;
+      const b = Math.floor(Math.random() * 900) + 100;
+      const ra = Math.round(a / 100) * 100;
+      const rb = Math.round(b / 100) * 100;
+      return {
+        question: `Estimate ${a} + ${b} by rounding both to the nearest 100.`,
+        answer: String(ra + rb),
+        working: `Working:\n${a} rounded to nearest 100 = ${ra}\n${b} rounded to nearest 100 = ${rb}\nEstimate = ${ra} + ${rb} = ${ra + rb}`,
+      };
+    } else if (t === 1) {
+      const a = Math.floor(Math.random() * 98) + 2;
+      return {
+        question: `Use mental maths: ${a} × 10 = ?`,
+        answer: String(a * 10),
+        working: `Working:\nMultiplying by 10 adds a zero.\n${a} × 10 = ${a * 10}`,
+      };
+    } else if (t === 2) {
+      const sum = (Math.floor(Math.random() * 9) + 1) * 100;
+      const a = sum - (Math.floor(Math.random() * (sum / 2 - 10)) + 10);
+      return {
+        question: `Fill in the missing number: ${a} + ___ = ${sum}`,
+        answer: String(sum - a),
+        working: `Working:\n___ = ${sum} - ${a} = ${sum - a}`,
+      };
+    } else if (t === 3) {
+      const num = Math.floor(Math.random() * 990) + 10;
+      const rounded = Math.round(num / 10) * 10;
+      return {
+        question: `What is ${num} rounded to the nearest 10?`,
+        answer: String(rounded),
+        working: `Working:\nOnes digit is ${num % 10}.\n${num % 10 >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${num} rounded to nearest 10 = ${rounded}`,
+      };
+    } else {
+      const num = Math.floor(Math.random() * 9900) + 100;
+      const rounded = Math.round(num / 100) * 100;
+      return {
+        question: `What is ${num} rounded to the nearest 100?`,
+        answer: String(rounded),
+        working: `Working:\nTens digit is ${Math.floor((num % 100) / 10)}.\n${Math.floor((num % 100) / 10) >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${num} rounded to nearest 100 = ${rounded}`,
+      };
+    }
+  }
+
+  private igcseDecimals(): Question {
+    const t = Math.floor(Math.random() * 6);
+    if (t === 0) {
+      const num = Math.floor(Math.random() * 9) + 1;
+      return {
+        question: `Write ${num}/10 as a decimal.`,
+        answer: `0.${num}`,
+        working: `Working:\n${num}/10 = 0.${num}`,
+      };
+    } else if (t === 1) {
+      const num = Math.floor(Math.random() * 99) + 1;
+      const dec = (num / 100).toFixed(2);
+      return {
+        question: `Write ${num}/100 as a decimal.`,
+        answer: dec,
+        working: `Working:\n${num}/100 = ${dec}`,
+      };
+    } else if (t === 2) {
+      const n1 = Math.floor(Math.random() * 90) + 5;
+      const n2 = Math.floor(Math.random() * (99 - n1)) + 1;
+      const d1 = n1 / 100;
+      const d2 = n2 / 100;
+      const sum = Math.round((d1 + d2) * 100) / 100;
+      return {
+        question: `Add: ${d1.toFixed(2)} + ${d2.toFixed(2)} = ?`,
+        answer: sum.toFixed(2),
+        working: `Working:\n${d1.toFixed(2)} + ${d2.toFixed(2)} = ${sum.toFixed(2)}`,
+      };
+    } else if (t === 3) {
+      const n1 = Math.floor(Math.random() * 8) + 2;
+      const n2 = Math.floor(Math.random() * (n1 - 1)) + 1;
+      const d1 = n1 / 10;
+      const d2 = n2 / 10;
+      const diff = Math.round((d1 - d2) * 10) / 10;
+      return {
+        question: `Subtract: ${d1.toFixed(1)} - ${d2.toFixed(1)} = ?`,
+        answer: diff.toFixed(1),
+        working: `Working:\n${d1.toFixed(1)} - ${d2.toFixed(1)} = ${diff.toFixed(1)}`,
+      };
+    } else if (t === 4) {
+      const total = Math.random() < 0.5 ? 10 : 100;
+      const part = Math.floor(Math.random() * (total - 1)) + 1;
+      const pct = (part / total) * 100;
+      return {
+        question: `What percentage is ${part} out of ${total}?`,
+        answer: `${pct}%`,
+        working: `Working:\n(${part} ÷ ${total}) × 100 = ${pct}%`,
+      };
+    } else {
+      const nums = Array.from({length: 3}, () => (Math.floor(Math.random() * 90) + 5) / 100);
+      const sorted = [...nums].sort((a, b) => a - b);
+      return {
+        question: `Order from smallest to largest: ${nums.map(n => n.toFixed(2)).join(', ')}`,
+        answer: sorted.map(n => n.toFixed(2)).join(', '),
+        working: `Working:\nCompare hundredths digits.\nSmallest to largest: ${sorted.map(n => n.toFixed(2)).join(' < ')}`,
+      };
+    }
+  }
+
+  private igcseNumberLine(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const half = Math.floor(Math.random() * 20) + 1;
+      const a = half * 2;
+      const gap = (Math.floor(Math.random() * 5) + 1) * 2;
+      const b = a + gap;
+      const mid = (a + b) / 2;
+      return {
+        question: `What number is halfway between ${a} and ${b}?`,
+        answer: String(mid),
+        working: `Working:\nHalfway = (${a} + ${b}) ÷ 2 = ${a + b} ÷ 2 = ${mid}`,
+      };
+    } else if (t === 1) {
+      const parts = [2, 4, 5, 10][Math.floor(Math.random() * 4)];
+      const start = Math.floor(Math.random() * 10) * parts;
+      const k = Math.floor(Math.random() * 5) + 1;
+      const end = start + parts * k;
+      const partWorth = k;
+      return {
+        question: `A number line goes from ${start} to ${end} in ${parts} equal parts. What is each part worth?`,
+        answer: String(partWorth),
+        working: `Working:\nTotal range = ${end} - ${start} = ${end - start}\nEach part = ${end - start} ÷ ${parts} = ${partWorth}`,
+      };
+    } else {
+      const step = Math.floor(Math.random() * 9) + 2;
+      const start = Math.floor(Math.random() * 20);
+      const fifth = start + step * 4;
+      return {
+        question: `Count on by ${step}s from ${start}. What is the 5th number?`,
+        answer: String(fifth),
+        working: `Working:\n${start}, ${start + step}, ${start + step * 2}, ${start + step * 3}, ${fifth}\nThe 5th number is ${fifth}.`,
+      };
+    }
+  }
+
+  private igcse3DShapes(): Question {
+    const shapes = [
+      { name: 'cube', faces: 6, edges: 12, vertices: 8 },
+      { name: 'cuboid', faces: 6, edges: 12, vertices: 8 },
+      { name: 'triangular prism', faces: 5, edges: 9, vertices: 6 },
+      { name: 'square pyramid', faces: 5, edges: 8, vertices: 5 },
+    ];
+    const t = Math.floor(Math.random() * 5);
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    if (t === 0) {
+      return {
+        question: `How many faces does a ${shape.name} have?`,
+        answer: String(shape.faces),
+        working: `Working:\nA ${shape.name} has ${shape.faces} faces, ${shape.edges} edges and ${shape.vertices} vertices.`,
+      };
+    } else if (t === 1) {
+      return {
+        question: `How many edges does a ${shape.name} have?`,
+        answer: String(shape.edges),
+        working: `Working:\nA ${shape.name} has ${shape.faces} faces, ${shape.edges} edges and ${shape.vertices} vertices.`,
+      };
+    } else if (t === 2) {
+      return {
+        question: `How many vertices does a ${shape.name} have?`,
+        answer: String(shape.vertices),
+        working: `Working:\nA ${shape.name} has ${shape.faces} faces, ${shape.edges} edges and ${shape.vertices} vertices.`,
+      };
+    } else if (t === 3) {
+      return {
+        question: `A ${shape.name} is unfolded into a net. How many faces does the net show?`,
+        answer: String(shape.faces),
+        working: `Working:\nUnfolding a 3D shape shows all its faces.\nA ${shape.name} has ${shape.faces} faces, so the net shows ${shape.faces} faces.`,
+      };
+    } else {
+      const unique = shapes.filter(s => s.name !== 'cube' && s.name !== 'cuboid');
+      const target = unique[Math.floor(Math.random() * unique.length)];
+      return {
+        question: `Which 3D shape has ${target.faces} faces, ${target.edges} edges and ${target.vertices} vertices?\nChoose: cube, cuboid, triangular prism, square pyramid`,
+        answer: target.name,
+        working: `Working:\nTriangular prism: 5 faces, 9 edges, 6 vertices\nSquare pyramid: 5 faces, 8 edges, 5 vertices\nCube/Cuboid: 6 faces, 12 edges, 8 vertices\nAnswer: ${target.name}`,
+      };
+    }
+  }
+
+  private igcseTransformations(): Question {
+    const templates = [
+      {
+        question: 'A shape is flipped over a mirror line. What type of transformation is this?',
+        answer: 'Reflection',
+        working: 'Working:\nFlipping a shape over a line = Reflection.\nThe shape keeps the same size but is mirrored.',
+      },
+      {
+        question: 'A shape slides to the right without turning or flipping. What transformation is this?',
+        answer: 'Translation',
+        working: 'Working:\nSliding without turning = Translation.\nEvery point moves the same distance in the same direction.',
+      },
+      {
+        question: 'A shape is turned 90° clockwise around a fixed point. What transformation is this?',
+        answer: 'Rotation',
+        working: 'Working:\nTurning a shape around a point = Rotation.',
+      },
+      {
+        question: 'After a reflection, does the shape change size?',
+        answer: 'No',
+        working: 'Working:\nReflection keeps size and shape the same. Only the orientation changes.',
+      },
+      {
+        question: 'A shape is moved 4 units right and 2 units up without rotating. What transformation is this?',
+        answer: 'Translation',
+        working: 'Working:\nMoving every point the same distance in the same direction = Translation.',
+      },
+      {
+        question: 'Name the transformation: a shape is turned 180° about its centre.',
+        answer: 'Rotation',
+        working: 'Working:\nTurning (spinning) around a fixed point = Rotation.',
+      },
+    ];
+    const tmpl = templates[Math.floor(Math.random() * templates.length)];
+    return { question: tmpl.question, answer: tmpl.answer, working: tmpl.working };
+  }
+
+  private igcseDataReasoning(): Question {
+    const t = Math.floor(Math.random() * 5);
+    if (t === 0) {
+      const mode = Math.floor(Math.random() * 8) + 2;
+      const others = Array.from({length: 4}, () => { let n: number; do { n = Math.floor(Math.random() * 9) + 1; } while (n === mode); return n; });
+      const data = [...others, mode, mode].sort(() => Math.random() - 0.5);
+      return {
+        question: `Find the mode of: ${data.join(', ')}`,
+        answer: String(mode),
+        working: `Working:\nThe mode is the most frequent value.\n${mode} appears ${data.filter(n => n === mode).length} times.\nMode = ${mode}`,
+      };
+    } else if (t === 1) {
+      const nums = Array.from({length: 5}, () => Math.floor(Math.random() * 20) + 1);
+      const range = Math.max(...nums) - Math.min(...nums);
+      return {
+        question: `Find the range of: ${nums.join(', ')}`,
+        answer: String(range),
+        working: `Working:\nRange = largest - smallest\n= ${Math.max(...nums)} - ${Math.min(...nums)} = ${range}`,
+      };
+    } else if (t === 2) {
+      const nums = Array.from({length: 4}, () => Math.floor(Math.random() * 9) + 1);
+      const sum = nums.reduce((a, b) => a + b, 0);
+      const extra = (4 - (sum % 4)) % 4;
+      nums[3] += extra;
+      const total = nums.reduce((a, b) => a + b, 0);
+      const mean = total / 4;
+      return {
+        question: `Find the mean of: ${nums.join(', ')}`,
+        answer: String(mean),
+        working: `Working:\nMean = sum ÷ count\n= (${nums.join(' + ')}) ÷ 4\n= ${total} ÷ 4 = ${mean}`,
+      };
+    } else if (t === 3) {
+      const n = Math.floor(Math.random() * 9) + 2;
+      const symbols = Math.floor(Math.random() * 6) + 2;
+      const categories = ['Apples', 'Oranges', 'Mangoes', 'Bananas', 'Grapes'];
+      const cat = categories[Math.floor(Math.random() * categories.length)];
+      return {
+        question: `A pictogram shows each symbol = ${n} items.\n${cat} has ${symbols} symbols. How many ${cat.toLowerCase()} is that?`,
+        answer: String(n * symbols),
+        working: `Working:\n${symbols} symbols × ${n} items each = ${n * symbols} ${cat.toLowerCase()}`,
+      };
+    } else {
+      const total = Math.floor(Math.random() * 16) + 10;
+      const num = Math.floor(Math.random() * (total - 1)) + 1;
+      const options = ['football', 'cricket', 'swimming', 'tennis', 'hockey'];
+      const option = options[Math.floor(Math.random() * options.length)];
+      const g = this.gcd(num, total);
+      const simplNum = num / g;
+      const simplDen = total / g;
+      const answer = simplDen === 1 ? String(simplNum) : `${simplNum}/${simplDen}`;
+      return {
+        question: `In a survey of ${total} students, ${num} chose ${option}. What fraction chose ${option}?`,
+        answer,
+        working: `Working:\nFraction = ${num}/${total}\nSimplify by dividing by ${g}: ${answer}`,
+      };
+    }
+  }
+
+  private igcseReasoning(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const n = Math.floor(Math.random() * 8) + 2;
+      const k = Math.floor(Math.random() * 9) + 2;
+      const answer = n * k;
+      const a = n * (k - 1);
+      const b = n * (k + 1);
+      return {
+        question: `I am a number between ${a} and ${b}. I am a multiple of ${n}. What could I be? Give one answer.`,
+        answer: String(answer),
+        working: `Working:\nMultiples of ${n}: ..., ${a}, ${answer}, ${b}, ...\nThe only multiple of ${n} between ${a} and ${b} is ${answer}.`,
+      };
+    } else if (t === 1) {
+      const evenN = [4, 6, 8, 10][Math.floor(Math.random() * 4)];
+      const k = Math.floor(Math.random() * 6) + 3;
+      const answer = evenN * k;
+      const half = evenN / 2 + 1;
+      const a = answer - half;
+      const b = answer + half;
+      return {
+        question: `I am an even number. I am greater than ${a} and less than ${b}. I am a multiple of ${evenN}. What am I?`,
+        answer: String(answer),
+        working: `Working:\nEven multiples of ${evenN} near this range: ${answer}\n${answer} is between ${a} and ${b} and is a multiple of ${evenN}.\nAnswer = ${answer}`,
+      };
+    } else {
+      const h = Math.floor(Math.random() * 9) + 1;
+      const tens = Math.floor(Math.random() * 10);
+      const u = Math.floor(Math.random() * 10);
+      const number = h * 100 + tens * 10 + u;
+      return {
+        question: `A number has ${h} hundreds, ${tens} tens and ${u} ones. What is the number?`,
+        answer: String(number),
+        working: `Working:\n${h} hundreds = ${h * 100}\n${tens} tens = ${tens * 10}\n${u} ones = ${u}\nNumber = ${h * 100} + ${tens * 10} + ${u} = ${number}`,
+      };
+    }
   }
 }

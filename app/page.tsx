@@ -48,6 +48,7 @@ export default function MathQuiz() {
 
   const [streak, setStreak] = useState<number>(0)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
+  const [curriculum, setCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>('CBSE')
 
   // UI-only state
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -98,9 +99,13 @@ export default function MathQuiz() {
   }, [])
 
   useEffect(() => {
+    fetch('/api/clear-session', { method: 'POST' }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const response = await fetch('/api/topics')
+        const response = await fetch(`/api/topics?curriculum=${curriculum}`)
         if (response.ok) {
           const data = await response.json()
           setAvailableTopics(["Random", ...data.topics])
@@ -110,8 +115,12 @@ export default function MathQuiz() {
       }
     }
     fetchTopics()
-    fetch('/api/clear-session', { method: 'POST' }).catch(() => {})
-  }, [])
+    setTopic("Random")
+    setCurrentQuestion("")
+    setCurrentAnswer("")
+    setCurrentTopic("")
+    setTimerActive(false)
+  }, [curriculum])
 
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
@@ -166,7 +175,7 @@ export default function MathQuiz() {
     setIsGenerating(true)
     setApiError(null)
     try {
-      const requestBody: any = { difficulty }
+      const requestBody: any = { difficulty, curriculum }
       if (topic !== "Random") {
         requestBody.topic = topic
       }
@@ -468,7 +477,7 @@ export default function MathQuiz() {
           fetch('/api/generate-worksheet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ difficulty, topic: topicParam, count }),
+            body: JSON.stringify({ difficulty, topic: topicParam, count, curriculum }),
           }).then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
 
         const [easyData, mediumData, hardData] = await Promise.all([
@@ -487,7 +496,7 @@ export default function MathQuiz() {
         const response = await fetch('/api/generate-worksheet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount }),
+          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount, curriculum }),
         })
         if (!response.ok) throw new Error('Failed')
         const data = await response.json()
@@ -565,7 +574,7 @@ export default function MathQuiz() {
                   Make Maths Fun!
                 </h2>
                 <p className="text-white/80 text-lg mb-6 leading-relaxed">
-                  Interactive practice for Class 4 · 19 topics · 3 difficulty levels · instant feedback
+                  Interactive practice for Class 4 · CBSE · ICSE · IGCSE
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -627,7 +636,7 @@ export default function MathQuiz() {
           <div>
             {[
               { q: "Is this completely free?", a: "Yes, completely free. No login, no subscription, no hidden fees. Just open and start practising." },
-              { q: "Which syllabus does this follow?", a: "The questions are aligned with the CBSE Class 4 Mathematics curriculum covering all major topics including Number System, Fractions, Geometry, Measurement, Data Handling and more." },
+              { q: "Which syllabus does this follow?", a: "Supports three curricula — CBSE, ICSE and IGCSE Cambridge Primary Stage 4. Switch between them using the Curriculum selector. Each curriculum has its own topic set and question style." },
               { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
               { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
               { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 19 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
@@ -658,6 +667,28 @@ export default function MathQuiz() {
         <div className="max-w-6xl mx-auto">
         {/* MAIN CARD */}
         <div ref={quizRef} className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
+
+          {/* CURRICULUM SELECTOR */}
+          <div className="mb-4">
+            <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">
+              Curriculum
+            </label>
+            <div className="flex gap-2">
+              {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurriculum(c)}
+                  className={`rounded-full px-4 py-2 font-bold text-sm transition ${
+                    curriculum === c
+                      ? 'bg-[#2563eb] text-white'
+                      : 'bg-white border border-[#2563eb] text-[#2563eb]'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* CONTROLS ROW */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

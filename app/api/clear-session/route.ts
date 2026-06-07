@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { generator } from '@/lib/generatorSingleton';
+import { cbseGenerator, icseGenerator, igcseGenerator } from '@/lib/generatorSingleton';
 
 export async function POST() {
-  generator.clearSession();
+  cbseGenerator.clearSession();
+  icseGenerator.clearSession();
+  igcseGenerator.clearSession();
   return NextResponse.json({ ok: true });
 }
