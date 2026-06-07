@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
@@ -54,6 +54,7 @@ export default function MathQuiz() {
   const [curriculum, setCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>('CBSE')
 
   // UI-only state
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
@@ -83,6 +84,12 @@ export default function MathQuiz() {
   useEffect(() => {
     const saved = localStorage.getItem('soundEnabled')
     if (saved !== null) setSoundEnabled(saved === 'true')
+  }, [])
+
+  useEffect(() => {
+    const dark = localStorage.getItem('theme') === 'dark'
+    setIsDarkMode(dark)
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark')
   }, [])
 
   useEffect(() => {
@@ -329,6 +336,18 @@ export default function MathQuiz() {
       }
     } catch {
       setApiError("Couldn't check your answer. Please try again.")
+    }
+  }
+
+  const toggleDarkMode = () => {
+    const next = !isDarkMode
+    setIsDarkMode(next)
+    if (next) {
+      document.documentElement.setAttribute('data-theme', 'dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.removeAttribute('data-theme')
+      localStorage.setItem('theme', 'light')
     }
   }
 
@@ -648,6 +667,13 @@ export default function MathQuiz() {
               className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
             >
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={toggleDarkMode}
+              title="Toggle dark mode"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
+            >
+              {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase">
               BETA
@@ -1527,7 +1553,7 @@ export default function MathQuiz() {
             <QRCodeSVG
               value={typeof window !== "undefined" ? window.location.href : ""}
               size={200}
-              bgColor="#ffffff"
+              bgColor={isDarkMode ? "#1e293b" : "#ffffff"}
               fgColor="#2563eb"
             />
             <button

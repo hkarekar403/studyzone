@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Baloo_2, Nunito } from "next/font/google"
+import Script from "next/script"
 import "./globals.css"
 
 const baloo2 = Baloo_2({
@@ -42,8 +43,18 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${baloo2.variable} ${nunito.variable}`}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${baloo2.variable} ${nunito.variable}`}>
+        {/* Inline script runs synchronously before first paint to prevent theme flash */}
+        <Script id="theme-init" strategy="beforeInteractive">{`
+          try {
+            if (localStorage.getItem('theme') === 'dark') {
+              document.documentElement.setAttribute('data-theme', 'dark');
+            }
+          } catch(e) {}
+        `}</Script>
+        {children}
+      </body>
     </html>
   )
 }

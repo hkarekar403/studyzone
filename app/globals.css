@@ -2,25 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme variables ───────────────────────────────────────── */
 :root {
   --color-primary: #2563eb;
   --color-secondary: #7c3aed;
   --color-accent: #f59e0b;
   --color-success: #16a34a;
   --color-error: #dc2626;
-  --color-bg-from: #eff6ff;
-  --color-bg-to: #f5f3ff;
-  --color-card: #ffffff;
+  --bg-primary: #eff6ff;
+  --bg-secondary: #f5f3ff;
+  --bg-card: #ffffff;
+  --bg-card-secondary: rgba(255,255,255,0.6);
+  --text-primary: #1e3a5f;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --navbar-bg: rgba(255,255,255,0.9);
+  --hero-overlay: rgba(255,255,255,0.1);
+  --dot-color: rgba(167, 139, 250, 0.22);
 }
 
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e1b4b;
+  --bg-card: #1e293b;
+  --bg-card-secondary: rgba(30,41,59,0.8);
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --input-bg: #0f172a;
+  --navbar-bg: rgba(15,23,42,0.95);
+  --hero-overlay: rgba(0,0,0,0.2);
+  --dot-color: rgba(99, 102, 241, 0.15);
+}
+
+/* ── Base body ─────────────────────────────────────────────── */
 body {
-  background-color: #eff6ff;
+  background-color: var(--bg-primary);
   background-image:
-    radial-gradient(circle, rgba(167, 139, 250, 0.22) 1.5px, transparent 1.5px),
-    linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    radial-gradient(circle, var(--dot-color) 1.5px, transparent 1.5px),
+    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   background-size: 24px 24px, 100% 100%;
   min-height: 100vh;
   font-family: var(--font-nunito), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .font-heading {
@@ -46,3 +73,57 @@ body {
 .animate-celebrate { animation: celebrate 0.4s ease-in-out; }
 .animate-shake { animation: shake 0.3s ease-in-out; }
 .animate-float { animation: float 3s ease-in-out infinite; }
+
+/* ── Dark mode overrides ───────────────────────────────────── */
+
+/* Text */
+[data-theme="dark"] .text-gray-800,
+[data-theme="dark"] .text-gray-700 { color: var(--text-secondary) !important; }
+
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-400 { color: var(--text-muted) !important; }
+
+/* Solid white / grey backgrounds */
+[data-theme="dark"] .bg-white          { background-color: var(--bg-card) !important; }
+[data-theme="dark"] .bg-gray-50        { background-color: #263040 !important; }
+[data-theme="dark"] .bg-gray-100       { background-color: #2d3748 !important; }
+
+/* Opacity-variant white backgrounds (navbar, panels) */
+[data-theme="dark"] .bg-white\/60      { background-color: var(--bg-card-secondary) !important; }
+[data-theme="dark"] .bg-white\/90      { background-color: var(--navbar-bg) !important; }
+
+/* Hover states */
+[data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #2d3748 !important; }
+
+/* Borders */
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300  { border-color: var(--border-color) !important; }
+
+/* Tinted light backgrounds (difficulty cards, feedback) */
+[data-theme="dark"] .bg-blue-50        { background-color: rgba(37,99,235,0.15)  !important; }
+[data-theme="dark"] .bg-purple-50      { background-color: rgba(124,58,237,0.15) !important; }
+[data-theme="dark"] .bg-amber-50       { background-color: rgba(245,158,11,0.15) !important; }
+[data-theme="dark"] .bg-red-50         { background-color: rgba(220,38,38,0.15)  !important; }
+[data-theme="dark"] .bg-green-50       { background-color: rgba(22,163,74,0.15)  !important; }
+
+/* Gradient stops for "ready to start" empty-state card */
+[data-theme="dark"] .from-blue-50   { --tw-gradient-from: rgba(37,99,235,0.1)  var(--tw-gradient-from-position) !important; }
+[data-theme="dark"] .to-purple-50   { --tw-gradient-to:   rgba(124,58,237,0.1) var(--tw-gradient-to-position)   !important; }
+
+/* Inputs */
+[data-theme="dark"] input:not([type="range"]):not([type="checkbox"]) {
+  background-color: var(--input-bg) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+[data-theme="dark"] input::placeholder { color: var(--text-muted) !important; }
+[data-theme="dark"] .disabled\:bg-gray-100:disabled { background-color: #263040 !important; }
+
+/* Selects */
+[data-theme="dark"] select {
+  background-color: var(--input-bg) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
