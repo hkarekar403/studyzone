@@ -55,7 +55,7 @@ export default function MathQuiz() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
-  const [wseDifficulty, setWseDifficulty] = useState("Easy")
+  const [wseDifficulty, setWseDifficulty] = useState("Random")
   const [wseTopic, setWseTopic] = useState("Random")
   const [wseCount, setWseCount] = useState(10)
 
@@ -471,18 +471,47 @@ export default function MathQuiz() {
   const generateWorksheet = async () => {
     setWorksheetLoading(true)
     try {
-      const response = await fetch('/api/generate-worksheet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          difficulty: wseDifficulty,
-          topic: wseTopic === 'Random' ? undefined : wseTopic,
-          count: wseCount,
-        }),
-      })
-      if (!response.ok) throw new Error('Failed')
-      const data = await response.json()
-      buildWorksheetPDF(data.questions, wseDifficulty, wseTopic)
+      type WQuestion = { number: number; question: string; answer: string; working: string }
+      let questions: WQuestion[]
+      const topicParam = wseTopic === 'Random' ? undefined : wseTopic
+
+      if (wseDifficulty === 'Random') {
+        const easyCount = Math.round(wseCount * 0.3)
+        const mediumCount = Math.round(wseCount * 0.5)
+        const hardCount = wseCount - easyCount - mediumCount
+
+        const post = (difficulty: string, count: number) =>
+          fetch('/api/generate-worksheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ difficulty, topic: topicParam, count }),
+          }).then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
+
+        const [easyData, mediumData, hardData] = await Promise.all([
+          post('Easy', easyCount),
+          post('Medium', mediumCount),
+          post('Hard', hardCount),
+        ])
+
+        const combined: WQuestion[] = [...easyData.questions, ...mediumData.questions, ...hardData.questions]
+        for (let i = combined.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [combined[i], combined[j]] = [combined[j], combined[i]]
+        }
+        questions = combined.map((q, idx) => ({ ...q, number: idx + 1 }))
+      } else {
+        const response = await fetch('/api/generate-worksheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount }),
+        })
+        if (!response.ok) throw new Error('Failed')
+        const data = await response.json()
+        questions = data.questions
+      }
+
+      const displayDifficulty = wseDifficulty === 'Random' ? 'Mixed' : wseDifficulty
+      buildWorksheetPDF(questions, displayDifficulty, wseTopic)
       setShowWorksheetModal(false)
     } catch {
       // leave modal open so user can retry
@@ -928,6 +957,7 @@ export default function MathQuiz() {
                   disabled={worksheetLoading}
                   className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
                 >
+                  <option value="Random">Random (Mixed)</option>
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
                   <option value="Hard">Hard</option>
