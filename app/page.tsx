@@ -20,7 +20,8 @@ interface SessionRecord {
 }
 
 export default function MathQuiz() {
-  const [difficulty, setDifficulty] = useState("Easy")
+  const [difficulty, setDifficulty] = useState("Random")
+  const [currentDifficulty, setCurrentDifficulty] = useState("Easy")
   const [topic, setTopic] = useState<string>("Random")
   const [availableTopics, setAvailableTopics] = useState<string[]>([])
   const [currentTopic, setCurrentTopic] = useState<string>("")
@@ -175,7 +176,10 @@ export default function MathQuiz() {
     setIsGenerating(true)
     setApiError(null)
     try {
-      const requestBody: any = { difficulty, curriculum }
+      const resolvedDifficulty = difficulty === 'Random'
+        ? (['Easy', 'Medium', 'Hard'] as const)[Math.floor(Math.random() * 3)]
+        : difficulty
+      const requestBody: any = { difficulty: resolvedDifficulty, curriculum }
       if (topic !== "Random") {
         requestBody.topic = topic
       }
@@ -203,14 +207,15 @@ export default function MathQuiz() {
       setFeedbackColor("")
       setCurrentAttempts(0)
       setQuestionLocked(false)
-      const timerDuration = difficulty === 'Easy' ? 45 : difficulty === 'Medium' ? 90 : 120
+      setCurrentDifficulty(resolvedDifficulty)
+      const timerDuration = resolvedDifficulty === 'Easy' ? 45 : resolvedDifficulty === 'Medium' ? 90 : 120
       setTimerDuration(timerDuration)
       setTimeLeft(timerDuration)
       setTimerActive(true)
 
       const newRecord: SessionRecord = {
         number: questionsGenerated + 1,
-        difficulty,
+        difficulty: resolvedDifficulty,
         topic: questionData.topic || "General",
         question: questionData.question,
         kidAnswer: "",
@@ -703,6 +708,7 @@ export default function MathQuiz() {
                 onChange={(e) => setDifficulty(e.target.value)}
                 className="w-full p-2 text-base font-semibold rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-blue-200 cursor-pointer"
               >
+                <option value="Random">Random</option>
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
                 <option value="Hard">Hard</option>
@@ -806,9 +812,9 @@ export default function MathQuiz() {
               ) : (
                 <div
                   className={`rounded-2xl p-6 mb-4 border-l-8 transition-all ${
-                    difficulty === "Easy"
+                    currentDifficulty === "Easy"
                       ? "border-blue-400 bg-blue-50"
-                      : difficulty === "Medium"
+                      : currentDifficulty === "Medium"
                       ? "border-amber-400 bg-amber-50"
                       : "border-red-400 bg-red-50"
                   } ${feedback === "Correct" ? "animate-celebrate" : ""}`}
@@ -816,14 +822,14 @@ export default function MathQuiz() {
                   <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
                     <span
                       className={`text-xs font-bold px-3 py-1 rounded-full ${
-                        difficulty === "Easy"
+                        currentDifficulty === "Easy"
                           ? "bg-blue-200 text-blue-700"
-                          : difficulty === "Medium"
+                          : currentDifficulty === "Medium"
                           ? "bg-amber-200 text-amber-700"
                           : "bg-red-200 text-red-700"
                       }`}
                     >
-                      {difficulty}
+                      {currentDifficulty}
                     </span>
                     {currentTopic && (
                       <span className="text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
@@ -939,7 +945,7 @@ export default function MathQuiz() {
                     Answer
                   </p>
                   <p className="text-lg font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
-                    {difficulty === "Hard"
+                    {currentDifficulty === "Hard"
                       ? `Answer: ${currentAnswer}\n\n${currentWorking}`
                       : `Answer: ${currentAnswer}`}
                   </p>
