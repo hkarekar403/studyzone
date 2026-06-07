@@ -1,0 +1,31 @@
+# StudyZone - Class 4 Maths Practice
+> Free interactive maths practice for Class 4 students
+
+StudyZone is a free web application for Class 4 students
+to practice mathematics. It supports CBSE, ICSE and IGCSE
+curricula with 19 topics across 3 difficulty levels.
+
+## Features
+- 19 maths topics including fractions, geometry, algebra,
+  data handling and more
+- 3 difficulty levels: Easy, Medium, Hard
+- Instant feedback with audio and visual effects
+- PDF session report export
+- Printable worksheet generator with answer key
+- No login required
+- Works on mobile, tablet and desktop
+- Dark mode support
+- Installable as a PWA
+
+## Curricula Supported
+- CBSE Class 4 Mathematics
+- ICSE Class 4 Mathematics
+- IGCSE Cambridge Primary Stage 4 Mathematics
+
+## Target Audience
+- Class 4 students aged 9-10 years
+- Parents of Class 4 students
+- Primary school teachers
+
+## URL
+https://studyzone.co.in

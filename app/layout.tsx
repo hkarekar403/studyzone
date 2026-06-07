@@ -47,6 +47,13 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  other: {
+    'og:site_name': 'StudyZone',
+    'og:locale': 'en_IN',
+    'application-name': 'StudyZone',
+    'msapplication-TileColor': '#2563eb',
+    'msapplication-config': '/browserconfig.xml',
+  },
 }
 
 export const viewport: Viewport = {
@@ -98,6 +105,12 @@ const jsonLd = {
   "provider": {
     "@type": "Person",
     "name": "Harshad Karekar"
+  },
+  "sameAs": ["https://studyzone.co.in"],
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://studyzone.co.in",
+    "query-input": "required name=search_term_string"
   },
 }
 
