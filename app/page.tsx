@@ -38,6 +38,8 @@ export default function MathQuiz() {
   const [questionsGenerated, setQuestionsGenerated] = useState<number>(0)
   const [correctAnswers, setCorrectAnswers] = useState<number>(0)
   const [currentAttempts, setCurrentAttempts] = useState<number>(0)
+  const [topicCorrect, setTopicCorrect] = useState<Record<string, number>>({})
+  const [topicAttempted, setTopicAttempted] = useState<Record<string, number>>({})
   const [questionLocked, setQuestionLocked] = useState<boolean>(false)
   const [sessionRecords, setSessionRecords] = useState<SessionRecord[]>([])
   const [sessionStartedAt] = useState<Date>(new Date())
@@ -274,6 +276,11 @@ export default function MathQuiz() {
       const data = await response.json()
       const isCorrect = data.is_correct
 
+      setTopicAttempted((prev) => ({ ...prev, [currentTopic]: (prev[currentTopic] ?? 0) + 1 }))
+      if (isCorrect) {
+        setTopicCorrect((prev) => ({ ...prev, [currentTopic]: (prev[currentTopic] ?? 0) + 1 }))
+      }
+
       if (currentRecord) {
         const updatedRecord = { ...currentRecord, kidAnswer: userAnswer }
         if (isCorrect) {
@@ -387,6 +394,20 @@ export default function MathQuiz() {
     })
 
     doc.save(`math_session_${endedAt.getTime()}.pdf`)
+  }
+
+  const getWeaknessAnalysis = () => {
+    const strong: string[] = []
+    const weak: string[] = []
+    const neutral: string[] = []
+    for (const topic of Object.keys(topicAttempted)) {
+      if (topicAttempted[topic] < 2) continue
+      const accuracy = (topicCorrect[topic] ?? 0) / topicAttempted[topic]
+      if (accuracy >= 0.75) strong.push(topic)
+      else if (accuracy < 0.5) weak.push(topic)
+      else neutral.push(topic)
+    }
+    return { strong, weak, neutral }
   }
 
   const buildWorksheetPDF = (
@@ -1070,6 +1091,50 @@ export default function MathQuiz() {
             )}
           </div>
         )}
+
+        {/* Performance Insights panel */}
+        {(() => {
+          const { strong, weak, neutral } = getWeaknessAnalysis()
+          const totalWithData = strong.length + weak.length + neutral.length
+          if (totalWithData === 0) return null
+          const totalAttempted = Object.values(topicAttempted).reduce((a, b) => a + b, 0)
+          const totalCorrect = Object.values(topicCorrect).reduce((a, b) => a + b, 0)
+          const overallPct = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0
+          return (
+            <div className="bg-white/60 rounded-2xl p-6 mb-4">
+              <h3 className="font-heading text-lg font-bold text-gray-700 mb-4">📊 Performance Insights</h3>
+              <div className="flex flex-col gap-3">
+                {strong.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-green-700 w-36 flex-shrink-0">💪 Strong topics:</span>
+                    {strong.map((t) => (
+                      <span key={t} className="text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full">{t}</span>
+                    ))}
+                  </div>
+                )}
+                {weak.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-red-700 w-36 flex-shrink-0">📚 Needs practice:</span>
+                    {weak.map((t) => (
+                      <span key={t} className="text-xs font-bold bg-red-100 text-red-700 px-3 py-1 rounded-full">{t}</span>
+                    ))}
+                  </div>
+                )}
+                {neutral.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-gray-600 w-36 flex-shrink-0">➡️ Keep going:</span>
+                    {neutral.map((t) => (
+                      <span key={t} className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{t}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Overall: {totalCorrect} correct out of {totalAttempted} attempted ({overallPct}%)
+              </p>
+            </div>
+          )
+        })()}
 
         {/* FOOTER */}
         <footer className="pb-6 flex items-center justify-between flex-wrap gap-2 px-1">
