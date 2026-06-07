@@ -458,7 +458,7 @@ export default function MathQuiz() {
     const doc = new jsPDF()
     const dateStr = new Date().toLocaleDateString()
     const safeDateStr = new Date().toISOString().split('T')[0]
-    const footer = 'Maths Practice — mathsquiz.vercel.app'
+    const footer = 'Maths Practice — studyzone.co.in'
     const count = questions.length
 
     const perQuestionTime =
