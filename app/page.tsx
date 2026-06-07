@@ -381,6 +381,13 @@ export default function MathQuiz() {
     const footer = 'Maths Practice — mathsquiz.vercel.app'
     const count = questions.length
 
+    const perQuestionTime =
+      wsDifficulty === 'Easy' ? 0.75 :
+      wsDifficulty === 'Medium' ? 1.5 :
+      wsDifficulty === 'Hard' ? 2 :
+      1.375 // Mixed: (0.3×0.75) + (0.5×1.5) + (0.2×2)
+    const totalMinutes = Math.ceil(count * perQuestionTime / 5) * 5
+
     // ── PAGE 1: Question sheet ──────────────────────────────────────
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
@@ -388,7 +395,7 @@ export default function MathQuiz() {
 
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Date: ${dateStr}`, 105, 30, { align: 'center' })
+    doc.text(`Difficulty: ${wsDifficulty} | Topic: ${wsTopic} | Time: ${totalMinutes} mins | Date: ${dateStr}`, 105, 30, { align: 'center' })
 
     doc.setDrawColor(200, 200, 200)
     doc.line(15, 34, 195, 34)
