@@ -61,6 +61,8 @@ export default function MathQuiz() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const quizRef = useRef<HTMLDivElement>(null)
+  const howItWorksRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     return () => {
@@ -501,48 +503,118 @@ export default function MathQuiz() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      {/* HEADER */}
-      <header className="max-w-6xl mx-auto mb-6 flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl animate-float inline-block">🚀</span>
-          <div>
-            <h1 className="font-heading text-4xl md:text-5xl font-bold text-blue-700 leading-tight">
-              Maths Practice
-            </h1>
-            <p className="text-gray-500 text-sm font-semibold tracking-wide mt-0.5">
-              Class 4 · Interactive Quiz
-            </p>
+    <div className="min-h-screen">
+      {/* STICKY NAVBAR */}
+      <nav className="sticky top-0 z-40 h-14 bg-white/90 backdrop-blur-sm shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 h-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🚀</span>
+            <span className="font-heading text-xl font-bold text-blue-700">MathsQuiz</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              How it works
+            </button>
+            <button
+              onClick={() => setShowQRModal(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
+            <button
+              onClick={() => {
+                const next = !soundEnabled
+                setSoundEnabled(next)
+                localStorage.setItem('soundEnabled', String(next))
+              }}
+              title="Toggle sound"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
+            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase">
+              BETA
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-1 flex-shrink-0">
-          <button
-            onClick={() => {
-              const next = !soundEnabled
-              setSoundEnabled(next)
-              localStorage.setItem('soundEnabled', String(next))
-            }}
-            title="Toggle sound"
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
-          >
-            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-          </button>
-          <button
-            onClick={() => setShowQRModal(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            Share
-          </button>
-          <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase">
-            BETA
-          </span>
-        </div>
-      </header>
+      </nav>
 
-      <div className="max-w-6xl mx-auto">
+      <div className="p-4 md:p-8">
+
+        {/* HERO */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <div className="rounded-2xl p-8 bg-gradient-to-r from-[#2563eb] to-[#7c3aed]">
+            <div className="flex flex-col lg:flex-row items-center gap-8">
+              <div className="flex-1">
+                <span className="inline-block mb-3 bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">
+                  ✨ Free for all students
+                </span>
+                <h2 className="font-heading text-4xl font-bold text-white mb-3 leading-tight">
+                  Make Maths Fun!
+                </h2>
+                <p className="text-white/80 text-lg mb-6 leading-relaxed">
+                  Interactive practice for Class 4 · 19 topics · 3 difficulty levels · instant feedback
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => quizRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                    className="bg-white text-blue-700 font-bold px-5 py-2.5 rounded-xl hover:bg-blue-50 transition-colors shadow-md"
+                  >
+                    Start Practising →
+                  </button>
+                  <button
+                    onClick={() => setShowWorksheetModal(true)}
+                    className="bg-transparent text-white font-bold px-5 py-2.5 rounded-xl border-2 border-white hover:bg-white/10 transition-colors"
+                  >
+                    Get Worksheet
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 flex-shrink-0">
+                {[
+                  { value: '19', label: 'Topics covered' },
+                  { value: '3', label: 'Difficulty levels' },
+                  { value: '∞', label: 'Questions' },
+                  { value: '📄', label: 'PDF export' },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white/15 rounded-xl p-4 text-center min-w-[110px]">
+                    <p className="text-3xl font-bold text-white leading-none mb-1">{stat.value}</p>
+                    <p className="text-white/70 text-xs font-medium">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* HOW IT WORKS */}
+        <div ref={howItWorksRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <h3 className="font-heading text-2xl font-bold text-blue-700 text-center mb-6">How it works</h3>
+          <div className="flex flex-col sm:flex-row gap-6">
+            {[
+              { step: '1', emoji: '🎯', title: 'Pick a Topic', desc: 'Choose from 19 maths topics or go Random. Select Easy, Medium or Hard.' },
+              { step: '2', emoji: '✏️', title: 'Answer Questions', desc: 'Type your answer and press Enter. Get instant feedback with audio and confetti!' },
+              { step: '3', emoji: '📄', title: 'Track Progress', desc: 'View your session history, export a PDF report, or download a printable worksheet.' },
+            ].map((s) => (
+              <div key={s.step} className="relative flex-1 bg-white rounded-xl p-5 shadow-sm text-center">
+                <span className="absolute top-3 left-3 bg-amber-400 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {s.step}
+                </span>
+                <p className="text-4xl mb-2">{s.emoji}</p>
+                <p className="font-bold text-blue-700 mb-1">{s.title}</p>
+                <p className="text-sm text-gray-600 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto">
         {/* MAIN CARD */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
+        <div ref={quizRef} className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
 
           {/* CONTROLS ROW */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -903,6 +975,7 @@ export default function MathQuiz() {
             </p>
           )}
         </footer>
+      </div>
       </div>
 
       {/* WORKSHEET MODAL */}
