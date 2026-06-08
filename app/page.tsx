@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
@@ -64,6 +64,17 @@ export default function MathQuiz() {
   const [copiedScore, setCopiedScore] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
+  const [inlineShareFeedback, setInlineShareFeedback] = useState("")
+
+  // Feedback form
+  const [feedbackName, setFeedbackName] = useState("")
+  const [feedbackEmail, setFeedbackEmail] = useState("")
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [feedbackMessage, setFeedbackMessage] = useState("")
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [feedbackError, setFeedbackError] = useState("")
+  const [hoverRating, setHoverRating] = useState(0)
   const [wseDifficulty, setWseDifficulty] = useState("Random")
   const [wseTopic, setWseTopic] = useState("Random")
   const [wseCount, setWseCount] = useState(10)
@@ -74,6 +85,7 @@ export default function MathQuiz() {
   const quizRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
   const faqRef = useRef<HTMLDivElement>(null)
+  const feedbackRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     return () => {
@@ -628,6 +640,66 @@ export default function MathQuiz() {
     }
   }
 
+  const handleFeedbackSubmit = async () => {
+    setFeedbackSubmitting(true)
+    setFeedbackError("")
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: feedbackName,
+          email: feedbackEmail,
+          rating: feedbackRating,
+          message: feedbackMessage,
+          curriculum,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setFeedbackSubmitted(true)
+        setTimeout(() => {
+          setFeedbackSubmitted(false)
+          setFeedbackName("")
+          setFeedbackEmail("")
+          setFeedbackRating(0)
+          setFeedbackMessage("")
+          setHoverRating(0)
+        }, 5000)
+      } else {
+        setFeedbackError(data.error || "Something went wrong. Please try again.")
+      }
+    } catch {
+      setFeedbackError("Something went wrong. Please try again.")
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
+  const handleInlineShare = async () => {
+    const inlineAccuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
+    const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${inlineAccuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
+    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }
+    if (nav.share) {
+      try {
+        await nav.share({ title: "My Maths Score on StudyZone", text: shareText, url: "https://studyzone.co.in" })
+        setInlineShareFeedback("Shared! ✓")
+        setTimeout(() => setInlineShareFeedback(""), 2000)
+      } catch (err) {
+        if ((err as DOMException)?.name !== "AbortError") {
+          navigator.clipboard.writeText(`${shareText} studyzone.co.in`)
+          setInlineShareFeedback("Copied! ✓")
+          setTimeout(() => setInlineShareFeedback(""), 2000)
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+        setInlineShareFeedback("Copied! ✓")
+        setTimeout(() => setInlineShareFeedback(""), 2000)
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen">
       {/* STICKY NAVBAR */}
@@ -649,6 +721,12 @@ export default function MathQuiz() {
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
             >
               FAQ
+            </button>
+            <button
+              onClick={() => feedbackRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              Feedback
             </button>
             <button
               onClick={() => setShowQRModal(true)}
@@ -790,6 +868,109 @@ export default function MathQuiz() {
           </div>
         </div>
 
+        {/* FEEDBACK */}
+        <div ref={feedbackRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <h3 className="font-heading text-2xl font-bold text-center mb-1" style={{ color: '#2563eb' }}>
+            💬 Share Your Feedback
+          </h3>
+          <p className="text-center text-sm text-gray-500 mb-6">Help us improve StudyZone for students everywhere</p>
+
+          {feedbackSubmitted ? (
+            <div className="flex flex-col items-center justify-center gap-3 bg-green-50 border border-green-200 rounded-2xl py-10 px-6 text-center">
+              <span className="text-5xl">🎉</span>
+              <p className="font-heading text-xl font-bold text-green-700">Thank you for your feedback!</p>
+              <p className="text-sm text-gray-600">Your response helps us make StudyZone better for students everywhere.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 max-w-lg mx-auto">
+              {/* Star rating */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm font-bold text-gray-600">Rate your experience</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const filled = star <= (hoverRating || feedbackRating)
+                    return (
+                      <button
+                        key={star}
+                        onClick={() => setFeedbackRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="transition-transform hover:scale-110"
+                        aria-label={`${star} star`}
+                      >
+                        <Star
+                          className="w-8 h-8 transition-colors"
+                          fill={filled ? '#f59e0b' : 'none'}
+                          stroke={filled ? '#f59e0b' : '#d1d5db'}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Name & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={feedbackName}
+                  onChange={(e) => setFeedbackName(e.target.value)}
+                  placeholder="Your name (optional)"
+                  className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
+                />
+                <input
+                  type="email"
+                  value={feedbackEmail}
+                  onChange={(e) => setFeedbackEmail(e.target.value)}
+                  placeholder="Your email (optional)"
+                  className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
+                />
+              </div>
+
+              {/* Curriculum (read-only) */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-500">
+                <span className="font-semibold text-gray-700">Curriculum:</span>
+                <span className="font-bold text-blue-700">{curriculum}</span>
+              </div>
+
+              {/* Message */}
+              <textarea
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                placeholder="What do you think of StudyZone? Any suggestions for improvement?"
+                rows={4}
+                className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400 resize-none"
+              />
+
+              {feedbackError && (
+                <p className="text-sm font-semibold text-red-600 text-center">{feedbackError}</p>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackMessage.trim() || feedbackSubmitting}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-2xl text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {feedbackSubmitting ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send Feedback
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="max-w-6xl mx-auto">
         {/* MAIN CARD */}
         <div ref={quizRef} className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
@@ -865,6 +1046,14 @@ export default function MathQuiz() {
                 <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base animate-pulse" : "text-sm"}`}>
                   🔥 {streak} streak!
                 </p>
+              )}
+              {correctAnswers > 0 && (
+                <button
+                  onClick={handleInlineShare}
+                  className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-500 text-white transition-colors self-center"
+                >
+                  {inlineShareFeedback || "Share 📤"}
+                </button>
               )}
             </div>
 
@@ -1249,6 +1438,8 @@ export default function MathQuiz() {
         <footer className="pb-6 flex items-center justify-between flex-wrap gap-2 px-1">
           <p className="text-sm text-gray-400">
             Built with ❤️ for curious minds · Class 4 Mathematics
+            {" "}|{" "}
+            <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
           </p>
           {visitorCount > 0 && (
             <p className="text-sm text-gray-400">
@@ -1276,12 +1467,28 @@ export default function MathQuiz() {
         const scoreColor = accuracy >= 70 ? 'text-green-600' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'
         const scoreBg = accuracy >= 70 ? 'bg-green-50 border-green-200' : accuracy >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
 
-        const handleShare = () => {
-          const text = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 studyzone.co.in`
-          navigator.clipboard.writeText(text).then(() => {
-            setCopiedScore(true)
-            setTimeout(() => setCopiedScore(false), 2000)
-          })
+        const handleShare = async () => {
+          const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
+          const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }
+          if (nav.share) {
+            try {
+              await nav.share({ title: "My Maths Score on StudyZone", text: shareText, url: "https://studyzone.co.in" })
+              setCopiedScore(true)
+              setTimeout(() => setCopiedScore(false), 2000)
+            } catch (err) {
+              if ((err as DOMException)?.name !== "AbortError") {
+                navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+                  setCopiedScore(true)
+                  setTimeout(() => setCopiedScore(false), 2000)
+                })
+              }
+            }
+          } else {
+            navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+              setCopiedScore(true)
+              setTimeout(() => setCopiedScore(false), 2000)
+            })
+          }
         }
 
         const handleNewSession = () => {
@@ -1375,8 +1582,18 @@ export default function MathQuiz() {
                   className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
-                  {copiedScore ? 'Copied! ✓' : 'Share Score'}
+                  {copiedScore ? 'Shared! ✓' : 'Share Score'}
                 </button>
+                {!(navigator as Navigator & { share?: unknown }).share && (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 Try it free at https://studyzone.co.in`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    Share on WhatsApp 💬
+                  </a>
+                )}
                 <button
                   onClick={handleNewSession}
                   className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
