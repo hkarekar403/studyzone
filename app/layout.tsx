@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Baloo_2, Nunito } from "next/font/google"
 import Script from "next/script"
+import { Analytics } from '@vercel/analytics/next'
 import "./globals.css"
 import PWAInstall from "./components/PWAInstall"
 
@@ -148,6 +149,7 @@ export default function RootLayout({
         `}</Script>
         {children}
         <PWAInstall />
+        <Analytics />
       </body>
     </html>
   )
