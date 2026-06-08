@@ -9,7 +9,13 @@ const escHtml = (s: string) =>
     .replace(/'/g, '&#039;')
 
 export async function POST(req: NextRequest) {
-  const { name, email, rating, message, curriculum } = await req.json()
+  let body
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
+  }
+  const { name, email, rating, message, curriculum } = body
 
   if (!message || typeof message !== 'string' || message.trim() === '') {
     return NextResponse.json({ success: false, error: 'Message is required.' }, { status: 400 })
@@ -17,6 +23,10 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return NextResponse.json({ success: false, error: 'Rating must be between 1 and 5.' }, { status: 400 })
   }
+  if (message.length > 2000)
+    return NextResponse.json({ error: 'Message too long' }, { status: 400 })
+  if (name && name.length > 100)
+    return NextResponse.json({ error: 'Name too long' }, { status: 400 })
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {

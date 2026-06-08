@@ -42,7 +42,7 @@ export default function MathQuiz() {
   const [topicAttempted, setTopicAttempted] = useState<Record<string, number>>({})
   const [questionLocked, setQuestionLocked] = useState<boolean>(false)
   const [sessionRecords, setSessionRecords] = useState<SessionRecord[]>([])
-  const [sessionStartedAt] = useState<Date>(new Date())
+  const sessionStartedAt = useRef<Date>(new Date())
   const [currentRecord, setCurrentRecord] = useState<SessionRecord | null>(null)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const [apiError, setApiError] = useState<string | null>(null)
@@ -74,6 +74,9 @@ export default function MathQuiz() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
   const [feedbackError, setFeedbackError] = useState("")
   const [hoverRating, setHoverRating] = useState(0)
+  const [feedbackTouched, setFeedbackTouched] = useState(false)
+  const [timerDisabled, setTimerDisabled] = useState(false)
+  const [sessionStartWarning, setSessionStartWarning] = useState(false)
   const [wseDifficulty, setWseDifficulty] = useState("Random")
   const [wseTopic, setWseTopic] = useState("Random")
   const [wseCount, setWseCount] = useState(10)
@@ -89,13 +92,47 @@ export default function MathQuiz() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
     }
   }, [])
+
+  useEffect(() => {
+    if (showSummary) {
+      const accuracy = questionsGenerated > 0
+        ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
+      if (accuracy >= 70) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#2563eb', '#7c3aed', '#f59e0b', '#16a34a']
+        })
+      }
+    }
+  }, [showSummary])
 
   useEffect(() => {
     const saved = localStorage.getItem('soundEnabled')
     if (saved !== null) setSoundEnabled(saved === 'true')
   }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('timer-disabled')
+    if (saved !== null) setTimerDisabled(saved === 'true')
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const elapsed = (new Date().getTime() - sessionStartedAt.current.getTime()) / 1000 / 60
+      if (elapsed >= 20 && !sessionStartWarning) {
+        setSessionStartWarning(true)
+      }
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [sessionStartWarning])
 
   useEffect(() => {
     const dark = localStorage.getItem('theme') === 'dark'
@@ -107,9 +144,9 @@ export default function MathQuiz() {
     const trackVisit = async () => {
       try {
         if (!sessionStorage.getItem("visited_this_session")) {
+          sessionStorage.setItem("visited_this_session", "1")
           const res = await fetch("/api/visitor-count", { method: "POST" })
           const data = await res.json()
-          sessionStorage.setItem("visited_this_session", "1")
           setVisitorCount(data.count ?? 0)
         } else {
           const res = await fetch("/api/visitor-count")
@@ -155,8 +192,8 @@ export default function MathQuiz() {
     } else if (timeLeft === 0 && timerActive) {
       setTimerActive(false)
       setQuestionLocked(true)
-      setFeedback("Time Up")
-      setFeedbackColor("#ff5a36")
+      setFeedback("Time's up — let's see the answer!")
+      setFeedbackColor("#d97706")
       setShowAnswer(true)
       setStreak(0)
     }
@@ -191,6 +228,10 @@ export default function MathQuiz() {
       oscillator.start(ctx.currentTime)
       oscillator.stop(ctx.currentTime + 0.2)
     }
+    oscillator.onended = () => {
+      oscillator.disconnect()
+      gainNode.disconnect()
+    }
   }
 
   const generateQuestion = async () => {
@@ -203,10 +244,13 @@ export default function MathQuiz() {
       const resolvedDifficulty = difficulty === 'Random'
         ? (['Easy', 'Medium', 'Hard'] as const)[Math.floor(Math.random() * 3)]
         : difficulty
-      const requestBody: any = { difficulty: resolvedDifficulty, curriculum }
-      if (topic !== "Random") {
-        requestBody.topic = topic
+      interface GenerateQuestionRequest {
+        difficulty: string
+        curriculum: string
+        topic?: string
       }
+      const requestBody: GenerateQuestionRequest = { difficulty: resolvedDifficulty, curriculum }
+      if (topic !== 'Random') requestBody.topic = topic
 
       const response = await fetch('/api/generate-question', {
         method: 'POST',
@@ -235,7 +279,7 @@ export default function MathQuiz() {
       const timerDuration = resolvedDifficulty === 'Easy' ? 45 : resolvedDifficulty === 'Medium' ? 90 : 120
       setTimerDuration(timerDuration)
       setTimeLeft(timerDuration)
-      setTimerActive(true)
+      if (!timerDisabled) setTimerActive(true)
 
       const newRecord: SessionRecord = {
         number: questionsGenerated + 1,
@@ -325,7 +369,7 @@ export default function MathQuiz() {
         } else {
           setCurrentAttempts((prev) => prev + 1)
           updatedRecord.isCorrect = false
-          updatedRecord.attempts.push({ answer: userAnswer, result: "Incorrect" })
+          updatedRecord.attempts.push({ answer: userAnswer, result: "Not quite" })
           setCurrentRecord(updatedRecord)
           setSessionRecords((prev) => prev.map((r) => (r.number === currentRecord.number ? updatedRecord : r)))
           setStreak(0)
@@ -334,14 +378,13 @@ export default function MathQuiz() {
           if (currentAttempts + 1 >= 3) {
             setQuestionLocked(true)
             setTimerActive(false)
-            setFeedback("Incorrect - Showing Answer")
-            setFeedbackColor("#d62828")
+            setFeedback("Let's look at the answer together")
+            setFeedbackColor("#d97706")
             setShowAnswer(true)
           } else {
             const attemptsLeft = 3 - (currentAttempts + 1)
-            const attemptWord = attemptsLeft === 1 ? "attempt" : "attempts"
-            setFeedback(`Incorrect - ${attemptsLeft} ${attemptWord} left`)
-            setFeedbackColor("#d62828")
+            setFeedback(`Not quite — ${attemptsLeft} more ${attemptsLeft === 1 ? 'try' : 'tries'}!`)
+            setFeedbackColor("#d97706")
           }
         }
       }
@@ -376,7 +419,7 @@ export default function MathQuiz() {
     doc.text("Class 4 Mathematics Practice Session Report", 20, 20)
 
     doc.setFontSize(12)
-    doc.text(`Session Start: ${sessionStartedAt.toLocaleString()}`, 20, 35)
+    doc.text(`Session Start: ${sessionStartedAt.current.toLocaleString()}`, 20, 35)
     doc.text(`Session End: ${endedAt.toLocaleString()}`, 20, 45)
     doc.text(`Questions Generated: ${questionsGenerated}`, 20, 55)
     doc.text(`Correct Answers: ${correctAnswers}`, 20, 65)
@@ -710,6 +753,27 @@ export default function MathQuiz() {
 
   return (
     <div className="min-h-screen">
+      <a
+        href="#quiz-section"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:text-blue-600 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:font-bold"
+      >
+        Skip to quiz
+      </a>
+      {/* BREAK REMINDER */}
+      {sessionStartWarning && (
+        <div className="fixed top-16 left-0 right-0 z-30 bg-amber-50 border-b border-amber-200 py-2 px-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-amber-800">
+            👋 You&apos;ve been practising for 20 minutes — great effort! Consider taking a short break.
+          </p>
+          <button
+            onClick={() => setSessionStartWarning(false)}
+            className="text-xs font-bold text-amber-700 hover:text-amber-900 flex-shrink-0"
+          >
+            Got it ✓
+          </button>
+        </div>
+      )}
+
       {/* STICKY NAVBAR */}
       <nav className="sticky top-0 z-40 h-14 bg-white/90 backdrop-blur-sm shadow-sm">
         <div className="max-w-6xl mx-auto px-4 md:px-8 h-full flex items-center justify-between">
@@ -872,6 +936,8 @@ export default function MathQuiz() {
                 <button
                   className="w-full flex items-center justify-between py-4 text-left gap-4"
                   onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                  aria-expanded={openFaqIndex === idx}
+                  aria-controls={`faq-answer-${idx}`}
                 >
                   <span className="font-bold text-blue-700 text-sm sm:text-base">{faq.q}</span>
                   {openFaqIndex === idx
@@ -879,7 +945,7 @@ export default function MathQuiz() {
                     : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
                 </button>
                 <div className={`grid transition-all duration-300 ${openFaqIndex === idx ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                  <div className="overflow-hidden">
+                  <div id={`faq-answer-${idx}`} className="overflow-hidden">
                     <p className="text-sm text-gray-600 pb-4 leading-relaxed">{faq.a}</p>
                   </div>
                 </div>
@@ -911,17 +977,18 @@ export default function MathQuiz() {
               {/* Star rating */}
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm font-bold text-gray-600">Rate your experience</p>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="radiogroup" aria-label="Rate your experience, 1 to 5 stars">
                   {[1, 2, 3, 4, 5].map((star) => {
                     const filled = star <= (hoverRating || feedbackRating)
                     return (
                       <button
                         key={star}
-                        onClick={() => setFeedbackRating(star)}
+                        onClick={() => { setFeedbackRating(star); setFeedbackTouched(true) }}
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
                         className="transition-transform hover:scale-110"
-                        aria-label={`${star} star`}
+                        aria-label={`${star} ${star === 1 ? 'star' : 'stars'} out of 5`}
+                        aria-checked={feedbackRating === star}
                       >
                         <Star
                           className="w-8 h-8 transition-colors"
@@ -932,16 +999,23 @@ export default function MathQuiz() {
                     )
                   })}
                 </div>
+                {feedbackTouched && feedbackRating === 0 && (
+                  <p className="text-xs text-amber-600 font-semibold">Please select a rating</p>
+                )}
               </div>
 
               {/* Name */}
-              <input
-                type="text"
-                value={feedbackName}
-                onChange={(e) => setFeedbackName(e.target.value)}
-                placeholder="Your name — parent or teacher (optional)"
-                className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
-              />
+              <div>
+                <label htmlFor="feedback-name" className="sr-only">Your name</label>
+                <input
+                  id="feedback-name"
+                  type="text"
+                  value={feedbackName}
+                  onChange={(e) => setFeedbackName(e.target.value)}
+                  placeholder="Your name — parent or teacher (optional)"
+                  className="w-full p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
+                />
+              </div>
 
               {/* Curriculum (read-only) */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-500">
@@ -950,22 +1024,26 @@ export default function MathQuiz() {
               </div>
 
               {/* Message */}
-              <textarea
-                value={feedbackMessage}
-                onChange={(e) => setFeedbackMessage(e.target.value)}
-                placeholder="What do you think of StudyZone? Any suggestions for improvement?"
-                rows={4}
-                className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400 resize-none"
-              />
+              <div>
+                <label htmlFor="feedback-message" className="sr-only">Your feedback message</label>
+                <textarea
+                  id="feedback-message"
+                  value={feedbackMessage}
+                  onChange={(e) => setFeedbackMessage(e.target.value)}
+                  placeholder="What do you think of StudyZone? Any suggestions for improvement?"
+                  rows={4}
+                  className="w-full p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400 resize-none"
+                />
+              </div>
 
               {feedbackError && (
-                <p className="text-sm font-semibold text-red-600 text-center">{feedbackError}</p>
+                <p className="text-sm font-semibold text-red-600 text-center" aria-live="polite">{feedbackError}</p>
               )}
 
               {/* Submit */}
               <button
                 onClick={handleFeedbackSubmit}
-                disabled={!feedbackMessage.trim() || feedbackSubmitting}
+                disabled={!feedbackMessage.trim() || feedbackRating === 0 || feedbackSubmitting}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-2xl text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {feedbackSubmitting ? (
@@ -989,18 +1067,19 @@ export default function MathQuiz() {
 
         <div className="max-w-6xl mx-auto">
         {/* MAIN CARD */}
-        <div ref={quizRef} className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
+        <div ref={quizRef} id="quiz-section" className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-6">
 
           {/* CURRICULUM SELECTOR */}
           <div className="mb-4">
             <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">
               Curriculum
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="group" aria-label="Select curriculum">
               {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
                 <button
                   key={c}
                   onClick={() => setCurriculum(c)}
+                  aria-pressed={curriculum === c}
                   className={`rounded-full px-4 py-2 font-bold text-sm transition ${
                     curriculum === c
                       ? 'bg-[#2563eb] text-white'
@@ -1024,6 +1103,7 @@ export default function MathQuiz() {
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
+                aria-label="Select difficulty level"
                 className="w-full p-2 text-base font-semibold rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-blue-200 cursor-pointer"
               >
                 <option value="Random">Random</option>
@@ -1041,6 +1121,7 @@ export default function MathQuiz() {
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
+                aria-label="Select topic"
                 className="w-full p-2 text-base font-semibold rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 border border-purple-200 cursor-pointer"
               >
                 {availableTopics.map((t) => (
@@ -1059,7 +1140,7 @@ export default function MathQuiz() {
                 </span>
               </div>
               {streak >= 3 && (
-                <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base animate-pulse" : "text-sm"}`}>
+                <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base" : "text-sm"}`}>
                   🔥 {streak} streak!
                 </p>
               )}
@@ -1075,33 +1156,58 @@ export default function MathQuiz() {
 
             {/* Timer with progress bar */}
             <div className="rounded-xl shadow-sm bg-gray-50 border border-gray-200 p-3">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span
-                  className={`text-xl font-bold tabular-nums ${
-                    timeLeft <= 10
-                      ? "text-red-600"
-                      : timeLeft <= 20
-                      ? "text-amber-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {Math.floor(timeLeft / 60).toString().padStart(2, "0")}:
-                  {(timeLeft % 60).toString().padStart(2, "0")}
-                </span>
+              <div aria-live="polite" className="sr-only">
+                {timeLeft === 20 && timerActive ? 'Warning: 20 seconds remaining' : ''}
+                {timeLeft === 10 && timerActive ? 'Warning: 10 seconds remaining' : ''}
+                {timeLeft === 0 ? 'Time is up' : ''}
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-1000 ease-linear ${
-                    timeLeft > 30
-                      ? "bg-green-500"
-                      : timeLeft > 15
-                      ? "bg-amber-400"
-                      : "bg-red-500"
-                  }`}
-                  style={{ width: `${(timeLeft / timerDuration) * 100}%` }}
-                />
-              </div>
+              {timerDisabled ? (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-sm font-semibold text-gray-500">Relaxed mode</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span
+                    className={`text-xl font-bold tabular-nums ${
+                      timeLeft <= 10
+                        ? "text-red-600"
+                        : timeLeft <= 20
+                        ? "text-amber-600"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {Math.floor(timeLeft / 60).toString().padStart(2, "0")}:
+                    {(timeLeft % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+              )}
+              {!timerDisabled && (
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                      timeLeft > 30
+                        ? "bg-green-500"
+                        : timeLeft > 15
+                        ? "bg-amber-400"
+                        : "bg-red-500"
+                    }`}
+                    style={{ width: `${(timeLeft / timerDuration) * 100}%` }}
+                  />
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  const next = !timerDisabled
+                  setTimerDisabled(next)
+                  localStorage.setItem('timer-disabled', String(next))
+                  if (next) setTimerActive(false)
+                }}
+                title="Some children need more time. Toggle timer off for a relaxed practice session."
+                className="w-full text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors text-center"
+              >
+                ⏱️ Timer {timerDisabled ? 'Off' : 'On'}
+              </button>
             </div>
           </div>
 
@@ -1142,7 +1248,7 @@ export default function MathQuiz() {
                       ? "border-blue-400 bg-blue-50"
                       : currentDifficulty === "Medium"
                       ? "border-amber-400 bg-amber-50"
-                      : "border-red-400 bg-red-50"
+                      : "border-purple-500 bg-purple-50"
                   } ${feedback === "Correct" ? "animate-celebrate" : ""}`}
                 >
                   <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
@@ -1152,7 +1258,7 @@ export default function MathQuiz() {
                           ? "bg-blue-200 text-blue-700"
                           : currentDifficulty === "Medium"
                           ? "bg-amber-200 text-amber-700"
-                          : "bg-red-200 text-red-700"
+                          : "bg-purple-100 text-purple-700"
                       }`}
                     >
                       {currentDifficulty}
@@ -1202,6 +1308,7 @@ export default function MathQuiz() {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") checkAnswer() }}
+                aria-label="Your answer"
                 placeholder="Type your answer and press Enter..."
                 disabled={questionLocked || !currentQuestion || isGenerating}
                 className={`w-full p-4 text-lg font-semibold border-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed mb-4 shadow-sm transition-colors ${
@@ -1215,19 +1322,19 @@ export default function MathQuiz() {
               {!questionLocked && currentQuestion && (() => {
                 const ans = currentAnswer.toLowerCase();
                 if (/\bquotient\b/.test(ans)) {
-                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as: Quotient = [number], Remainder = [number]</p>;
+                  return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write as: Quotient = [number], Remainder = [number]</p>;
                 }
                 if (/\bprofit\b|\bloss\b/.test(ans)) {
-                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as: Profit of Rs.[amount] or Loss of Rs.[amount]</p>;
+                  return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write as: Profit of Rs.[amount] or Loss of Rs.[amount]</p>;
                 }
                 if (/\d+\s+\d+\/\d+/.test(ans)) {
-                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Mixed number format: whole number then fraction, e.g. 3 2/5</p>;
+                  return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Mixed number format: whole number then fraction, e.g. 3 2/5</p>;
                 }
                 if (ans.includes('/')) {
-                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write as a fraction, e.g. 3/5</p>;
+                  return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write as a fraction, e.g. 3/5</p>;
                 }
                 if (ans.includes(',') && /^[\d\s,]+$/.test(ans)) {
-                  return <p className="text-sm italic text-gray-400 mt-1 mb-3">💡 Write all numbers separated by commas, e.g. 1, 2, 3, 6</p>;
+                  return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write all numbers separated by commas, e.g. 1, 2, 3, 6</p>;
                 }
                 return null;
               })()}
@@ -1260,7 +1367,7 @@ export default function MathQuiz() {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center" aria-live="assertive" aria-atomic="true">
                       <p className="text-lg font-bold" style={{ color: feedbackColor }}>
                         {feedback}
                       </p>
@@ -1337,6 +1444,7 @@ export default function MathQuiz() {
                     setSessionEndTime(endTime)
                     setTimerActive(false)
                     setShowSummary(true)
+                    setSessionStartWarning(false)
                   }}
                   className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
                 >
@@ -1458,11 +1566,11 @@ export default function MathQuiz() {
         {/* FOOTER */}
         <footer className="pb-6 px-1 flex flex-col gap-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500">
               Built with ❤️ for curious minds · Class 4 Mathematics
             </p>
             {visitorCount > 0 && (
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-500">
                 🎯 {visitorCount} students have practised here
               </p>
             )}
@@ -1471,7 +1579,7 @@ export default function MathQuiz() {
             StudyZone is a practice tool only. It does not assess or reflect a child&apos;s academic capability.
             Real evaluation should be done by qualified teachers.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
             {" "}|{" "}
             <a href="/about" className="hover:text-gray-600 underline underline-offset-2 transition-colors">About</a>
@@ -1485,14 +1593,10 @@ export default function MathQuiz() {
         const accuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
         const passed = accuracy >= 70
         const endTime = sessionEndTime ?? new Date()
-        const elapsedSecs = Math.round((endTime.getTime() - sessionStartedAt.getTime()) / 1000)
+        const elapsedSecs = Math.round((endTime.getTime() - sessionStartedAt.current.getTime()) / 1000)
         const mins = Math.floor(elapsedSecs / 60)
         const secs = elapsedSecs % 60
         const { strong, weak } = getWeaknessAnalysis()
-
-        if (passed) {
-          confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 }, colors: ['#2563eb', '#7c3aed', '#f59e0b', '#16a34a'] })
-        }
 
         const scoreColor = accuracy >= 70 ? 'text-green-600' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'
         const scoreBg = accuracy >= 70 ? 'bg-green-50 border-green-200' : accuracy >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
@@ -1615,14 +1719,18 @@ export default function MathQuiz() {
                   {copiedScore ? 'Shared! ✓' : 'Share Score'}
                 </button>
                 {!(navigator as Navigator & { share?: unknown }).share && (
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 Try it free at https://studyzone.co.in`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-                  >
-                    Share on WhatsApp 💬
-                  </a>
+                  <div className="flex flex-col items-center gap-1">
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 Try it free at https://studyzone.co.in`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Opens WhatsApp in a new tab"
+                      className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      Share on WhatsApp 💬
+                    </a>
+                    <span className="text-xs text-gray-500 text-center">↗ Opens WhatsApp</span>
+                  </div>
                 )}
                 <button
                   onClick={handleNewSession}

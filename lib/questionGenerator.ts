@@ -886,7 +886,8 @@ export class MathQuestionGenerator {
       ].join('');
     });
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${totalH}" viewBox="0 0 ${SVG_W} ${totalH}">${rows.join('')}</svg>`;
+    const ariaLabel = `Bar chart: ${data.map(d => d.label + ' ' + d.count).join(', ')}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${totalH}" viewBox="0 0 ${SVG_W} ${totalH}" role="img" aria-label="${ariaLabel}"><title>Bar chart showing: ${data.map(d => d.label + ': ' + d.count).join(', ')}</title>${rows.join('')}</svg>`;
   }
 
   private generateTallySVG(count: number): string {
@@ -921,7 +922,7 @@ export class MathQuestionGenerator {
     const endX = partial > 0 ? x + (partial - 1) * LS : x - GG;
     const totalWidth = endX + PAD;
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${H}" viewBox="0 0 ${totalWidth} ${H}">${lines.join('')}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${H}" viewBox="0 0 ${totalWidth} ${H}" role="img" aria-label="Tally chart showing ${count} marks"><title>Tally chart showing ${count} marks</title>${lines.join('')}</svg>`;
   }
 
   private generateShapeSVG(shape: string): string {
@@ -961,7 +962,7 @@ export class MathQuestionGenerator {
         shapeEl = `<circle cx="${cx}" cy="${cy}" r="45" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${shapeEl}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Diagram of a ${shape}"><title>${shape} diagram</title>${shapeEl}</svg>`;
   }
 
   private generateAngleSVG(degrees: number): string {
@@ -982,7 +983,7 @@ export class MathQuestionGenerator {
     const labelY = (oy - (arcR + 18) * Math.sin(halfRad)).toFixed(1);
 
     return (
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Angle diagram showing ${degrees} degrees"><title>Angle diagram: ${degrees} degrees</title>` +
       `<line x1="${ox}" y1="${oy}" x2="${ox + rayLen}" y2="${oy}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
       `<line x1="${ox}" y1="${oy}" x2="${rayEndX}" y2="${rayEndY}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
       `<path d="M ${ox + arcR} ${oy} A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX} ${arcEndY}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>` +

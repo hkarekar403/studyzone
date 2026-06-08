@@ -130,6 +130,14 @@ export default function RootLayout({
         />
       </head>
       <body className={`${baloo2.variable} ${nunito.variable}`}>
+        <noscript>
+          <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif', background: '#eff6ff', minHeight: '100vh' }}>
+            <h1>StudyZone — Class 4 Maths Practice</h1>
+            <p>This website requires JavaScript to work.</p>
+            <p>Please enable JavaScript in your browser settings and reload the page.</p>
+            <p>If you are on a school device, please ask your teacher or IT administrator to enable JavaScript for studyzone.co.in</p>
+          </div>
+        </noscript>
         {/* Inline script runs synchronously before first paint to prevent theme flash */}
         <Script id="theme-init" strategy="beforeInteractive">{`
           try {
