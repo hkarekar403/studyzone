@@ -63,6 +63,7 @@ export default function MathQuiz() {
   const [copiedScore, setCopiedScore] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
+  const [inlineShareFeedback, setInlineShareFeedback] = useState("")
   const [wseDifficulty, setWseDifficulty] = useState("Random")
   const [wseTopic, setWseTopic] = useState("Random")
   const [wseCount, setWseCount] = useState(10)
@@ -609,6 +610,30 @@ export default function MathQuiz() {
     }
   }
 
+  const handleInlineShare = async () => {
+    const inlineAccuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
+    const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${inlineAccuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
+    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }
+    if (nav.share) {
+      try {
+        await nav.share({ title: "My Maths Score on StudyZone", text: shareText, url: "https://studyzone.co.in" })
+        setInlineShareFeedback("Shared! ✓")
+        setTimeout(() => setInlineShareFeedback(""), 2000)
+      } catch (err) {
+        if ((err as DOMException)?.name !== "AbortError") {
+          navigator.clipboard.writeText(`${shareText} studyzone.co.in`)
+          setInlineShareFeedback("Copied! ✓")
+          setTimeout(() => setInlineShareFeedback(""), 2000)
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+        setInlineShareFeedback("Copied! ✓")
+        setTimeout(() => setInlineShareFeedback(""), 2000)
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen">
       {/* STICKY NAVBAR */}
@@ -839,6 +864,14 @@ export default function MathQuiz() {
                 <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base animate-pulse" : "text-sm"}`}>
                   🔥 {streak} streak!
                 </p>
+              )}
+              {correctAnswers > 0 && (
+                <button
+                  onClick={handleInlineShare}
+                  className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-500 text-white transition-colors self-center"
+                >
+                  {inlineShareFeedback || "Share 📤"}
+                </button>
               )}
             </div>
 
@@ -1250,12 +1283,28 @@ export default function MathQuiz() {
         const scoreColor = accuracy >= 70 ? 'text-green-600' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'
         const scoreBg = accuracy >= 70 ? 'bg-green-50 border-green-200' : accuracy >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
 
-        const handleShare = () => {
-          const text = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 studyzone.co.in`
-          navigator.clipboard.writeText(text).then(() => {
-            setCopiedScore(true)
-            setTimeout(() => setCopiedScore(false), 2000)
-          })
+        const handleShare = async () => {
+          const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
+          const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }
+          if (nav.share) {
+            try {
+              await nav.share({ title: "My Maths Score on StudyZone", text: shareText, url: "https://studyzone.co.in" })
+              setCopiedScore(true)
+              setTimeout(() => setCopiedScore(false), 2000)
+            } catch (err) {
+              if ((err as DOMException)?.name !== "AbortError") {
+                navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+                  setCopiedScore(true)
+                  setTimeout(() => setCopiedScore(false), 2000)
+                })
+              }
+            }
+          } else {
+            navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
+              setCopiedScore(true)
+              setTimeout(() => setCopiedScore(false), 2000)
+            })
+          }
         }
 
         const handleNewSession = () => {
@@ -1349,8 +1398,18 @@ export default function MathQuiz() {
                   className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
-                  {copiedScore ? 'Copied! ✓' : 'Share Score'}
+                  {copiedScore ? 'Shared! ✓' : 'Share Score'}
                 </button>
+                {!(navigator as Navigator & { share?: unknown }).share && (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 Try it free at https://studyzone.co.in`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    Share on WhatsApp 💬
+                  </a>
+                )}
                 <button
                   onClick={handleNewSession}
                   className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
