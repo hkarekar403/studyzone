@@ -68,7 +68,6 @@ export default function MathQuiz() {
 
   // Feedback form
   const [feedbackName, setFeedbackName] = useState("")
-  const [feedbackEmail, setFeedbackEmail] = useState("")
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackMessage, setFeedbackMessage] = useState("")
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
@@ -649,7 +648,6 @@ export default function MathQuiz() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: feedbackName,
-          email: feedbackEmail,
           rating: feedbackRating,
           message: feedbackMessage,
           curriculum,
@@ -661,7 +659,6 @@ export default function MathQuiz() {
         setTimeout(() => {
           setFeedbackSubmitted(false)
           setFeedbackName("")
-          setFeedbackEmail("")
           setFeedbackRating(0)
           setFeedbackMessage("")
           setHoverRating(0)
@@ -739,6 +736,18 @@ export default function MathQuiz() {
             >
               Feedback
             </button>
+            <a
+              href="/privacy"
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              Privacy
+            </a>
+            <a
+              href="/about"
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              About
+            </a>
             <button
               onClick={() => setShowQRModal(true)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
@@ -881,6 +890,11 @@ export default function MathQuiz() {
 
         {/* FEEDBACK */}
         <div ref={feedbackRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <div className="flex justify-center mb-3">
+            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-4 py-1.5 rounded-full border border-amber-300">
+              👨‍👩‍👧 For Parents &amp; Teachers Only
+            </span>
+          </div>
           <h3 className="font-heading text-2xl font-bold text-center mb-1" style={{ color: '#2563eb' }}>
             💬 Share Your Feedback
           </h3>
@@ -920,23 +934,14 @@ export default function MathQuiz() {
                 </div>
               </div>
 
-              {/* Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={feedbackName}
-                  onChange={(e) => setFeedbackName(e.target.value)}
-                  placeholder="Your name (optional)"
-                  className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
-                />
-                <input
-                  type="email"
-                  value={feedbackEmail}
-                  onChange={(e) => setFeedbackEmail(e.target.value)}
-                  placeholder="Your email (optional)"
-                  className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
-                />
-              </div>
+              {/* Name */}
+              <input
+                type="text"
+                value={feedbackName}
+                onChange={(e) => setFeedbackName(e.target.value)}
+                placeholder="Your name — parent or teacher (optional)"
+                className="p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
+              />
 
               {/* Curriculum (read-only) */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-500">
@@ -1451,17 +1456,26 @@ export default function MathQuiz() {
         })()}
 
         {/* FOOTER */}
-        <footer className="pb-6 flex items-center justify-between flex-wrap gap-2 px-1">
-          <p className="text-sm text-gray-400">
-            Built with ❤️ for curious minds · Class 4 Mathematics
-            {" "}|{" "}
-            <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
-          </p>
-          {visitorCount > 0 && (
+        <footer className="pb-6 px-1 flex flex-col gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-sm text-gray-400">
-              🎯 {visitorCount} students have practised here
+              Built with ❤️ for curious minds · Class 4 Mathematics
             </p>
-          )}
+            {visitorCount > 0 && (
+              <p className="text-sm text-gray-400">
+                🎯 {visitorCount} students have practised here
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
+            StudyZone is a practice tool only. It does not assess or reflect a child&apos;s academic capability.
+            Real evaluation should be done by qualified teachers.
+          </p>
+          <p className="text-xs text-gray-400">
+            <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
+            {" "}|{" "}
+            <a href="/about" className="hover:text-gray-600 underline underline-offset-2 transition-colors">About</a>
+          </p>
         </footer>
       </div>
       </div>

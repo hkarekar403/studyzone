@@ -103,8 +103,9 @@ const jsonLd = {
     "Installable as PWA"
   ],
   "provider": {
-    "@type": "Person",
-    "name": "Harshad Karekar"
+    "@type": "Organization",
+    "name": "StudyZone",
+    "url": "https://studyzone.co.in"
   },
   "sameAs": ["https://studyzone.co.in"],
   "potentialAction": {

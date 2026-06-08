@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(apiKey)
 
     const safeName = escHtml(name || 'Not provided')
-    const safeEmail = escHtml(email || 'Not provided')
     const safeMessage = escHtml(message)
     const safeCurriculum = escHtml(curriculum || 'Not provided')
     const stars = '⭐'.repeat(rating)
@@ -41,7 +40,6 @@ export async function POST(req: NextRequest) {
       html: `
         <h2>New Feedback from StudyZone</h2>
         <p><strong>Name:</strong> ${safeName}</p>
-        <p><strong>Email:</strong> ${safeEmail}</p>
         <p><strong>Rating:</strong> ${stars} (${rating}/5)</p>
         <p><strong>Curriculum:</strong> ${safeCurriculum}</p>
         <p><strong>Message:</strong></p>
