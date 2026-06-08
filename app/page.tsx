@@ -1256,6 +1256,8 @@ export default function MathQuiz() {
         <footer className="pb-6 flex items-center justify-between flex-wrap gap-2 px-1">
           <p className="text-sm text-gray-400">
             Built with ❤️ for curious minds · Class 4 Mathematics
+            {" "}|{" "}
+            <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
           </p>
           {visitorCount > 0 && (
             <p className="text-sm text-gray-400">
