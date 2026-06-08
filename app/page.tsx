@@ -676,6 +676,17 @@ export default function MathQuiz() {
     }
   }
 
+  const sanitizeSVG = (svg: string): string => {
+    const start = svg.indexOf('<svg')
+    const end = svg.indexOf('</svg>') + 6
+    if (start === -1 || end === 5) return ''
+    const svgContent = svg.substring(start, end)
+    return svgContent
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/\bon\w+\s*=/gi, 'data-removed=')
+      .replace(/javascript:/gi, '')
+  }
+
   const handleInlineShare = async () => {
     const inlineAccuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
     const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${inlineAccuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
@@ -1156,11 +1167,16 @@ export default function MathQuiz() {
                       <div className="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed w-full">
                         {(() => {
                           const [textBefore, svgAndAfter] = currentQuestion.split('[[TALLY_SVG]]');
-                          const svgEndIdx = svgAndAfter.indexOf('</svg>') + 6;
+                          const svgCloseIdx = svgAndAfter.indexOf('</svg>');
+                          if (svgCloseIdx === -1) {
+                            return <p className="whitespace-pre-wrap">{currentQuestion.replace('[[TALLY_SVG]]', '')}</p>;
+                          }
+                          const svgEndIdx = svgCloseIdx + 6;
+                          const safeSvg = sanitizeSVG(svgAndAfter.substring(0, svgEndIdx));
                           return (
                             <>
                               <span className="whitespace-pre-wrap">{textBefore}</span>
-                              <div className="my-4 inline-block" dangerouslySetInnerHTML={{ __html: svgAndAfter.substring(0, svgEndIdx) }} />
+                              {safeSvg && <div className="my-4 inline-block" dangerouslySetInnerHTML={{ __html: safeSvg }} />}
                               <span className="whitespace-pre-wrap">{svgAndAfter.substring(svgEndIdx)}</span>
                             </>
                           );
