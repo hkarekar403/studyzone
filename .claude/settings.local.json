@@ -12,7 +12,9 @@
       "Bash(git add *)",
       "Bash(git commit -m 'Add CBSE/ICSE/IGCSE multi-curriculum support *)",
       "Bash(git push *)",
-      "Bash(node scripts/generate-icons.mjs)"
+      "Bash(node scripts/generate-icons.mjs)",
+      "Bash(npx ts-node *)",
+      "Bash(npx tsx *)"
     ]
   }
 }
