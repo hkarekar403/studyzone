@@ -592,29 +592,11 @@ function generateAlgebraicExpressions(
   const id = `algebraic-expressions-${difficulty}-${curriculum}`;
 
   if (difficulty === 'Easy') {
-    // Add two polynomials with MCQ
-    const a1 = randInt(-5, 5);
-    const b1 = randInt(-5, 5);
-    const c1 = randInt(-5, 5);
-    const a2 = randInt(-5, 5);
-    const b2 = randInt(-5, 5);
-    const c2 = randInt(-5, 5);
-
-    const resultA = a1 + a2;
-    const resultB = b1 + b2;
-    const resultC = c1 + c2;
-
-    const correctAnswer = `${resultA}x² + ${resultB}x + ${resultC}`;
-    const options = [
-      correctAnswer,
-      `${resultA}x² + ${resultB + 1}x + ${resultC}`,
-      `${resultA + 1}x² + ${resultB}x + ${resultC}`,
-      `${resultA}x² + ${resultB}x + ${resultC + 1}`,
-    ];
-
-    // Shuffle options
-    const shuffled = options.sort(() => Math.random() - 0.5);
-    const correctIndex = shuffled.indexOf(correctAnswer);
+    // Add two single-term expressions, find coefficient in sum
+    const n = randInt(2, 5);
+    const a1 = randInt(1, 8);
+    const a2 = randInt(1, 8);
+    const coefficient = a1 + a2;
 
     return {
       id,
@@ -622,37 +604,23 @@ function generateAlgebraicExpressions(
       topic: 'Algebraic Expressions and Identities',
       curriculum,
       difficulty,
-      text: `Add: $(${a1}x² + ${b1}x + ${c1}) + (${a2}x² + ${b2}x + ${c2})$`,
+      text: `Add: ${a1}x^{${n}} + ${a2}x^{${n}}. What is the coefficient of $x^{${n}}$ in the sum?`,
       answerSpec: {
-        kind: 'mcq',
-        options: shuffled,
-        correctIndex,
+        kind: 'integer',
+        value: coefficient,
       },
-      displayAnswer: correctAnswer,
+      displayAnswer: String(coefficient),
     };
   }
 
   if (difficulty === 'Medium') {
-    // Expand (ax + b)(cx + d)
+    // Expand (ax + b)(cx + d), find coefficient of x
     const a = randInt(1, 4);
     const c = randInt(1, 4);
     const b = randInt(-6, 6);
     const d = randInt(-6, 6);
 
-    const ac = a * c;
-    const adbc = a * d + b * c;
-    const bd = b * d;
-
-    const correctAnswer = `${ac}x² + ${adbc}x + ${bd}`;
-    const options = [
-      correctAnswer,
-      `${ac}x² + ${adbc + 1}x + ${bd}`,
-      `${ac + 1}x² + ${adbc}x + ${bd}`,
-      `${ac}x² + ${adbc}x + ${bd + 1}`,
-    ];
-
-    const shuffled = options.sort(() => Math.random() - 0.5);
-    const correctIndex = shuffled.indexOf(correctAnswer);
+    const coefficientOfX = a * d + b * c;
 
     return {
       id,
@@ -660,13 +628,12 @@ function generateAlgebraicExpressions(
       topic: 'Algebraic Expressions and Identities',
       curriculum,
       difficulty,
-      text: `Expand: $(${a}x + ${b})(${c}x + ${d})$`,
+      text: `Expand: $(${a}x + ${b})(${c}x + ${d})$. What is the coefficient of $x$?`,
       answerSpec: {
-        kind: 'mcq',
-        options: shuffled,
-        correctIndex,
+        kind: 'integer',
+        value: coefficientOfX,
       },
-      displayAnswer: correctAnswer,
+      displayAnswer: String(coefficientOfX),
     };
   }
 
@@ -916,20 +883,9 @@ function generateQuadrilaterals(
   }
 
   if (difficulty === 'Medium') {
-    // Parallelogram angles — MCQ
+    // Parallelogram adjacent angle
     const x = randInt(55, 85);
-    const supplementary = 180 - x;
-
-    const correctAnswer = `${x}°, ${supplementary}°, ${x}°, ${supplementary}°`;
-    const options = [
-      correctAnswer,
-      `${x}°, ${x}°, ${x}°, ${x}°`,
-      `${x}°, ${supplementary}°, ${supplementary}°, ${x}°`,
-      `${supplementary}°, ${supplementary}°, ${supplementary}°, ${supplementary}°`,
-    ];
-
-    const shuffled = options.sort(() => Math.random() - 0.5);
-    const correctIndex = shuffled.indexOf(correctAnswer);
+    const adjacentAngle = 180 - x;
 
     return {
       id,
@@ -937,13 +893,12 @@ function generateQuadrilaterals(
       topic: 'Understanding Quadrilaterals',
       curriculum,
       difficulty,
-      text: `In a parallelogram, one angle is ${x}°. What are all four angles?`,
+      text: `In a parallelogram, one angle is ${x}°. Find the measure of the adjacent angle.`,
       answerSpec: {
-        kind: 'mcq',
-        options: shuffled,
-        correctIndex,
+        kind: 'integer',
+        value: adjacentAngle,
       },
-      displayAnswer: correctAnswer,
+      displayAnswer: `${adjacentAngle}°`,
     };
   }
 
