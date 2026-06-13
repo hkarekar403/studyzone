@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
   let resolvedTopic = topic;
   if (!topic || topic === 'Random') {
     resolvedTopic = CLASS8_TOPICS[Math.floor(Math.random() * CLASS8_TOPICS.length)].id;
+  } else {
+    // Map label to id if a label was provided
+    const topicMatch = CLASS8_TOPICS.find(t => t.label === topic);
+    if (topicMatch) {
+      resolvedTopic = topicMatch.id;
+    }
   }
 
   const question = generateClass8Question(resolvedTopic, resolvedDifficulty, curriculum as any);

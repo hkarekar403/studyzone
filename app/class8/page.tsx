@@ -201,7 +201,7 @@ export default function MathQuiz() {
         const response = await fetch(`/api/class8/topics?curriculum=${curriculum}`)
         if (response.ok) {
           const data = await response.json()
-          setAvailableTopics(["Random", ...data.topics])
+          setAvailableTopics(["Random", ...data.topics.map((t: {id: string, label: string}) => t.label)])
         }
       } catch {
         setAvailableTopics(["Random"])
