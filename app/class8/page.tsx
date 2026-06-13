@@ -198,7 +198,7 @@ export default function MathQuiz() {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        const response = await fetch(`/api/topics?curriculum=${curriculum}`)
+        const response = await fetch(`/api/class8/topics?curriculum=${curriculum}`)
         if (response.ok) {
           const data = await response.json()
           setAvailableTopics(["Random", ...data.topics])
@@ -283,7 +283,7 @@ export default function MathQuiz() {
       const requestBody: GenerateQuestionRequest = { difficulty: resolvedDifficulty, curriculum }
       if (topic !== 'Random') requestBody.topic = topic
 
-      const response = await fetch('/api/generate-question', {
+      const response = await fetch('/api/class8/generate-question', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
