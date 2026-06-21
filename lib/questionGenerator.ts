@@ -46,6 +46,9 @@ export class MathQuestionGenerator {
       this.hardArea,
       this.hardSymmetry,
       this.hardProbability,
+      this.hardWorkerDays,
+      this.hardShopkeeperChallenge,
+      this.hardMisleadingContext,
     ],
   };
 
@@ -62,7 +65,7 @@ export class MathQuestionGenerator {
     "Squares & Cubes": [this.mediumSquareCube],
     "Geometry": [this.hardGeometryAngles, this.hardSymmetry, this.medium3DShapes],
     "Perimeter & Area": [this.mediumPerimeter, this.hardArea],
-    "Money": [this.mediumMoney],
+    "Money": [this.mediumMoney, this.hardShopkeeperChallenge],
     "Time": [this.mediumTime],
     "Patterns": [this.hardPatterns],
     "Algebra": [this.hardAlgebra],
@@ -105,6 +108,9 @@ export class MathQuestionGenerator {
     [this.hardArea, "Perimeter & Area"],
     [this.hardSymmetry, "Geometry"],
     [this.hardProbability, "Data Handling"],
+    [this.hardWorkerDays, "Word Problems"],
+    [this.hardShopkeeperChallenge, "Money"],
+    [this.hardMisleadingContext, "Word Problems"],
   ]);
 
   constructor(curriculum: 'CBSE' | 'ICSE' | 'IGCSE' = 'CBSE') {
@@ -848,6 +854,130 @@ export class MathQuestionGenerator {
       answer: `${area} cm²`,
       working: `Working:\nArea of rectangle = length × width\n= ${length} × ${width}\n= ${area} cm²`,
     };
+  }
+
+  private hardWorkerDays(): Question {
+    const scenarios = [
+      { w1: 6, d1: 8, w2: 4, noun: 'wall' },
+      { w1: 4, d1: 9, w2: 6, noun: 'fence' },
+      { w1: 3, d1: 8, w2: 6, noun: 'road' },
+      { w1: 5, d1: 6, w2: 3, noun: 'bridge' },
+      { w1: 8, d1: 5, w2: 4, noun: 'wall' },
+      { w1: 6, d1: 4, w2: 3, noun: 'house' },
+      { w1: 4, d1: 6, w2: 8, noun: 'road' },
+      { w1: 6, d1: 10, w2: 4, noun: 'fence' },
+      { w1: 5, d1: 8, w2: 10, noun: 'garden' },
+      { w1: 9, d1: 4, w2: 3, noun: 'wall' },
+    ];
+    const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const totalWork = s.w1 * s.d1;
+    const d2 = totalWork / s.w2;
+    return {
+      question: `${s.w1} workers can build a ${s.noun} in ${s.d1} days.\nHow many days will ${s.w2} workers take to build the same ${s.noun}?`,
+      answer: `${d2} days`,
+      working: `Working:\nTotal work = ${s.w1} workers × ${s.d1} days = ${totalWork} worker-days\n${s.w2} workers would need: ${totalWork} ÷ ${s.w2} = ${d2} days`,
+    };
+  }
+
+  private hardShopkeeperChallenge(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const items = [
+        { item: 'toys', qty: 8, cp: 25, sp: 30 },
+        { item: 'books', qty: 6, cp: 40, sp: 50 },
+        { item: 'pens', qty: 12, cp: 10, sp: 12 },
+        { item: 'bottles', qty: 5, cp: 60, sp: 80 },
+        { item: 'toys', qty: 8, cp: 30, sp: 20 },
+        { item: 'mugs', qty: 6, cp: 50, sp: 40 },
+      ];
+      const sc = items[Math.floor(Math.random() * items.length)];
+      const { item, qty, cp, sp } = sc;
+      const totalCost = qty * cp;
+      const totalRevenue = (qty - 1) * sp;
+      const diff = totalRevenue - totalCost;
+      const label = diff >= 0 ? 'Profit' : 'Loss';
+      const absVal = Math.abs(diff);
+      return {
+        question: `A shopkeeper buys ${qty} ${item} at ₹${cp} each.\nOne ${item.slice(0, -1)} is damaged and cannot be sold.\nThe rest are sold at ₹${sp} each.\nFind the profit or loss.`,
+        answer: `${label} of ₹${absVal}`,
+        working: `Working:\nTotal cost = ${qty} × ₹${cp} = ₹${totalCost}\nItems sold = ${qty} − 1 = ${qty - 1}\nTotal revenue = ${qty - 1} × ₹${sp} = ₹${totalRevenue}\n${label} = ₹${Math.max(totalRevenue, totalCost)} − ₹${Math.min(totalRevenue, totalCost)} = ₹${absVal} (${label})`,
+      };
+    } else if (t === 1) {
+      const scenarios = [
+        { qty: 4, price: 50, disc: 10 },
+        { qty: 5, price: 40, disc: 20 },
+        { qty: 3, price: 100, disc: 25 },
+        { qty: 6, price: 50, disc: 10 },
+        { qty: 4, price: 75, disc: 20 },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const total = s.qty * s.price;
+      const discount = (total * s.disc) / 100;
+      const finalAmount = total - discount;
+      return {
+        question: `Rajan buys ${s.qty} notebooks at ₹${s.price} each.\nThe shopkeeper gives a ${s.disc}% discount on the total bill.\nHow much does Rajan pay?`,
+        answer: `₹${finalAmount}`,
+        working: `Working:\nTotal before discount = ${s.qty} × ₹${s.price} = ₹${total}\nDiscount = ${s.disc}% of ₹${total} = ₹${discount}\nAmount paid = ₹${total} − ₹${discount} = ₹${finalAmount}`,
+      };
+    } else {
+      const scenarios = [
+        { wage: 200, days: 5, bonus: 100, expense: 150 },
+        { wage: 150, days: 6, bonus: 50, expense: 200 },
+        { wage: 300, days: 4, bonus: 200, expense: 250 },
+        { wage: 250, days: 3, bonus: 100, expense: 300 },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const totalEarned = s.wage * s.days + s.bonus;
+      const remaining = totalEarned - s.expense;
+      return {
+        question: `Priya earns ₹${s.wage} per day and works for ${s.days} days.\nShe also receives a bonus of ₹${s.bonus}.\nShe spends ₹${s.expense} on groceries.\nHow much money does she have left?`,
+        answer: `₹${remaining}`,
+        working: `Working:\nWages = ${s.days} × ₹${s.wage} = ₹${s.wage * s.days}\nTotal earnings = ₹${s.wage * s.days} + ₹${s.bonus} = ₹${totalEarned}\nMoney left = ₹${totalEarned} − ₹${s.expense} = ₹${remaining}`,
+      };
+    }
+  }
+
+  private hardMisleadingContext(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const length = Math.floor(Math.random() * 10) + 8;
+      const width = Math.floor(Math.random() * 6) + 4;
+      const depth = Math.floor(Math.random() * 3) + 2;
+      const perimeter = 2 * (length + width);
+      return {
+        question: `A rectangular garden is ${length} m long, ${width} m wide, and has a ${depth} m tall boundary wall.\nWhat is the perimeter of the garden?`,
+        answer: `${perimeter} m`,
+        working: `Working:\nThe wall height (${depth} m) is NOT needed for the perimeter.\nPerimeter = 2 × (length + width) = 2 × (${length} + ${width}) = ${perimeter} m`,
+      };
+    } else if (t === 1) {
+      const trios = [['Arjun', 'Bhavi', 'Chetna'], ['Rahul', 'Seema', 'Tarun'], ['Pooja', 'Qasim', 'Riya']];
+      const trio = trios[Math.floor(Math.random() * trios.length)];
+      const scoreA = Math.floor(Math.random() * 20) + 60;
+      const scoreB = Math.floor(Math.random() * 20) + 60;
+      const scoreC = Math.floor(Math.random() * 20) + 60;
+      const diff = Math.abs(scoreA - scoreB);
+      const higher = scoreA >= scoreB ? trio[0] : trio[1];
+      const lower = scoreA >= scoreB ? trio[1] : trio[0];
+      return {
+        question: `${trio[0]} scored ${scoreA} marks, ${trio[1]} scored ${scoreB} marks, and ${trio[2]} scored ${scoreC} marks.\nBy how many marks did ${higher} score more than ${lower}?`,
+        answer: `${diff} marks`,
+        working: `Working:\n${trio[2]}'s score (${scoreC}) is not needed for this question.\nDifference = ${Math.max(scoreA, scoreB)} − ${Math.min(scoreA, scoreB)} = ${diff} marks`,
+      };
+    } else {
+      const scenarios = [
+        { speed: 60, time: 3, detail: 'red car', extra: 'The car was bought 2 years ago for ₹3,00,000.' },
+        { speed: 80, time: 2, detail: 'blue bus', extra: 'The bus seats 42 passengers.' },
+        { speed: 50, time: 4, detail: 'green truck', extra: 'The truck is 5 years old.' },
+        { speed: 45, time: 4, detail: 'school van', extra: 'The van carries 3 teachers and 15 students.' },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const distance = s.speed * s.time;
+      return {
+        question: `A ${s.detail} travels at ${s.speed} km/h for ${s.time} hours.\n${s.extra}\nHow far does the ${s.detail} travel?`,
+        answer: `${distance} km`,
+        working: `Working:\nThe extra information is not needed to find the distance.\nDistance = Speed × Time = ${s.speed} × ${s.time} = ${distance} km`,
+      };
+    }
   }
 
   private getPlaceName(power: number): string {
