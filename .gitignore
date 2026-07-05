@@ -31,3 +31,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pdfs
+*.pdf
+reference/pages/
+reference/*.png
