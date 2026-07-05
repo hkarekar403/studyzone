@@ -15,7 +15,20 @@
       "Bash(node scripts/generate-icons.mjs)",
       "Bash(npx ts-node *)",
       "Bash(npx tsx *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(pdftotext -f 1 -l 5 maths-class4-book.pdf -)",
+      "Bash(pdftotext -f 1 -l 10 maths-class4-book.pdf -)",
+      "Bash(python -m pip install --quiet PyMuPDF)",
+      "Bash(python -c \"import fitz; print\\('PyMuPDF version:', fitz.pymupdf_version\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python3 -c \"import fitz\")",
+      "Bash(python *)",
+      "Bash(git status *)",
+      "Bash(git mv *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\harsh\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-harsh-Documents-WindSurf-Projects-Maths-Learning-Website\\\\b713db67-bcd5-42a8-93cc-52c5a6a08da3\\\\scratchpad\")",
+      "Bash(node_modules/.bin/tsc lib/questionGenerator.ts --outDir \"C:\\\\Users\\\\harsh\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-harsh-Documents-WindSurf-Projects-Maths-Learning-Website\\\\b713db67-bcd5-42a8-93cc-52c5a6a08da3\\\\scratchpad\\\\out\" --module commonjs --target es2017 --esModuleInterop --skipLibCheck)",
+      "Bash(node run_test.js)",
+      "Bash(rm *)"
     ]
   }
 }

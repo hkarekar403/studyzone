@@ -3,6 +3,8 @@ export interface Question {
   answer: string;
   working: string;
   topic?: string;
+  selfAssess?: boolean;
+  modelAnswer?: string;
 }
 
 export class MathQuestionGenerator {
@@ -49,6 +51,12 @@ export class MathQuestionGenerator {
       this.hardWorkerDays,
       this.hardShopkeeperChallenge,
       this.hardMisleadingContext,
+      this.hardInverseProblems,
+      this.hardEstimateFirst,
+      this.hardFindAllSolutions,
+      this.hardSpotTheError,
+      this.hardLogicalReasoning,
+      this.hardMisleadingInfo,
     ],
   };
 
@@ -60,7 +68,7 @@ export class MathQuestionGenerator {
     "Place Value": [this.easyPlaceValue],
     "Odd/Even": [this.easyOddEven],
     "Fractions": [this.easyFraction, this.mediumFractionAddition, this.hardFractionUnlike],
-    "Factors & Multiples": [this.mediumFactorsMultiples],
+    "Factors & Multiples": [this.mediumFactorsMultiples, this.hardFindAllSolutions],
     "Prime/Composite": [this.mediumPrimeComposite],
     "Squares & Cubes": [this.mediumSquareCube],
     "Geometry": [this.hardGeometryAngles, this.hardSymmetry, this.medium3DShapes],
@@ -72,6 +80,17 @@ export class MathQuestionGenerator {
     "Measurement": [this.hardMeasurement],
     "Data Handling": [this.easyTallyChart, this.easyProbability, this.mediumBarGraph, this.hardProbability],
     "2D Shapes": [this.easy2DShapes],
+    "Word Problems": [
+      this.mediumWordProblem,
+      this.hardMultiStep,
+      this.hardWorkerDays,
+      this.hardMisleadingContext,
+      this.hardInverseProblems,
+      this.hardEstimateFirst,
+      this.hardSpotTheError,
+      this.hardLogicalReasoning,
+      this.hardMisleadingInfo,
+    ],
   };
 
   // Maps each generator function to its display topic when randomly selected.
@@ -111,6 +130,12 @@ export class MathQuestionGenerator {
     [this.hardWorkerDays, "Word Problems"],
     [this.hardShopkeeperChallenge, "Money"],
     [this.hardMisleadingContext, "Word Problems"],
+    [this.hardInverseProblems, "Word Problems"],
+    [this.hardEstimateFirst, "Word Problems"],
+    [this.hardFindAllSolutions, "Factors & Multiples"],
+    [this.hardSpotTheError, "Word Problems"],
+    [this.hardLogicalReasoning, "Word Problems"],
+    [this.hardMisleadingInfo, "Word Problems"],
   ]);
 
   constructor(curriculum: 'CBSE' | 'ICSE' | 'IGCSE' = 'CBSE') {
@@ -976,6 +1001,277 @@ export class MathQuestionGenerator {
         question: `A ${s.detail} travels at ${s.speed} km/h for ${s.time} hours.\n${s.extra}\nHow far does the ${s.detail} travel?`,
         answer: `${distance} km`,
         working: `Working:\nThe extra information is not needed to find the distance.\nDistance = Speed × Time = ${s.speed} × ${s.time} = ${distance} km`,
+      };
+    }
+  }
+
+  private randomIndianName(): string {
+    const names = ['Aarav', 'Diya', 'Kabir', 'Anaya', 'Vihaan', 'Ishaan', 'Saanvi', 'Reyansh', 'Myra', 'Arjun'];
+    return names[Math.floor(Math.random() * names.length)];
+  }
+
+  private hardInverseProblems(): Question {
+    const t = Math.floor(Math.random() * 4);
+    const name = this.randomIndianName();
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 20) + 4;
+      const b = Math.floor(Math.random() * 15) + 3;
+      const product = a * b;
+      return {
+        question: `The product of two numbers is ${product}. One number is ${a}.\nFind the other number.`,
+        answer: b.toString(),
+        working: `Working:\nOther number = Product ÷ known number\n= ${product} ÷ ${a} = ${b}`,
+      };
+    } else if (t === 1) {
+      const divisor = Math.floor(Math.random() * 9) + 4;
+      const quotient = Math.floor(Math.random() * 25) + 6;
+      const number = divisor * quotient;
+      return {
+        question: `A number divided by ${divisor} gives ${quotient}.\nWhat is the number?`,
+        answer: number.toString(),
+        working: `Working:\nNumber ÷ ${divisor} = ${quotient}\nSo the number = ${quotient} × ${divisor} = ${number}`,
+      };
+    } else if (t === 2) {
+      const purchases = ['a cricket bat', 'new shoes', 'a birthday gift', 'a school bag', 'sweets for Diwali'];
+      const purchase = purchases[Math.floor(Math.random() * purchases.length)];
+      const left = Math.floor(Math.random() * 200) + 50;
+      const spent = Math.floor(Math.random() * 300) + 100;
+      const start = spent + left;
+      return {
+        question: `After spending ₹${spent} on ${purchase}, ${name} has ₹${left} left.\nHow much money did ${name} start with?`,
+        answer: `₹${start}`,
+        working: `Working:\nMoney at start = amount spent + amount left\n= ₹${spent} + ₹${left} = ₹${start}`,
+      };
+    } else {
+      const n = Math.floor(Math.random() * 50) + 10;
+      const sum = Math.floor(Math.random() * 200) + 100;
+      const number = sum - n;
+      return {
+        question: `${n} is added to a number to get ${sum}.\nFind the number.`,
+        answer: number.toString(),
+        working: `Working:\nnumber + ${n} = ${sum}\nnumber = ${sum} - ${n} = ${number}`,
+      };
+    }
+  }
+
+  private hardEstimateFirst(): Question {
+    const t = Math.floor(Math.random() * 3);
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 700) + 150;
+      const b = Math.floor(Math.random() * 700) + 150;
+      const exact = a + b;
+      const ra = Math.round(a / 100) * 100;
+      const rb = Math.round(b / 100) * 100;
+      const estimate = ra + rb;
+      return {
+        question: `Estimate ${a} + ${b} by rounding each number to the nearest 100, then find the exact answer.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: ${estimate}, Exact: ${exact}`,
+        working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} + ${rb} = ${estimate}\nExact = ${a} + ${b} = ${exact}`,
+      };
+    } else if (t === 1) {
+      let a = Math.floor(Math.random() * 700) + 300;
+      let b = Math.floor(Math.random() * 400) + 100;
+      if (b > a) { [a, b] = [b, a]; }
+      const exact = a - b;
+      const ra = Math.round(a / 100) * 100;
+      const rb = Math.round(b / 100) * 100;
+      const estimate = ra - rb;
+      return {
+        question: `Estimate ${a} - ${b} by rounding each number to the nearest 100, then find the exact answer.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: ${estimate}, Exact: ${exact}`,
+        working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} - ${rb} = ${estimate}\nExact = ${a} - ${b} = ${exact}`,
+      };
+    } else {
+      const items = ['mangoes', 'notebooks', 'bangles', 'story books', 'pencil boxes'];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const qty = Math.floor(Math.random() * 6) + 4;
+      const price = Math.floor(Math.random() * 40) + 12;
+      const exact = qty * price;
+      const rp = Math.round(price / 10) * 10;
+      const estimate = qty * rp;
+      return {
+        question: `A shopkeeper sells ${item} at ₹${price} each. Estimate the cost of ${qty} ${item} by rounding the price to the nearest ₹10, then find the exact cost.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: ₹${estimate}, Exact: ₹${exact}`,
+        working: `Working:\n₹${price} rounds to ₹${rp}\nEstimate = ${qty} × ₹${rp} = ₹${estimate}\nExact = ${qty} × ₹${price} = ₹${exact}`,
+      };
+    }
+  }
+
+  private hardFindAllSolutions(): Question {
+    const t = Math.floor(Math.random() * 3);
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 10) + 3;
+      const b = Math.floor(Math.random() * 10) + 3;
+      const product = a * b;
+      return {
+        question: `Write two numbers that multiply together to give ${product}.`,
+        answer: `Any valid answer, e.g. ${a} and ${b}`,
+        working: `Working:\n${a} × ${b} = ${product}\nAny two factors of ${product} that multiply together to give ${product} are correct.`,
+      };
+    } else if (t === 1) {
+      const candidates = [12, 16, 18, 20, 24, 28, 30, 36, 40, 42, 48];
+      const n = candidates[Math.floor(Math.random() * candidates.length)];
+      const pairs: string[] = [];
+      for (let i = 1; i * i <= n; i++) {
+        if (n % i === 0) pairs.push(`${i}×${n / i}`);
+      }
+      return {
+        question: `Find all the factor pairs of ${n}.\nHow many pairs did you find?`,
+        answer: `Any valid answer, e.g. ${pairs[0]}`,
+        working: `Working:\nAll factor pairs of ${n}: ${pairs.join(', ')}\nThere are ${pairs.length} factor pairs in total — that's how you know you found them all.`,
+      };
+    } else {
+      const s = Math.floor(Math.random() * 10) + 4;
+      const found: number[] = [];
+      for (let num = 10; num <= 99; num++) {
+        const d1 = Math.floor(num / 10);
+        const d2 = num % 10;
+        if (d1 + d2 === s) found.push(num);
+      }
+      return {
+        question: `List all two-digit numbers whose digits add up to ${s}.`,
+        answer: `Any valid answer, e.g. ${found[0]}`,
+        working: `Working:\nTwo-digit numbers with digit sum ${s}: ${found.join(', ')}\nThere are ${found.length} such numbers in total.`,
+      };
+    }
+  }
+
+  private hardSpotTheError(): Question {
+    const t = Math.floor(Math.random() * 2);
+    const name = this.randomIndianName();
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 11) + 4;
+      const b = Math.floor(Math.random() * 9) + 3;
+      const correct = a * b;
+      const mistakes = [correct + a, correct - a, correct + b, correct - b];
+      let wrong = mistakes[Math.floor(Math.random() * mistakes.length)];
+      if (wrong === correct || wrong <= 0) wrong = correct + a;
+      return {
+        question: `${name} calculated ${a} × ${b} = ${wrong}.\nIs this correct? If not, what is the right answer?`,
+        answer: `No, the correct answer is ${correct}`,
+        working: `Working:\n${a} × ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
+      };
+    } else {
+      const a = Math.floor(Math.random() * 300) + 100;
+      const b = Math.floor(Math.random() * 250) + 50;
+      const correct = a + b;
+      const delta = Math.floor(Math.random() * 15) + 1;
+      const wrong = Math.random() < 0.5 ? correct + delta : correct - delta;
+      return {
+        question: `${name} added ${a} + ${b} and got ${wrong}.\nIs this correct? If not, what is the right answer?`,
+        answer: `No, the correct answer is ${correct}`,
+        working: `Working:\n${a} + ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
+      };
+    }
+  }
+
+  private hardLogicalReasoning(): Question {
+    const t = Math.floor(Math.random() * 2);
+
+    if (t === 0) {
+      const settings = ['a school wall', 'a village well', 'a new road', 'a community hall', 'a garden fence'];
+      const setting = settings[Math.floor(Math.random() * settings.length)];
+      const settingNoun = setting.replace(/^a\s+/, '');
+      const w1 = Math.floor(Math.random() * 6) + 3;
+      const d1 = Math.floor(Math.random() * 8) + 4;
+      const totalWork = w1 * d1;
+      const divisors: number[] = [];
+      for (let i = 2; i <= 12; i++) { if (totalWork % i === 0 && i !== w1) divisors.push(i); }
+      const w2 = divisors.length > 0 ? divisors[Math.floor(Math.random() * divisors.length)] : w1 * 2;
+      const d2 = totalWork / w2;
+      return {
+        question: `${w1} workers can build ${setting} in ${d1} days.\nHow many days will ${w2} workers take to build the same ${settingNoun}?`,
+        answer: `${d2} days`,
+        working: `Working:\nTotal work = ${w1} workers × ${d1} days = ${totalWork} worker-days\n${w2} workers would take: ${totalWork} ÷ ${w2} = ${d2} days\n(More workers means fewer days — this is inverse proportion.)`,
+      };
+    } else {
+      const itemPairs: [string, string][] = [
+        ['mangoes', 'mango'], ['bangles', 'bangle'], ['notebooks', 'notebook'], ['oranges', 'orange'], ['pencils', 'pencil'],
+      ];
+      const [item, itemSingular] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
+      const items1 = Math.floor(Math.random() * 6) + 3;
+      const unitCost = Math.floor(Math.random() * 8) + 2;
+      const cost1 = items1 * unitCost;
+      const items2 = Math.floor(Math.random() * 10) + 5;
+      const cost2 = items2 * unitCost;
+      return {
+        question: `If ${items1} ${item} cost ₹${cost1}, how much do ${items2} ${item} cost?`,
+        answer: `₹${cost2}`,
+        working: `Working:\nCost of 1 ${itemSingular} = ₹${cost1} ÷ ${items1} = ₹${unitCost}\nCost of ${items2} ${item} = ${items2} × ₹${unitCost} = ₹${cost2}\n(More items means more cost — this is direct proportion.)`,
+      };
+    }
+  }
+
+  private hardMisleadingInfo(): Question {
+    const t = Math.floor(Math.random() * 2);
+    const name = this.randomIndianName();
+
+    if (t === 0) {
+      const itemPairs: [string, string][] = [
+        ['marbles', 'stickers'], ['mangoes', 'oranges'], ['pencils', 'erasers'], ['stamps', 'coins'], ['bangles', 'ribbons'],
+      ];
+      const [item1, item2] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
+      const a = Math.floor(Math.random() * 30) + 20;
+      const b = Math.floor(Math.random() * 25) + 10;
+      const c = Math.floor(Math.random() * (a - 5)) + 1;
+      const left = a - c;
+      return {
+        question: `${name} has ${a} ${item1} and ${b} ${item2}.\n${name} gives away ${c} ${item1} to a friend.\nHow many ${item1} does ${name} have left?`,
+        answer: left.toString(),
+        working: `Working:\nThe number of ${item2} (${b}) is not needed for this question.\n${item1} left = ${a} - ${c} = ${left}`,
+      };
+    } else {
+      const items = ['toffees', 'story books', 'crayons', 'chocolates'];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const price = Math.floor(Math.random() * 8) + 3;
+      const qty = Math.floor(Math.random() * 8) + 4;
+      const age = Math.floor(Math.random() * 6) + 8;
+      const total = price * qty;
+      return {
+        question: `${name}, who is ${age} years old, buys ${qty} ${item} at ₹${price} each.\nHow much does ${name} spend in total?`,
+        answer: `₹${total}`,
+        working: `Working:\nThe age (${age}) is not needed for this question.\nTotal cost = ${qty} × ₹${price} = ₹${total}`,
+      };
+    }
+  }
+
+  private hardExplainReasoning(): Question {
+    const t = Math.floor(Math.random() * 3);
+
+    if (t === 0) {
+      const l = Math.floor(Math.random() * 10) + 4;
+      const w = Math.floor(Math.random() * 8) + 3;
+      return {
+        question: `Explain how you would find the area of a rectangle that is ${l} cm long and ${w} cm wide.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\nArea = length × width = ${l} × ${w} = ${l * w} cm²`,
+        selfAssess: true,
+        modelAnswer: `To find the area, multiply the length by the width: ${l} cm × ${w} cm = ${l * w} cm². I know to use multiplication (not addition) because area measures the space covered by a 2D shape, and the rectangle can be thought of as ${l} rows of ${w} unit squares each.`,
+      };
+    } else if (t === 1) {
+      const qty = Math.floor(Math.random() * 8) + 4;
+      const cp = Math.floor(Math.random() * 30) + 20;
+      const sp = cp + Math.floor(Math.random() * 15) + 5;
+      return {
+        question: `A shopkeeper buys ${qty} toys at ₹${cp} each and sells all of them at ₹${sp} each.\nExplain how you would find out whether the shopkeeper made a profit or a loss, and by how much.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\nTotal cost = ${qty} × ₹${cp} = ₹${qty * cp}\nTotal revenue = ${qty} × ₹${sp} = ₹${qty * sp}\nProfit = ₹${qty * sp} - ₹${qty * cp} = ₹${qty * (sp - cp)}`,
+        selfAssess: true,
+        modelAnswer: `First, find the total cost price by multiplying the quantity by the cost price per toy. Then find the total selling price the same way. Since the selling price per toy is higher than the cost price, I know there's a profit. Subtract the total cost from the total revenue to find the profit amount.`,
+      };
+    } else {
+      const d1 = Math.floor(Math.random() * 4) + 2;
+      const d2 = Math.floor(Math.random() * 4) + 2;
+      return {
+        question: `Explain how you would find the LCM of ${d1} and ${d2}, and then find it.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\nLCM of ${d1} and ${d2} = ${this.lcm(d1, d2)}`,
+        selfAssess: true,
+        modelAnswer: `I would list the multiples of both numbers: multiples of ${d1} and multiples of ${d2}, then find the smallest number that appears in both lists. That smallest common number is the LCM, which is ${this.lcm(d1, d2)}.`,
       };
     }
   }
