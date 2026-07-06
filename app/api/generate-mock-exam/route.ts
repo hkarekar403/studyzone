@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenerator } from '@/lib/generatorSingleton'
+import { MOCK_EXAM_STRUCTURE } from '@/lib/questionGenerator'
 
 const VALID_CURRICULA = ['CBSE', 'ICSE', 'IGCSE']
-
-const EXAM_STRUCTURE = {
-  50: {
-    VSA: { count: 10, marksEach: 1, difficulty: 'Easy' },
-    SA1: { count: 5,  marksEach: 2, difficulty: 'Medium' },
-    SA2: { count: 5,  marksEach: 3, difficulty: 'Medium' },
-    LA:  { count: 3,  marksEach: 5, difficulty: 'Hard' },
-  },
-  25: {
-    VSA: { count: 5,  marksEach: 1, difficulty: 'Easy' },
-    SA1: { count: 3,  marksEach: 2, difficulty: 'Medium' },
-    SA2: { count: 3,  marksEach: 3, difficulty: 'Medium' },
-    LA:  { count: 1,  marksEach: 5, difficulty: 'Hard' },
-  },
-} as const
+const VALID_TOTAL_MARKS = [25, 50]
 
 export async function POST(request: NextRequest) {
   let body
@@ -26,38 +13,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { curriculum = 'CBSE', topic, totalMarks = 50 } = body
+  const { curriculum = 'CBSE', topics = [], totalMarks = 50 } = body
 
   if (!VALID_CURRICULA.includes(curriculum))
     return NextResponse.json({ error: 'Invalid curriculum' }, { status: 400 })
-  if (totalMarks !== 25 && totalMarks !== 50)
+  if (!VALID_TOTAL_MARKS.includes(totalMarks))
     return NextResponse.json({ error: 'totalMarks must be 25 or 50' }, { status: 400 })
+  if (!Array.isArray(topics))
+    return NextResponse.json({ error: 'topics must be an array' }, { status: 400 })
 
   const gen = getGenerator(curriculum)
-  const structure = EXAM_STRUCTURE[totalMarks as 25 | 50]
-  const topicParam: string | undefined = topic && topic !== 'Random' ? topic : undefined
+  const structure = MOCK_EXAM_STRUCTURE[totalMarks as 25 | 50]
+  const sections = gen.getMockExamQuestions(topics, totalMarks as 25 | 50)
 
-  type QItem = { question: string; answer: string; working: string }
+  const totalTime = Math.round(
+    (Object.keys(structure) as (keyof typeof structure)[]).reduce(
+      (sum, section) => sum + structure[section].count * structure[section].minutesEach,
+      0,
+    ),
+  )
 
-  const generateSection = (difficulty: string, count: number): QItem[] => {
-    const questions: QItem[] = []
-    let attempts = 0
-    const maxAttempts = count * 8
-    while (questions.length < count && attempts < maxAttempts) {
-      attempts++
-      const q = gen.generate(difficulty, topicParam)
-      if (q.question.includes('[[TALLY_SVG]]')) continue
-      questions.push({ question: q.question, answer: q.answer, working: q.working })
-    }
-    return questions
-  }
-
-  const sections = {
-    VSA: generateSection(structure.VSA.difficulty, structure.VSA.count),
-    SA1: generateSection(structure.SA1.difficulty, structure.SA1.count),
-    SA2: generateSection(structure.SA2.difficulty, structure.SA2.count),
-    LA:  generateSection(structure.LA.difficulty,  structure.LA.count),
-  }
-
-  return NextResponse.json({ sections, structure, totalMarks, curriculum })
+  return NextResponse.json({ sections, structure, totalMarks, totalTime, curriculum })
 }

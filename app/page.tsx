@@ -5,6 +5,7 @@ import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
+import FocusTrap from "focus-trap-react"
 
 interface SessionRecord {
   number: number
@@ -86,8 +87,9 @@ export default function MathQuiz() {
   const [showMockExamModal, setShowMockExamModal] = useState(false)
   const [mockExamLoading, setMockExamLoading] = useState(false)
   const [mockExamCurriculum, setMockExamCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>(curriculum)
-  const [mockExamTopic, setMockExamTopic] = useState('Random')
+  const [mockExamTopics, setMockExamTopics] = useState<string[]>(['All Topics'])
   const [mockExamTotalMarks, setMockExamTotalMarks] = useState<25 | 50>(50)
+  const mockExamModalRef = useRef<HTMLDivElement>(null)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -691,18 +693,18 @@ export default function MathQuiz() {
 
   type MockQuestion = { question: string; answer: string; working: string }
   type MockSections = { VSA: MockQuestion[]; SA1: MockQuestion[]; SA2: MockQuestion[]; LA: MockQuestion[] }
-  type MockStructure = { VSA: { count: number; marksEach: number }; SA1: { count: number; marksEach: number }; SA2: { count: number; marksEach: number }; LA: { count: number; marksEach: number } }
+  type MockSectionMeta = { count: number; marksEach: number; minutesEach: number }
+  type MockStructure = { VSA: MockSectionMeta; SA1: MockSectionMeta; SA2: MockSectionMeta; LA: MockSectionMeta }
 
   const buildMockExamPDF = (
     sections: MockSections,
     structure: MockStructure,
     totalMarks: number,
+    totalTime: number,
     examCurriculum: string,
-    examTopic: string,
   ) => {
     const doc = new jsPDF()
     const safeDateStr = new Date().toISOString().split('T')[0]
-    const timeAllowed = totalMarks === 50 ? '50 minutes' : '25 minutes'
     const footerText = 'StudyZone — studyzone.co.in'
     let y = 0
     let pageNum = 1
@@ -724,305 +726,242 @@ export default function MathQuiz() {
       }
     }
 
-    // ── Exam header ──
+    // SVG-sentinel questions can't render in jsPDF — filtered server-side already,
+    // but re-filtered here defensively (mirrors app/api/generate-worksheet).
+    const clean = (qs: MockQuestion[]) => qs.filter((q) => !q.question.includes('[[TALLY_SVG]]'))
+    const secVSA = clean(sections.VSA)
+    const secSA1 = clean(sections.SA1)
+    const secSA2 = clean(sections.SA2)
+    const secLA = clean(sections.LA)
+
+    // ── Header ──
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
-    doc.text('Class 4 Mathematics — Mock Examination', 105, 22, { align: 'center' })
+    doc.text('StudyZone Mock Examination', 105, 20, { align: 'center' })
 
-    doc.setFontSize(10)
+    doc.setFontSize(13)
     doc.setFont('helvetica', 'normal')
-    doc.text(
-      `Curriculum: ${examCurriculum}  |  Topic: ${examTopic}  |  Total Marks: ${totalMarks}  |  Time: ${timeAllowed}`,
-      105, 30, { align: 'center' },
-    )
+    doc.text(`Class 4 Mathematics — ${examCurriculum}`, 105, 28, { align: 'center' })
 
     doc.setDrawColor(180, 180, 180)
-    doc.line(15, 34, 195, 34)
+    doc.line(15, 33, 195, 33)
 
     doc.setFontSize(11)
-    doc.text('Name: ________________________________   Class: _______   Date: ___________', 15, 41)
-    doc.text(`School: ___________________________   Roll No.: _______   Score: _____/${totalMarks}`, 15, 49)
-
-    doc.line(15, 53, 195, 53)
-
-    doc.setFontSize(9)
-    doc.setTextColor(80, 80, 80)
-    doc.text('Instructions: All questions are compulsory. Read each question carefully before answering.', 15, 59)
-    doc.text('Write answers neatly. Rough work may be done in the spaces provided.', 15, 65)
-    doc.setTextColor(0, 0, 0)
+    doc.text('Name: ________________________', 15, 41)
+    doc.text('Date: ___________', 105, 41)
+    doc.text(`Time: ${totalTime} minutes`, 15, 48)
+    doc.text(`Maximum Marks: ${totalMarks}`, 105, 48)
 
     doc.setDrawColor(180, 180, 180)
-    doc.line(15, 69, 195, 69)
-    y = 78
+    doc.line(15, 53, 195, 53)
+    y = 60
 
-    const vsaTotal = structure.VSA.count * structure.VSA.marksEach
-    const sa1Total = structure.SA1.count * structure.SA1.marksEach
-    const sa2Total = structure.SA2.count * structure.SA2.marksEach
-    const laTotal  = structure.LA.count  * structure.LA.marksEach
-    const vCount = structure.VSA.count
-    const s1Count = structure.SA1.count
-    const s2Count = structure.SA2.count
+    // ── Instructions box ──
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('General Instructions:', 15, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    const instructions = [
+      '1. All questions are compulsory.',
+      `2. Section A carries ${structure.VSA.marksEach} mark each.`,
+      `3. Section B carries ${structure.SA1.marksEach} marks each.`,
+      `4. Section C carries ${structure.SA2.marksEach} marks each.`,
+      `5. Section D carries ${structure.LA.marksEach} marks each.`,
+      '6. Show your working where required.',
+    ]
+    instructions.forEach((line) => { doc.text(line, 15, y); y += 5.5 })
+    y += 3
+    doc.setDrawColor(180, 180, 180)
+    doc.line(15, y, 195, y)
+    y += 9
 
-    const sectionHeader = (label: string, marks: string) => {
+    const sectionHeader = (label: string, total: number) => {
       checkPage(20)
-      y += 4
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
-      doc.text(`${label}  [${marks}]`, 15, y)
+      doc.text(label, 15, y)
       doc.setFont('helvetica', 'normal')
-      y += 8
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`${total} marks total`, 195, y, { align: 'right' })
+      doc.setTextColor(0, 0, 0)
+      y += 7
     }
 
-    // ── Section A – VSA ──
-    sectionHeader(`SECTION A — Very Short Answer`, `${structure.VSA.count} × ${structure.VSA.marksEach} = ${vsaTotal} marks`)
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Write the answer on the line provided.', 15, y)
-    doc.setTextColor(0, 0, 0)
-    y += 6
+    const renderSection = (
+      label: string,
+      questions: MockQuestion[],
+      marksEach: number,
+      blankLines: number,
+      startNumber: number,
+    ) => {
+      sectionHeader(label, questions.length * marksEach)
+      questions.forEach((q, i) => {
+        checkPage(16 + blankLines * 7)
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.text(`${startNumber + i}.`, 15, y)
+        doc.setFont('helvetica', 'normal')
+        const qLines = doc.splitTextToSize(sanitizePDFText(q.question), 148)
+        doc.text(qLines, 24, y)
+        doc.setFontSize(9)
+        doc.setTextColor(100, 100, 100)
+        doc.text(`[${marksEach} mark${marksEach > 1 ? 's' : ''}]`, 195, y, { align: 'right' })
+        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(10)
+        y += qLines.length * 5 + 3
+        doc.setDrawColor(210, 210, 210)
+        for (let ln = 0; ln < blankLines; ln++) {
+          y += 7
+          doc.line(24, y, 190, y)
+        }
+        y += 8
+      })
+    }
 
-    sections.VSA.forEach((q, i) => {
-      checkPage(22)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${i + 1}.`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const qLines = doc.splitTextToSize(sanitizePDFText(q.question), 163)
-      doc.text(qLines, 24, y)
-      y += qLines.length * 5 + 2
-      doc.setDrawColor(210, 210, 210)
-      doc.text('Ans:', 24, y + 4)
-      doc.line(36, y + 5, 190, y + 5)
-      y += 11
-    })
-
-    // ── Section B – SA1 ──
-    sectionHeader(`SECTION B — Short Answer I`, `${structure.SA1.count} × ${structure.SA1.marksEach} = ${sa1Total} marks`)
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Show your working where necessary.', 15, y)
-    doc.setTextColor(0, 0, 0)
-    y += 6
-
-    sections.SA1.forEach((q, i) => {
-      checkPage(32)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${vCount + i + 1}.`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const qLines = doc.splitTextToSize(sanitizePDFText(q.question), 163)
-      doc.text(qLines, 24, y)
-      y += qLines.length * 5 + 2
-      doc.setDrawColor(210, 210, 210)
-      doc.line(24, y + 5, 190, y + 5)
-      doc.text('Ans:', 24, y + 12)
-      doc.line(36, y + 13, 190, y + 13)
-      y += 19
-    })
-
-    // ── Section C – SA2 ──
-    sectionHeader(`SECTION C — Short Answer II`, `${structure.SA2.count} × ${structure.SA2.marksEach} = ${sa2Total} marks`)
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Show full working for each question.', 15, y)
-    doc.setTextColor(0, 0, 0)
-    y += 6
-
-    sections.SA2.forEach((q, i) => {
-      checkPage(48)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${vCount + s1Count + i + 1}.`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const qLines = doc.splitTextToSize(sanitizePDFText(q.question), 163)
-      doc.text(qLines, 24, y)
-      y += qLines.length * 5 + 2
-      doc.setFontSize(9)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Working:', 24, y + 4)
-      doc.setTextColor(0, 0, 0)
-      doc.setDrawColor(210, 210, 210)
-      doc.line(50, y + 5, 190, y + 5)
-      doc.line(24, y + 12, 190, y + 12)
-      doc.line(24, y + 19, 190, y + 19)
-      doc.text('Ans:', 24, y + 26)
-      doc.line(36, y + 27, 190, y + 27)
-      y += 33
-      doc.setFontSize(10)
-    })
-
-    // ── Section D – LA ──
-    sectionHeader(`SECTION D — Long Answer`, `${structure.LA.count} × ${structure.LA.marksEach} = ${laTotal} marks`)
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Show complete working. Marks are awarded for correct method.', 15, y)
-    doc.setTextColor(0, 0, 0)
-    y += 6
-
-    sections.LA.forEach((q, i) => {
-      checkPage(65)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${vCount + s1Count + s2Count + i + 1}.`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const qLines = doc.splitTextToSize(sanitizePDFText(q.question), 163)
-      doc.text(qLines, 24, y)
-      y += qLines.length * 5 + 2
-      doc.setFontSize(9)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Working:', 24, y + 4)
-      doc.setTextColor(0, 0, 0)
-      doc.setDrawColor(210, 210, 210)
-      doc.line(50, y + 5, 190, y + 5)
-      for (let ln = 1; ln <= 4; ln++) doc.line(24, y + 5 + ln * 9, 190, y + 5 + ln * 9)
-      doc.text('Ans:', 24, y + 50)
-      doc.line(36, y + 51, 190, y + 51)
-      y += 57
-      doc.setFontSize(10)
-    })
+    renderSection('SECTION A — Very Short Answer (VSA)', secVSA, structure.VSA.marksEach, 1, 1)
+    renderSection('SECTION B — Short Answer I (SA1)', secSA1, structure.SA1.marksEach, 2, secVSA.length + 1)
+    renderSection('SECTION C — Short Answer II (SA2)', secSA2, structure.SA2.marksEach, 3, secVSA.length + secSA1.length + 1)
+    renderSection('SECTION D — Long Answer (LA)', secLA, structure.LA.marksEach, 5, secVSA.length + secSA1.length + secSA2.length + 1)
 
     addFooter()
+    doc.save(`mock_exam_${examCurriculum}_${safeDateStr}.pdf`)
+  }
 
-    // ── Answer key page ──
-    doc.addPage()
-    pageNum++
-    y = 20
+  const buildMockExamAnswerKey = (
+    sections: MockSections,
+    structure: MockStructure,
+    totalMarks: number,
+    examCurriculum: string,
+  ) => {
+    const doc = new jsPDF()
+    const safeDateStr = new Date().toISOString().split('T')[0]
+    let y = 20
+    let pageNum = 1
+
+    const addFooter = () => {
+      doc.setFontSize(9)
+      doc.setTextColor(150, 150, 150)
+      doc.text('StudyZone — studyzone.co.in', 105, 290, { align: 'center' })
+      doc.text(`Page ${pageNum}`, 195, 290, { align: 'right' })
+      doc.setTextColor(0, 0, 0)
+    }
+
+    const checkPage = (needed = 16) => {
+      if (y + needed > 270) {
+        addFooter()
+        doc.addPage()
+        pageNum++
+        y = 20
+      }
+    }
+
+    const clean = (qs: MockQuestion[]) => qs.filter((q) => !q.question.includes('[[TALLY_SVG]]'))
+    const secVSA = clean(sections.VSA)
+    const secSA1 = clean(sections.SA1)
+    const secSA2 = clean(sections.SA2)
+    const secLA = clean(sections.LA)
 
     doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(200, 0, 0)
-    doc.text('TEACHER COPY — NOT FOR STUDENTS', 105, y, { align: 'center' })
-    doc.setTextColor(0, 0, 0)
-    y += 8
-
-    doc.setFontSize(13)
-    doc.text('Answer Key — Class 4 Mathematics Mock Examination', 105, y, { align: 'center' })
+    doc.text('Answer Key — TEACHER COPY', 105, y, { align: 'center' })
     y += 7
+    doc.setFontSize(11)
+    doc.text('NOT FOR STUDENTS', 105, y, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+    y += 9
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Curriculum: ${examCurriculum}  |  Total Marks: ${totalMarks}`, 105, y, { align: 'center' })
+    doc.text(`Class 4 Mathematics — ${examCurriculum} Mock Examination Answer Key`, 105, y, { align: 'center' })
+    y += 6
+    doc.setFontSize(10)
+    doc.text(`Total Marks: ${totalMarks}`, 105, y, { align: 'center' })
     y += 5
     doc.setDrawColor(180, 180, 180)
     doc.line(15, y, 195, y)
     y += 8
 
-    const akSection = (label: string, marks: string) => {
+    const akSection = (
+      label: string,
+      marksEach: number,
+      questions: MockQuestion[],
+      startNumber: number,
+      showWorking: boolean,
+    ) => {
       checkPage(16)
-      doc.setFontSize(11)
+      doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
-      doc.text(`${label}  (${marks})`, 15, y)
+      doc.text(`${label}  (${questions.length * marksEach} marks)`, 15, y)
+      y += 8
       doc.setFont('helvetica', 'normal')
-      y += 7
+      questions.forEach((q, i) => {
+        checkPage(showWorking ? 20 : 10)
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.text(`Q${startNumber + i} [${marksEach} mark${marksEach > 1 ? 's' : ''}]:`, 15, y)
+        doc.setFont('helvetica', 'normal')
+        const ansLines = doc.splitTextToSize(sanitizePDFText(q.answer), 128)
+        doc.text(ansLines, 64, y)
+        y += Math.max(ansLines.length * 5, 5) + 2
+        if (showWorking && q.working) {
+          doc.setFontSize(9)
+          doc.setTextColor(100, 100, 100)
+          const workLines = doc.splitTextToSize(sanitizePDFText(q.working), 160)
+          doc.text(workLines, 24, y)
+          doc.setTextColor(0, 0, 0)
+          y += workLines.length * 4.5 + 3
+        }
+        y += 2
+      })
+      y += 4
+      doc.setDrawColor(220, 220, 220)
+      doc.line(15, y, 195, y)
+      y += 6
     }
 
-    // Section A answers
-    akSection('Section A', `${vsaTotal} marks`)
-    doc.setFontSize(10)
-    sections.VSA.forEach((q, i) => {
-      checkPage(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Q${i + 1}:`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const ans = doc.splitTextToSize(sanitizePDFText(q.answer), 155)
-      doc.text(ans, 28, y)
-      y += Math.max(ans.length * 5, 5) + 2
-    })
-
-    y += 4
-    doc.setDrawColor(220, 220, 220)
-    doc.line(15, y, 195, y)
-    y += 6
-
-    // Section B answers
-    akSection('Section B', `${sa1Total} marks`)
-    doc.setFontSize(10)
-    sections.SA1.forEach((q, i) => {
-      checkPage(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Q${vCount + i + 1}:`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const ans = doc.splitTextToSize(sanitizePDFText(q.answer), 155)
-      doc.text(ans, 28, y)
-      y += Math.max(ans.length * 5, 5) + 2
-    })
-
-    y += 4
-    doc.setDrawColor(220, 220, 220)
-    doc.line(15, y, 195, y)
-    y += 6
-
-    // Section C answers with working
-    akSection('Section C', `${sa2Total} marks`)
-    doc.setFontSize(10)
-    sections.SA2.forEach((q, i) => {
-      checkPage(18)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Q${vCount + s1Count + i + 1}:`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const ans = doc.splitTextToSize(sanitizePDFText(q.answer), 155)
-      doc.text(ans, 28, y)
-      y += Math.max(ans.length * 5, 5) + 1
-      if (q.working) {
-        doc.setFontSize(9)
-        doc.setTextColor(100, 100, 100)
-        const work = doc.splitTextToSize(sanitizePDFText(q.working), 158)
-        doc.text(work, 28, y)
-        doc.setTextColor(0, 0, 0)
-        y += work.length * 4.5 + 2
-      }
-      y += 2
-    })
-
-    y += 4
-    doc.setDrawColor(220, 220, 220)
-    doc.line(15, y, 195, y)
-    y += 6
-
-    // Section D answers with full working
-    akSection('Section D', `${laTotal} marks`)
-    doc.setFontSize(10)
-    sections.LA.forEach((q, i) => {
-      checkPage(25)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Q${vCount + s1Count + s2Count + i + 1}:`, 15, y)
-      doc.setFont('helvetica', 'normal')
-      const ans = doc.splitTextToSize(sanitizePDFText(q.answer), 155)
-      doc.text(ans, 28, y)
-      y += Math.max(ans.length * 5, 5) + 1
-      if (q.working) {
-        doc.setFontSize(9)
-        doc.setTextColor(100, 100, 100)
-        const work = doc.splitTextToSize(sanitizePDFText(q.working), 158)
-        doc.text(work, 28, y)
-        doc.setTextColor(0, 0, 0)
-        y += work.length * 4.5 + 3
-      }
-      y += 3
-    })
+    akSection('Section A (VSA)', structure.VSA.marksEach, secVSA, 1, false)
+    akSection('Section B (SA1)', structure.SA1.marksEach, secSA1, secVSA.length + 1, false)
+    akSection('Section C (SA2)', structure.SA2.marksEach, secSA2, secVSA.length + secSA1.length + 1, true)
+    akSection('Section D (LA)', structure.LA.marksEach, secLA, secVSA.length + secSA1.length + secSA2.length + 1, true)
 
     addFooter()
-    doc.save(`mock_exam_${totalMarks}marks_${safeDateStr}.pdf`)
+    doc.save(`mock_exam_answer_key_${examCurriculum}_${safeDateStr}.pdf`)
   }
 
-  const generateMockExam = async () => {
+  const generateMockExam = async (withAnswerKey: boolean) => {
     setMockExamLoading(true)
     try {
-      const topicParam = mockExamTopic === 'Random' ? undefined : mockExamTopic
+      const topicsParam = mockExamTopics.includes('All Topics') ? [] : mockExamTopics
       const response = await fetch('/api/generate-mock-exam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ curriculum: mockExamCurriculum, topic: topicParam, totalMarks: mockExamTotalMarks }),
+        body: JSON.stringify({ curriculum: mockExamCurriculum, topics: topicsParam, totalMarks: mockExamTotalMarks }),
       })
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
-      buildMockExamPDF(data.sections, data.structure, data.totalMarks, data.curriculum, mockExamTopic)
+      buildMockExamPDF(data.sections, data.structure, data.totalMarks, data.totalTime, data.curriculum)
+      if (withAnswerKey) buildMockExamAnswerKey(data.sections, data.structure, data.totalMarks, data.curriculum)
       setShowMockExamModal(false)
     } catch {
       // leave modal open so user can retry
     } finally {
       setMockExamLoading(false)
     }
+  }
+
+  const toggleMockExamTopic = (t: string) => {
+    if (t === 'All Topics') {
+      setMockExamTopics(['All Topics'])
+      return
+    }
+    setMockExamTopics((prev) => {
+      const withoutAll = prev.filter((p) => p !== 'All Topics')
+      const next = withoutAll.includes(t) ? withoutAll.filter((p) => p !== t) : [...withoutAll, t]
+      return next.length === 0 ? ['All Topics'] : next
+    })
   }
 
   const handleFeedbackSubmit = async () => {
@@ -2254,115 +2193,158 @@ export default function MathQuiz() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => !mockExamLoading && setShowMockExamModal(false)}
         >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5 w-[380px]"
-            onClick={(e) => e.stopPropagation()}
+          <FocusTrap
+            active={showMockExamModal}
+            focusTrapOptions={{
+              onDeactivate: () => !mockExamLoading && setShowMockExamModal(false),
+              clickOutsideDeactivates: true,
+              escapeDeactivates: !mockExamLoading,
+            }}
           >
-            <button
-              onClick={() => setShowMockExamModal(false)}
-              disabled={mockExamLoading}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+            <div
+              ref={mockExamModalRef}
+              className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5 w-[380px] max-h-[85vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <h2 className="font-heading text-xl font-bold text-gray-800">Generate Mock Examination</h2>
-              <p className="text-sm text-gray-500 mt-1">Sections A–D question paper + answer key (2-page PDF)</p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Curriculum</label>
-                <div className="flex gap-2">
-                  {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setMockExamCurriculum(c)}
-                      disabled={mockExamLoading}
-                      className={`rounded-full px-4 py-2 font-bold text-sm transition disabled:opacity-60 ${
-                        mockExamCurriculum === c
-                          ? 'bg-[#2563eb] text-white'
-                          : 'bg-white border border-[#2563eb] text-[#2563eb]'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Topic</label>
-                <select
-                  value={mockExamTopic}
-                  onChange={(e) => setMockExamTopic(e.target.value)}
-                  disabled={mockExamLoading}
-                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 border border-gray-200 cursor-pointer disabled:opacity-60"
-                >
-                  {availableTopics.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Total Marks</label>
-                <div className="flex gap-2">
-                  {([50, 25] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setMockExamTotalMarks(m)}
-                      disabled={mockExamLoading}
-                      className={`flex-1 rounded-full py-2 font-bold text-sm transition disabled:opacity-60 ${
-                        mockExamTotalMarks === m
-                          ? 'bg-violet-600 text-white'
-                          : 'bg-white border border-violet-600 text-violet-600'
-                      }`}
-                    >
-                      {m} marks
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400 mt-1.5">
-                  {mockExamTotalMarks === 50
-                    ? 'A(10×1) + B(5×2) + C(5×3) + D(3×5) = 50 marks · ~50 mins'
-                    : 'A(5×1) + B(3×2) + C(3×3) + D(1×5) = 25 marks · ~25 mins'
-                  }
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={generateMockExam}
-                disabled={mockExamLoading}
-                className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {mockExamLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4" />
-                    📝 Download Mock Exam PDF
-                  </>
-                )}
-              </button>
               <button
                 onClick={() => setShowMockExamModal(false)}
                 disabled={mockExamLoading}
-                className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40"
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                aria-label="Close mock exam dialog"
               >
-                Cancel
+                <X className="w-5 h-5" />
               </button>
+
+              <div>
+                <h2 className="font-heading text-xl font-bold text-gray-800">Generate Mock Examination</h2>
+                <p className="text-sm text-gray-500 mt-1">Competency-weighted exam paper: Sections A–D (VSA/SA1/SA2/LA)</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Curriculum</label>
+                  <div className="flex gap-2">
+                    {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setMockExamCurriculum(c)}
+                        disabled={mockExamLoading}
+                        className={`rounded-full px-4 py-2 font-bold text-sm transition disabled:opacity-60 ${
+                          mockExamCurriculum === c
+                            ? 'bg-[#2563eb] text-white'
+                            : 'bg-white border border-[#2563eb] text-[#2563eb]'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Topics</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={mockExamTopics.includes('All Topics')}
+                        onChange={() => toggleMockExamTopic('All Topics')}
+                        disabled={mockExamLoading}
+                      />
+                      All Topics
+                    </label>
+                    {availableTopics.map((t) => (
+                      <label key={t} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={mockExamTopics.includes(t)}
+                          onChange={() => toggleMockExamTopic(t)}
+                          disabled={mockExamLoading}
+                        />
+                        {t}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Total Marks</label>
+                  <div className="flex gap-2">
+                    {([50, 25] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setMockExamTotalMarks(m)}
+                        disabled={mockExamLoading}
+                        className={`flex-1 rounded-full py-2 font-bold text-sm transition disabled:opacity-60 ${
+                          mockExamTotalMarks === m
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-white border border-violet-600 text-violet-600'
+                        }`}
+                      >
+                        {m} marks
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    {mockExamTotalMarks === 50
+                      ? 'A(10×1) + B(5×2) + C(5×3) + D(3×5) = 50 marks · ~50 mins'
+                      : 'A(5×1) + B(3×2) + C(3×3) + D(1×5) = 25 marks · ~25 mins'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => generateMockExam(false)}
+                  disabled={mockExamLoading}
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {mockExamLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      📝 Question Paper
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => generateMockExam(true)}
+                  disabled={mockExamLoading}
+                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {mockExamLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      🔑 Question Paper + Answer Key
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowMockExamModal(false)}
+                  disabled={mockExamLoading}
+                  className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
+          </FocusTrap>
         </div>
       )}
 

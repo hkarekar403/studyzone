@@ -7,6 +7,25 @@ export interface Question {
   modelAnswer?: string;
 }
 
+// Competency tiers for the Mock Exam generator, mirroring a school exam's
+// VSA / SA1 / SA2 / LA section structure (see BOOK_ANALYSIS.md Section 6).
+export type Competency = 'VSA' | 'SA1' | 'SA2' | 'LA';
+
+export const MOCK_EXAM_STRUCTURE: Record<25 | 50, Record<Competency, { count: number; marksEach: number; minutesEach: number }>> = {
+  50: {
+    VSA: { count: 10, marksEach: 1, minutesEach: 1 },
+    SA1: { count: 5, marksEach: 2, minutesEach: 2 },
+    SA2: { count: 5, marksEach: 3, minutesEach: 2.5 },
+    LA: { count: 3, marksEach: 5, minutesEach: 4.5 },
+  },
+  25: {
+    VSA: { count: 5, marksEach: 1, minutesEach: 1 },
+    SA1: { count: 3, marksEach: 2, minutesEach: 2 },
+    SA2: { count: 3, marksEach: 3, minutesEach: 2.5 },
+    LA: { count: 1, marksEach: 5, minutesEach: 4.5 },
+  },
+};
+
 export class MathQuestionGenerator {
   private askedQuestions: Set<string> = new Set();
   private curriculum: string = 'CBSE';
@@ -22,6 +41,7 @@ export class MathQuestionGenerator {
       this.easyTallyChart,
       this.easyProbability,
       this.easy2DShapes,
+      this.likelihoodQuestions,
     ],
     Medium: [
       this.mediumWordProblem,
@@ -36,6 +56,10 @@ export class MathQuestionGenerator {
       this.mediumTime,
       this.mediumBarGraph,
       this.medium3DShapes,
+      this.numberLineQuestions,
+      this.percentageGridQuestions,
+      this.likelihoodQuestions,
+      this.fractionWallQuestions,
     ],
     Hard: [
       this.hardMultiStep,
@@ -57,6 +81,7 @@ export class MathQuestionGenerator {
       this.hardSpotTheError,
       this.hardLogicalReasoning,
       this.hardMisleadingInfo,
+      this.numberLineQuestions,
     ],
   };
 
@@ -67,7 +92,7 @@ export class MathQuestionGenerator {
     "Division": [this.mediumDivision, this.hardDivisionRemainder],
     "Place Value": [this.easyPlaceValue],
     "Odd/Even": [this.easyOddEven],
-    "Fractions": [this.easyFraction, this.mediumFractionAddition, this.hardFractionUnlike],
+    "Fractions": [this.easyFraction, this.mediumFractionAddition, this.hardFractionUnlike, this.fractionWallQuestions, this.percentageGridQuestions],
     "Factors & Multiples": [this.mediumFactorsMultiples, this.hardFindAllSolutions],
     "Prime/Composite": [this.mediumPrimeComposite],
     "Squares & Cubes": [this.mediumSquareCube],
@@ -78,8 +103,9 @@ export class MathQuestionGenerator {
     "Patterns": [this.hardPatterns],
     "Algebra": [this.hardAlgebra],
     "Measurement": [this.hardMeasurement],
-    "Data Handling": [this.easyTallyChart, this.easyProbability, this.mediumBarGraph, this.hardProbability],
+    "Data Handling": [this.easyTallyChart, this.easyProbability, this.mediumBarGraph, this.hardProbability, this.likelihoodQuestions],
     "2D Shapes": [this.easy2DShapes],
+    "Number Line": [this.numberLineQuestions],
     "Word Problems": [
       this.mediumWordProblem,
       this.hardMultiStep,
@@ -136,6 +162,92 @@ export class MathQuestionGenerator {
     [this.hardSpotTheError, "Word Problems"],
     [this.hardLogicalReasoning, "Word Problems"],
     [this.hardMisleadingInfo, "Word Problems"],
+    [this.igcseInverseProblems, "Word Problems"],
+    [this.igcseEstimateFirst, "Word Problems"],
+    [this.igcseSpotTheError, "Word Problems"],
+    [this.igcseLogicalReasoning, "Word Problems"],
+    [this.igcseMisleadingInfo, "Word Problems"],
+    [this.igcseShopkeeperChallenge, "Money"],
+    [this.igcseMisleadingContext, "Word Problems"],
+    [this.numberLineQuestions, "Number Line"],
+    [this.percentageGridQuestions, "Fractions"],
+    [this.likelihoodQuestions, "Data Handling"],
+    [this.fractionWallQuestions, "Fractions"],
+  ]);
+
+  // Maps each generator function to its Mock Exam competency tier (VSA/SA1/SA2/LA).
+  // VSA = single-step recall/fact; SA1 = conceptual/visual (charts, diagrams, scales);
+  // SA2 = direct computation; LA = multi-step narrative word problems.
+  private competencyMap: Map<() => Question, Competency> = new Map([
+    // VSA — recall / single-step
+    [this.easyAddition, "VSA"],
+    [this.easySubtraction, "VSA"],
+    [this.easyMultiplication, "VSA"],
+    [this.easyPlaceValue, "VSA"],
+    [this.easyOddEven, "VSA"],
+    [this.easyFraction, "VSA"],
+    [this.mediumPrimeComposite, "VSA"],
+    [this.mediumSquareCube, "VSA"],
+    [this.easy2DShapes, "VSA"],
+    [this.medium3DShapes, "VSA"],
+    [this.igcse3DShapes, "VSA"],
+    [this.igcseTransformations, "VSA"],
+
+    // SA1 — conceptual / visual (charts, diagrams, scales).
+    // Note: generators that ALWAYS embed an [[TALLY_SVG]] diagram (easyTallyChart,
+    // mediumBarGraph, numberLineQuestions, percentageGridQuestions, likelihoodQuestions,
+    // fractionWallQuestions) are deliberately left untagged here — jsPDF can't render
+    // inline SVG, so a Mock Exam PDF can never use them; tagging them would starve
+    // this section (see getMockExamQuestions' per-attempt SVG filter).
+    [this.easyProbability, "SA1"],
+    [this.hardSymmetry, "SA1"],
+    [this.igcseDataReasoning, "SA1"],
+    [this.igcseNumberLine, "SA1"],
+
+    // SA2 — direct computation
+    [this.mediumWordProblem, "SA2"],
+    [this.mediumMultiplication, "SA2"],
+    [this.mediumDivision, "SA2"],
+    [this.mediumFactorsMultiples, "SA2"],
+    [this.mediumFractionAddition, "SA2"],
+    [this.mediumPerimeter, "SA2"],
+    [this.mediumMoney, "SA2"],
+    [this.mediumTime, "SA2"],
+    [this.hardDivisionRemainder, "SA2"],
+    [this.hardMeasurement, "SA2"],
+    [this.hardFractionUnlike, "SA2"],
+    [this.hardGeometryAngles, "SA2"],
+    [this.hardPatterns, "SA2"],
+    [this.hardAlgebra, "SA2"],
+    [this.hardArea, "SA2"],
+    [this.hardProbability, "SA2"],
+    [this.icseNumbers, "SA2"],
+    [this.icseFactorsMultiples, "SA2"],
+    [this.icseMixedNumbers, "SA2"],
+    [this.icseDecimals, "SA2"],
+    [this.igcseNumberSense, "SA2"],
+    [this.igcseDecimals, "SA2"],
+
+    // LA — multi-step narrative word problems
+    [this.hardMultiStep, "LA"],
+    [this.hardWorkerDays, "LA"],
+    [this.hardShopkeeperChallenge, "LA"],
+    [this.hardMisleadingContext, "LA"],
+    [this.hardInverseProblems, "LA"],
+    [this.hardEstimateFirst, "LA"],
+    [this.hardFindAllSolutions, "LA"],
+    [this.hardSpotTheError, "LA"],
+    [this.hardLogicalReasoning, "LA"],
+    [this.hardMisleadingInfo, "LA"],
+    [this.igcseShopkeeperChallenge, "LA"],
+    [this.igcseMisleadingContext, "LA"],
+    [this.igcseInverseProblems, "LA"],
+    [this.igcseEstimateFirst, "LA"],
+    [this.igcseSpotTheError, "LA"],
+    [this.igcseLogicalReasoning, "LA"],
+    [this.igcseMisleadingInfo, "LA"],
+    [this.icseWordProblems, "LA"],
+    [this.igcseReasoning, "LA"],
   ]);
 
   constructor(curriculum: 'CBSE' | 'ICSE' | 'IGCSE' = 'CBSE') {
@@ -149,45 +261,149 @@ export class MathQuestionGenerator {
   private getTopicGenerators(): Record<string, (() => Question)[]> {
     if (this.curriculum === 'ICSE') {
       return {
-        "Numbers": [this.icseNumbers.bind(this)],
-        "Factors & Multiples": [this.icseFactorsMultiples.bind(this)],
-        "Mixed Numbers": [this.icseMixedNumbers.bind(this)],
-        "Decimals": [this.icseDecimals.bind(this)],
-        "Word Problems": [this.icseWordProblems.bind(this)],
-        "Addition": [this.easyAddition.bind(this)],
-        "Subtraction": [this.easySubtraction.bind(this)],
-        "Multiplication": [this.mediumMultiplication.bind(this)],
-        "Division": [this.mediumDivision.bind(this)],
-        "Fractions": [this.easyFraction.bind(this), this.mediumFractionAddition.bind(this)],
-        "Geometry": [this.easy2DShapes.bind(this), this.medium3DShapes.bind(this)],
-        "Measurement": [this.hardMeasurement.bind(this)],
-        "Time": [this.mediumTime.bind(this)],
-        "Money": [this.mediumMoney.bind(this)],
-        "Data Handling": [this.easyTallyChart.bind(this), this.mediumBarGraph.bind(this)],
-        "Patterns": [this.hardPatterns.bind(this)],
+        "Numbers": [this.icseNumbers],
+        "Factors & Multiples": [this.icseFactorsMultiples],
+        "Mixed Numbers": [this.icseMixedNumbers],
+        "Decimals": [this.icseDecimals],
+        "Word Problems": [this.icseWordProblems],
+        "Addition": [this.easyAddition],
+        "Subtraction": [this.easySubtraction],
+        "Multiplication": [this.mediumMultiplication],
+        "Division": [this.mediumDivision],
+        "Fractions": [this.easyFraction, this.mediumFractionAddition, this.fractionWallQuestions, this.percentageGridQuestions],
+        "Geometry": [this.easy2DShapes, this.medium3DShapes],
+        "Measurement": [this.hardMeasurement],
+        "Time": [this.mediumTime],
+        "Money": [this.mediumMoney],
+        "Data Handling": [this.easyTallyChart, this.mediumBarGraph, this.likelihoodQuestions],
+        "Patterns": [this.hardPatterns],
+        "Number Line": [this.numberLineQuestions],
       };
     }
     if (this.curriculum === 'IGCSE') {
       return {
-        "Number Sense": [this.igcseNumberSense.bind(this)],
-        "Decimals & Percentages": [this.igcseDecimals.bind(this)],
-        "Number Line": [this.igcseNumberLine.bind(this)],
-        "3D Shapes": [this.igcse3DShapes.bind(this)],
-        "Transformations": [this.igcseTransformations.bind(this)],
-        "Data & Reasoning": [this.igcseDataReasoning.bind(this)],
-        "Reasoning": [this.igcseReasoning.bind(this)],
-        "Addition": [this.easyAddition.bind(this)],
-        "Subtraction": [this.easySubtraction.bind(this)],
-        "Multiplication": [this.mediumMultiplication.bind(this)],
-        "Division": [this.mediumDivision.bind(this)],
-        "Fractions": [this.easyFraction.bind(this)],
-        "Geometry": [this.easy2DShapes.bind(this), this.hardGeometryAngles.bind(this)],
-        "Measurement": [this.hardMeasurement.bind(this)],
-        "Patterns": [this.hardPatterns.bind(this)],
-        "Algebra": [this.hardAlgebra.bind(this)],
+        "Number Sense": [this.igcseNumberSense],
+        "Decimals & Percentages": [this.igcseDecimals, this.percentageGridQuestions],
+        "Number Line": [this.igcseNumberLine, this.numberLineQuestions],
+        "3D Shapes": [this.igcse3DShapes],
+        "Transformations": [this.igcseTransformations],
+        "Data & Reasoning": [this.igcseDataReasoning, this.likelihoodQuestions],
+        "Reasoning": [this.igcseReasoning],
+        "Addition": [this.easyAddition],
+        "Subtraction": [this.easySubtraction],
+        "Multiplication": [this.mediumMultiplication],
+        "Division": [this.mediumDivision],
+        "Fractions": [this.easyFraction, this.fractionWallQuestions],
+        "Geometry": [this.easy2DShapes, this.hardGeometryAngles],
+        "Measurement": [this.hardMeasurement],
+        "Patterns": [this.hardPatterns],
+        "Algebra": [this.hardAlgebra],
+        "Word Problems": [
+          this.igcseInverseProblems,
+          this.igcseEstimateFirst,
+          this.hardFindAllSolutions,
+          this.igcseSpotTheError,
+          this.igcseLogicalReasoning,
+          this.igcseMisleadingInfo,
+          this.igcseShopkeeperChallenge,
+          this.igcseMisleadingContext,
+        ],
       };
     }
     return this.topicGenerators;
+  }
+
+  // Returns the difficulty-random generator pool, swapping in international-context
+  // variants of the Batch A "cognitive difficulty" generators for IGCSE's Hard tier
+  // (same question shapes, dollars/international names instead of rupees/Indian names).
+  private getDifficultyGenerators(difficulty: string): (() => Question)[] {
+    const base = this.generators[difficulty] || this.generators.Easy;
+    if (this.curriculum === 'IGCSE' && difficulty === 'Hard') {
+      const swapMap = new Map<() => Question, () => Question>([
+        [this.hardInverseProblems, this.igcseInverseProblems],
+        [this.hardEstimateFirst, this.igcseEstimateFirst],
+        [this.hardSpotTheError, this.igcseSpotTheError],
+        [this.hardLogicalReasoning, this.igcseLogicalReasoning],
+        [this.hardMisleadingInfo, this.igcseMisleadingInfo],
+        [this.hardShopkeeperChallenge, this.igcseShopkeeperChallenge],
+        [this.hardMisleadingContext, this.igcseMisleadingContext],
+      ]);
+      return base.map(fn => swapMap.get(fn) || fn);
+    }
+    return base;
+  }
+
+  // Resolves the candidate generator functions for a Mock Exam topic filter.
+  // Empty/["All Topics"] falls back to every generator function this curriculum knows about.
+  private getCandidateFunctionsForTopics(topics: string[]): (() => Question)[] {
+    const topicGens = this.getTopicGenerators();
+    const allFns = new Set<() => Question>();
+    Object.values(topicGens).forEach(fns => fns.forEach(fn => allFns.add(fn)));
+
+    if (!topics || topics.length === 0 || topics.includes('All Topics')) {
+      return Array.from(allFns);
+    }
+
+    const filtered = new Set<() => Question>();
+    for (const t of topics) {
+      const fns = topicGens[t];
+      if (fns) fns.forEach(fn => filtered.add(fn));
+    }
+    return filtered.size > 0 ? Array.from(filtered) : Array.from(allFns);
+  }
+
+  // Builds a competency-weighted Mock Exam paper: VSA/SA1/SA2/LA sections sized per
+  // MOCK_EXAM_STRUCTURE, drawn from the topic-filtered candidate pool, deduplicated
+  // within the exam, and never including SVG-based questions (can't render in jsPDF).
+  getMockExamQuestions(topics: string[], totalMarks: 25 | 50): Record<Competency, Question[]> {
+    const structure = MOCK_EXAM_STRUCTURE[totalMarks];
+    const candidates = this.getCandidateFunctionsForTopics(topics);
+
+    const bySection: Record<Competency, (() => Question)[]> = { VSA: [], SA1: [], SA2: [], LA: [] };
+    for (const fn of candidates) {
+      const competency = this.competencyMap.get(fn);
+      if (competency) bySection[competency].push(fn);
+    }
+
+    const generateSection = (count: number, competencyFns: (() => Question)[]): Question[] => {
+      const pool = competencyFns.length > 0 ? competencyFns : candidates;
+      const questions: Question[] = [];
+      const seenInExam = new Set<string>();
+      const maxAttempts = count * 40;
+      let attempts = 0;
+
+      while (questions.length < count && attempts < maxAttempts) {
+        attempts++;
+        const fn = pool[Math.floor(Math.random() * pool.length)];
+        const raw = fn.call(this) as Question;
+        if (raw.question.includes('[[TALLY_SVG]]')) continue;
+        if (seenInExam.has(raw.question)) continue;
+        seenInExam.add(raw.question);
+        questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
+      }
+
+      // Guarantee the exact requested count even if the pool ran out of unique,
+      // non-SVG variety — repeats are preferable to a short exam paper.
+      while (questions.length < count) {
+        const fn = pool[Math.floor(Math.random() * pool.length)];
+        let raw = fn.call(this) as Question;
+        let tries = 0;
+        while (raw.question.includes('[[TALLY_SVG]]') && tries < 10) {
+          raw = fn.call(this) as Question;
+          tries++;
+        }
+        questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
+      }
+
+      return questions;
+    };
+
+    return {
+      VSA: generateSection(structure.VSA.count, bySection.VSA),
+      SA1: generateSection(structure.SA1.count, bySection.SA1),
+      SA2: generateSection(structure.SA2.count, bySection.SA2),
+      LA: generateSection(structure.LA.count, bySection.LA),
+    };
   }
 
   clearSession(): void {
@@ -204,7 +420,7 @@ export class MathQuestionGenerator {
         const fn = fns[Math.floor(Math.random() * fns.length)];
         q = { ...fn.call(this), topic };
       } else {
-        const generators = this.generators[difficulty] || this.generators.Easy;
+        const generators = this.getDifficultyGenerators(difficulty);
         const fn = generators[Math.floor(Math.random() * generators.length)];
         const result = fn.call(this) as Question;
         q = { ...result, topic: this.detectTopicMap.get(fn) || "General" };
@@ -430,11 +646,21 @@ export class MathQuestionGenerator {
     const quotient = Math.floor(Math.random() * 7) + 8;
     const remainder = Math.floor(Math.random() * (divisor - 1)) + 1;
     const dividend = divisor * quotient + remainder;
-    return {
-      question: `Divide ${dividend} by ${divisor}.\nWrite the answer as quotient and remainder.`,
-      answer: `Quotient = ${quotient}, Remainder = ${remainder}`,
-      working: `Working:\n${divisor} x ${quotient} = ${divisor * quotient}\n${divisor * quotient} + ${remainder} = ${dividend}\nSo quotient = ${quotient} and remainder = ${remainder}`,
-    };
+
+    if (Math.random() < 0.5) {
+      return {
+        question: `Divide ${dividend} by ${divisor}.\nWrite the answer as quotient and remainder.`,
+        answer: `Quotient = ${quotient}, Remainder = ${remainder}`,
+        working: `Working:\n${divisor} x ${quotient} = ${divisor * quotient}\n${divisor * quotient} + ${remainder} = ${dividend}\nSo quotient = ${quotient} and remainder = ${remainder}`,
+      };
+    } else {
+      // Inverse direction: reconstruct the dividend from divisor, quotient and remainder.
+      return {
+        question: `When a number is divided by ${divisor}, the quotient is ${quotient} and the remainder is ${remainder}.\nWhat is the number?`,
+        answer: dividend.toString(),
+        working: `Working:\nnumber = divisor × quotient + remainder\n= ${divisor} × ${quotient} + ${remainder}\n= ${divisor * quotient} + ${remainder}\n= ${dividend}`,
+      };
+    }
   }
 
   private hardMeasurement(): Question {
@@ -451,7 +677,7 @@ export class MathQuestionGenerator {
   private easyPlaceValue(): Question {
     const num = Math.floor(Math.random() * 900000) + 100000;
     const numStr = num.toString();
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(Math.random() * 5);
 
     if (t === 0) {
       const digitIndex = Math.floor(Math.random() * numStr.length);
@@ -480,13 +706,23 @@ export class MathQuestionGenerator {
         answer: answer,
         working: `Working:\n${workingLines.join('\n')}\nExpanded form = ${answer}`,
       };
-    } else {
+    } else if (t === 3) {
       const digitIndex = Math.floor(Math.random() * numStr.length);
       const digit = numStr[digitIndex];
       return {
         question: `What is the face value of ${digit} in the number ${num}?`,
         answer: digit,
         working: `Working:\nFace value of a digit is the digit itself, regardless of its position.\nFace value of ${digit} = ${digit}`,
+      };
+    } else {
+      // Inverse/repeated-scaling reasoning: work backwards through two ×10 steps.
+      const name = this.randomIndianName();
+      const finalValue = (Math.floor(Math.random() * 90) + 10) * 100;
+      const original = finalValue / 100;
+      return {
+        question: `${name} multiplies a number by 10, then multiplies the result by 10 again.\n${name} ends up with ${finalValue}. What number did ${name} start with?`,
+        answer: original.toString(),
+        working: `Working:\nMultiplying by 10 twice is the same as multiplying by 100.\n${finalValue} ÷ 100 = ${original}\n${name} started with ${original}.`,
       };
     }
   }
@@ -797,24 +1033,71 @@ export class MathQuestionGenerator {
   }
 
   private hardFractionUnlike(): Question {
-    const denom1 = Math.floor(Math.random() * 4) + 2;
-    const denom2 = Math.floor(Math.random() * 4) + 2;
-    const num1 = Math.floor(Math.random() * (denom1 - 1)) + 1;
-    const num2 = Math.floor(Math.random() * (denom2 - 1)) + 1;
-    const lcm = this.lcm(denom1, denom2);
-    const newNum1 = num1 * (lcm / denom1);
-    const newNum2 = num2 * (lcm / denom2);
-    const sumNum = newNum1 + newNum2;
+    const t = Math.floor(Math.random() * 4);
 
-    return {
-      question: `Add: ${num1}/${denom1} + ${num2}/${denom2} = ?`,
-      answer: `${sumNum}/${lcm}`,
-      working: `Working:\nLCM of ${denom1} and ${denom2} = ${lcm}\n${num1}/${denom1} = ${newNum1}/${lcm}\n${num2}/${denom2} = ${newNum2}/${lcm}\n${newNum1}/${lcm} + ${newNum2}/${lcm} = ${sumNum}/${lcm}`,
-    };
+    if (t === 0) {
+      const denom1 = Math.floor(Math.random() * 4) + 2;
+      const denom2 = Math.floor(Math.random() * 4) + 2;
+      const num1 = Math.floor(Math.random() * (denom1 - 1)) + 1;
+      const num2 = Math.floor(Math.random() * (denom2 - 1)) + 1;
+      const lcm = this.lcm(denom1, denom2);
+      const newNum1 = num1 * (lcm / denom1);
+      const newNum2 = num2 * (lcm / denom2);
+      const sumNum = newNum1 + newNum2;
+
+      return {
+        question: `Add: ${num1}/${denom1} + ${num2}/${denom2} = ?`,
+        answer: `${sumNum}/${lcm}`,
+        working: `Working:\nLCM of ${denom1} and ${denom2} = ${lcm}\n${num1}/${denom1} = ${newNum1}/${lcm}\n${num2}/${denom2} = ${newNum2}/${lcm}\n${newNum1}/${lcm} + ${newNum2}/${lcm} = ${sumNum}/${lcm}`,
+      };
+    } else if (t === 1) {
+      const denomA = Math.floor(Math.random() * 4) + 2;
+      const denomB = Math.floor(Math.random() * 4) + 2;
+      const numA = Math.floor(Math.random() * (denomA - 1)) + 1;
+      const numB = Math.floor(Math.random() * (denomB - 1)) + 1;
+      const lcm = this.lcm(denomA, denomB);
+      const lcmA = numA * (lcm / denomA);
+      const lcmB = numB * (lcm / denomB);
+      const bigger = lcmA >= lcmB ? { num: numA, denom: denomA, lcmVal: lcmA } : { num: numB, denom: denomB, lcmVal: lcmB };
+      const smaller = lcmA >= lcmB ? { num: numB, denom: denomB, lcmVal: lcmB } : { num: numA, denom: denomA, lcmVal: lcmA };
+      const diffNum = bigger.lcmVal - smaller.lcmVal;
+      const answer = diffNum === 0 ? '0' : `${diffNum}/${lcm}`;
+
+      return {
+        question: `Subtract: ${bigger.num}/${bigger.denom} - ${smaller.num}/${smaller.denom} = ?`,
+        answer,
+        working: `Working:\nLCM of ${bigger.denom} and ${smaller.denom} = ${lcm}\n${bigger.num}/${bigger.denom} = ${bigger.lcmVal}/${lcm}\n${smaller.num}/${smaller.denom} = ${smaller.lcmVal}/${lcm}\n${bigger.lcmVal}/${lcm} - ${smaller.lcmVal}/${lcm} = ${answer}`,
+      };
+    } else if (t === 2) {
+      // Multiply a unit fraction by a whole number.
+      const denom = Math.floor(Math.random() * 8) + 3;
+      const whole = Math.floor(Math.random() * 6) + 2;
+      const g = this.gcd(whole, denom);
+      const simplifiedNum = whole / g;
+      const simplifiedDenom = denom / g;
+      const answer = simplifiedDenom === 1 ? String(simplifiedNum) : `${simplifiedNum}/${simplifiedDenom}`;
+
+      return {
+        question: `Multiply: 1/${denom} × ${whole} = ?`,
+        answer,
+        working: `Working:\n1/${denom} × ${whole} = ${whole}/${denom}\n${g > 1 ? `Simplify by dividing top and bottom by ${g}: ${answer}` : `Already in simplest form: ${answer}`}`,
+      };
+    } else {
+      // Divide a unit fraction by a whole number.
+      const denom = Math.floor(Math.random() * 6) + 2;
+      const whole = Math.floor(Math.random() * 6) + 2;
+      const newDenom = denom * whole;
+
+      return {
+        question: `Divide: 1/${denom} ÷ ${whole} = ?`,
+        answer: `1/${newDenom}`,
+        working: `Working:\nDividing by a whole number multiplies the denominator.\n1/${denom} ÷ ${whole} = 1/(${denom} × ${whole}) = 1/${newDenom}`,
+      };
+    }
   }
 
   private hardGeometryAngles(): Question {
-    const types = ['angle_sum', 'right_angle', 'acute_obtuse'];
+    const types = ['angle_sum', 'classify_triangle', 'straight_line', 'vertically_opposite'];
     const type = types[Math.floor(Math.random() * types.length)];
 
     if (type === 'angle_sum') {
@@ -826,34 +1109,100 @@ export class MathQuestionGenerator {
         answer: `${angle3}°`,
         working: `Working:\nSum of angles in a triangle = 180°\n${angle1}° + ${angle2}° + ? = 180°\n? = 180° - ${angle1}° - ${angle2}° = ${angle3}°`,
       };
-    } else if (type === 'right_angle') {
+    } else if (type === 'classify_triangle') {
+      // Two given angles bounded so the derived third angle is always positive (20-140°).
+      const angle1 = Math.floor(Math.random() * 61) + 20;
+      const angle2 = Math.floor(Math.random() * 61) + 20;
+      const angle3 = 180 - angle1 - angle2;
+      const maxAngle = Math.max(angle1, angle2, angle3);
+      const classification = maxAngle === 90 ? 'Right' : maxAngle > 90 ? 'Obtuse' : 'Acute';
       return {
-        question: `A right angle measures how many degrees?`,
-        answer: `90°`,
-        working: `Working:\nA right angle = 90°\nIt's represented by a small square in the corner.`,
+        question: `A triangle has two angles of ${angle1}° and ${angle2}°.\nFind the third angle, then classify the triangle as Acute, Right, or Obtuse.`,
+        answer: classification,
+        working: `Working:\nThird angle = 180° - ${angle1}° - ${angle2}° = ${angle3}°\nThe three angles are ${angle1}°, ${angle2}° and ${angle3}°.\nThe largest angle is ${maxAngle}°, so the triangle is ${classification}.`,
       };
+    } else if (type === 'straight_line') {
+      const useThree = Math.random() < 0.5;
+      if (useThree) {
+        const a = Math.floor(Math.random() * 60) + 20;
+        const b = Math.floor(Math.random() * 60) + 20;
+        const c = 180 - a - b;
+        return {
+          question: `Three angles lie on a straight line: ${a}°, ${b}°, and an unknown angle.\nFind the unknown angle.`,
+          answer: `${c}°`,
+          working: `Working:\nAngles on a straight line add up to 180°\n${a}° + ${b}° + ? = 180°\n? = 180° - ${a}° - ${b}° = ${c}°`,
+        };
+      } else {
+        const a = Math.floor(Math.random() * 150) + 15;
+        const b = 180 - a;
+        return {
+          question: `Two angles lie on a straight line.\n\n[[TALLY_SVG]]${this.generateAngleSVG(a)}\n\nOne angle is ${a}°. Find the other angle.`,
+          answer: `${b}°`,
+          working: `Working:\nAngles on a straight line add up to 180°\n${a}° + ? = 180°\n? = 180° - ${a}° = ${b}°`,
+        };
+      }
     } else {
-      const angle = Math.floor(Math.random() * 170) + 1;
-      const classification = angle < 90 ? 'acute' : angle === 90 ? 'right' : angle < 180 ? 'obtuse' : 'reflex';
+      const a = Math.floor(Math.random() * 150) + 15;
+      const b = 180 - a;
       return {
-        question: `Classify this angle: ${angle}°\n\n[[TALLY_SVG]]${this.generateAngleSVG(angle)}`,
-        answer: classification.charAt(0).toUpperCase() + classification.slice(1),
-        working: `Working:\n${angle}° is a ${classification} angle.\n${angle < 90 ? '(Less than 90°)' : angle === 90 ? '(Exactly 90°)' : '(Between 90° and 180°)'}`,
+        question: `Two straight lines cross at a point, forming four angles.\nOne of the angles is ${a}°.\nFind the other three angles (list all three).`,
+        answer: `${a}, ${b}, ${b}`,
+        working: `Working:\nThe angle vertically opposite ${a}° is also ${a}° (vertically opposite angles are equal).\nThe two angles adjacent to it lie on a straight line with it: 180° - ${a}° = ${b}° each.\nThe other three angles are ${a}°, ${b}° and ${b}°.`,
       };
     }
   }
 
   private hardPatterns(): Question {
-    const start = Math.floor(Math.random() * 10) + 1;
-    const diff = Math.floor(Math.random() * 5) + 1;
-    const seq = [start, start + diff, start + 2 * diff, start + 3 * diff, '?'];
-    const answer = start + 4 * diff;
+    const t = Math.floor(Math.random() * 3);
 
-    return {
-      question: `Find the next number in the sequence:\n${seq.slice(0, 4).join(', ')}, ?`,
-      answer: answer.toString(),
-      working: `Working:\nPattern: Each number increases by ${diff}\n${start} + ${diff} = ${start + diff}\n${start + diff} + ${diff} = ${start + 2 * diff}\n${start + 2 * diff} + ${diff} = ${start + 3 * diff}\n${start + 3 * diff} + ${diff} = ${answer}`,
-    };
+    if (t === 0) {
+      // Multiplicative rule: each term is multiplied by a fixed ratio (not a constant-difference sequence).
+      const start = Math.floor(Math.random() * 4) + 2;
+      const ratio = Math.floor(Math.random() * 2) + 2;
+      const terms = [start, start * ratio, start * ratio * ratio, start * ratio * ratio * ratio];
+      const answer = terms[3] * ratio;
+      const steps = terms.map((v, i) => (i === 0 ? `${v}` : `${terms[i - 1]} × ${ratio} = ${v}`)).join('\n');
+      return {
+        question: `Find the next number in the sequence:\n${terms.join(', ')}, ?`,
+        answer: answer.toString(),
+        working: `Working:\nEach term is found by multiplying the previous term by ${ratio}.\n${steps}\n${terms[3]} × ${ratio} = ${answer}`,
+      };
+    } else if (t === 1) {
+      // Two-step alternating rule: add x, then add y, then add x, then add y...
+      const start = Math.floor(Math.random() * 10) + 1;
+      const x = Math.floor(Math.random() * 6) + 2;
+      const y = Math.floor(Math.random() * 6) + 8;
+      const steps = [x, y, x, y];
+      const terms = [start];
+      for (const step of steps) terms.push(terms[terms.length - 1] + step);
+      const answer = terms[terms.length - 1] + x;
+      const workingSteps = terms.map((v, i) => (i === 0 ? `${v}` : `+ ${steps[i - 1]} → ${v}`)).join('\n');
+      return {
+        question: `Find the next number in the sequence:\n${terms.join(', ')}, ?`,
+        answer: answer.toString(),
+        working: `Working:\nThe rule alternates two steps: add ${x}, then add ${y}, repeating.\n${workingSteps}\n+ ${x} → ${answer}`,
+      };
+    } else {
+      // Increasing-difference rule: the gap between consecutive terms grows by a fixed amount each step.
+      const start = Math.floor(Math.random() * 5) + 1;
+      const firstDiff = Math.floor(Math.random() * 3) + 1;
+      const increase = Math.floor(Math.random() * 2) + 1;
+      const diffs = [firstDiff, firstDiff + increase, firstDiff + 2 * increase, firstDiff + 3 * increase];
+      const terms = [start];
+      for (const d of diffs) terms.push(terms[terms.length - 1] + d);
+      const nextDiff = firstDiff + 4 * increase;
+      const answer = terms[terms.length - 1] + nextDiff;
+      return {
+        question: `Find the next number in the sequence:\n${terms.join(', ')}, ?`,
+        answer: answer.toString(),
+        working: `Working:\nLook at the differences between consecutive terms: ${diffs.join(', ')}\nThe differences increase by ${increase} each time, so the next difference is ${nextDiff}.\n${terms[terms.length - 1]} + ${nextDiff} = ${answer}`,
+      };
+    }
+  }
+
+  // Renders a coefficient*variable term, omitting the coefficient when it is 1 (e.g. "x" not "1x").
+  private formatAlgebraTerm(coeff: number, varName: string = 'x'): string {
+    return coeff === 1 ? varName : `${coeff}${varName}`;
   }
 
   private hardAlgebra(): Question {
@@ -861,11 +1210,13 @@ export class MathQuestionGenerator {
     const a = Math.floor(Math.random() * 5) + 1;
     const b = Math.floor(Math.random() * 20) + 5;
     const sum = a * x + b;
+    const term = this.formatAlgebraTerm(a);
+    const divisionStep = a === 1 ? '' : `\nx = ${sum - b} ÷ ${a}\nx = ${x}`;
 
     return {
-      question: `Solve: ${a}x + ${b} = ${sum}. Find the value of x.`,
+      question: `Solve: ${term} + ${b} = ${sum}. Find the value of x.`,
       answer: x.toString(),
-      working: `Working:\n${a}x + ${b} = ${sum}\n${a}x = ${sum} - ${b}\n${a}x = ${sum - b}\nx = ${sum - b} ÷ ${a}\nx = ${x}`,
+      working: `Working:\n${term} + ${b} = ${sum}\n${term} = ${sum} - ${b}\n${term} = ${sum - b}${divisionStep}`,
     };
   }
 
@@ -1005,8 +1356,118 @@ export class MathQuestionGenerator {
     }
   }
 
+  // IGCSE variants of hardShopkeeperChallenge / hardMisleadingContext — dollars/international
+  // names instead of rupees/Indian names, otherwise identical question shapes.
+  private igcseShopkeeperChallenge(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const items = [
+        { item: 'toys', qty: 8, cp: 25, sp: 30 },
+        { item: 'books', qty: 6, cp: 40, sp: 50 },
+        { item: 'pens', qty: 12, cp: 10, sp: 12 },
+        { item: 'bottles', qty: 5, cp: 60, sp: 80 },
+        { item: 'toys', qty: 8, cp: 30, sp: 20 },
+        { item: 'mugs', qty: 6, cp: 50, sp: 40 },
+      ];
+      const sc = items[Math.floor(Math.random() * items.length)];
+      const { item, qty, cp, sp } = sc;
+      const totalCost = qty * cp;
+      const totalRevenue = (qty - 1) * sp;
+      const diff = totalRevenue - totalCost;
+      const label = diff >= 0 ? 'Profit' : 'Loss';
+      const absVal = Math.abs(diff);
+      return {
+        question: `A shopkeeper buys ${qty} ${item} at $${cp} each.\nOne ${item.slice(0, -1)} is damaged and cannot be sold.\nThe rest are sold at $${sp} each.\nFind the profit or loss.`,
+        answer: `${label} of $${absVal}`,
+        working: `Working:\nTotal cost = ${qty} × $${cp} = $${totalCost}\nItems sold = ${qty} − 1 = ${qty - 1}\nTotal revenue = ${qty - 1} × $${sp} = $${totalRevenue}\n${label} = $${Math.max(totalRevenue, totalCost)} − $${Math.min(totalRevenue, totalCost)} = $${absVal} (${label})`,
+      };
+    } else if (t === 1) {
+      const scenarios = [
+        { qty: 4, price: 50, disc: 10 },
+        { qty: 5, price: 40, disc: 20 },
+        { qty: 3, price: 100, disc: 25 },
+        { qty: 6, price: 50, disc: 10 },
+        { qty: 4, price: 75, disc: 20 },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const name = this.randomInternationalName();
+      const total = s.qty * s.price;
+      const discount = (total * s.disc) / 100;
+      const finalAmount = total - discount;
+      return {
+        question: `${name} buys ${s.qty} notebooks at $${s.price} each.\nThe shop gives a ${s.disc}% discount on the total bill.\nHow much does ${name} pay?`,
+        answer: `$${finalAmount}`,
+        working: `Working:\nTotal before discount = ${s.qty} × $${s.price} = $${total}\nDiscount = ${s.disc}% of $${total} = $${discount}\nAmount paid = $${total} − $${discount} = $${finalAmount}`,
+      };
+    } else {
+      const scenarios = [
+        { wage: 200, days: 5, bonus: 100, expense: 150 },
+        { wage: 150, days: 6, bonus: 50, expense: 200 },
+        { wage: 300, days: 4, bonus: 200, expense: 250 },
+        { wage: 250, days: 3, bonus: 100, expense: 300 },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const name = this.randomInternationalName();
+      const totalEarned = s.wage * s.days + s.bonus;
+      const remaining = totalEarned - s.expense;
+      return {
+        question: `${name} earns $${s.wage} per day and works for ${s.days} days.\n${name} also receives a bonus of $${s.bonus}.\n${name} spends $${s.expense} on groceries.\nHow much money does ${name} have left?`,
+        answer: `$${remaining}`,
+        working: `Working:\nWages = ${s.days} × $${s.wage} = $${s.wage * s.days}\nTotal earnings = $${s.wage * s.days} + $${s.bonus} = $${totalEarned}\nMoney left = $${totalEarned} − $${s.expense} = $${remaining}`,
+      };
+    }
+  }
+
+  private igcseMisleadingContext(): Question {
+    const t = Math.floor(Math.random() * 3);
+    if (t === 0) {
+      const length = Math.floor(Math.random() * 10) + 8;
+      const width = Math.floor(Math.random() * 6) + 4;
+      const depth = Math.floor(Math.random() * 3) + 2;
+      const perimeter = 2 * (length + width);
+      return {
+        question: `A rectangular garden is ${length} m long, ${width} m wide, and has a ${depth} m tall boundary wall.\nWhat is the perimeter of the garden?`,
+        answer: `${perimeter} m`,
+        working: `Working:\nThe wall height (${depth} m) is NOT needed for the perimeter.\nPerimeter = 2 × (length + width) = 2 × (${length} + ${width}) = ${perimeter} m`,
+      };
+    } else if (t === 1) {
+      const trios = [['Emma', 'Liam', 'Sofia'], ['Noah', 'Olivia', 'Ethan'], ['Ava', 'Oliver', 'Mia']];
+      const trio = trios[Math.floor(Math.random() * trios.length)];
+      const scoreA = Math.floor(Math.random() * 20) + 60;
+      const scoreB = Math.floor(Math.random() * 20) + 60;
+      const scoreC = Math.floor(Math.random() * 20) + 60;
+      const diff = Math.abs(scoreA - scoreB);
+      const higher = scoreA >= scoreB ? trio[0] : trio[1];
+      const lower = scoreA >= scoreB ? trio[1] : trio[0];
+      return {
+        question: `${trio[0]} scored ${scoreA} marks, ${trio[1]} scored ${scoreB} marks, and ${trio[2]} scored ${scoreC} marks.\nBy how many marks did ${higher} score more than ${lower}?`,
+        answer: `${diff} marks`,
+        working: `Working:\n${trio[2]}'s score (${scoreC}) is not needed for this question.\nDifference = ${Math.max(scoreA, scoreB)} − ${Math.min(scoreA, scoreB)} = ${diff} marks`,
+      };
+    } else {
+      const scenarios = [
+        { speed: 60, time: 3, detail: 'red car', extra: 'The car was bought 2 years ago for $30,000.' },
+        { speed: 80, time: 2, detail: 'blue bus', extra: 'The bus seats 42 passengers.' },
+        { speed: 50, time: 4, detail: 'green truck', extra: 'The truck is 5 years old.' },
+        { speed: 45, time: 4, detail: 'school van', extra: 'The van carries 3 teachers and 15 students.' },
+      ];
+      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const distance = s.speed * s.time;
+      return {
+        question: `A ${s.detail} travels at ${s.speed} km/h for ${s.time} hours.\n${s.extra}\nHow far does the ${s.detail} travel?`,
+        answer: `${distance} km`,
+        working: `Working:\nThe extra information is not needed to find the distance.\nDistance = Speed × Time = ${s.speed} × ${s.time} = ${distance} km`,
+      };
+    }
+  }
+
   private randomIndianName(): string {
     const names = ['Aarav', 'Diya', 'Kabir', 'Anaya', 'Vihaan', 'Ishaan', 'Saanvi', 'Reyansh', 'Myra', 'Arjun'];
+    return names[Math.floor(Math.random() * names.length)];
+  }
+
+  private randomInternationalName(): string {
+    const names = ['Emma', 'Liam', 'Sofia', 'Noah', 'Ava', 'Oliver', 'Mia', 'Lucas', 'Olivia', 'Ethan'];
     return names[Math.floor(Math.random() * names.length)];
   }
 
@@ -1239,6 +1700,199 @@ export class MathQuestionGenerator {
     }
   }
 
+  // ── IGCSE variants of the Batch A "cognitive difficulty" generators ─────────
+  // Same question shapes as their CBSE counterparts above, but using international
+  // contexts (dollars, international names) instead of Indian rupees/names.
+
+  private igcseInverseProblems(): Question {
+    const t = Math.floor(Math.random() * 4);
+    const name = this.randomInternationalName();
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 20) + 4;
+      const b = Math.floor(Math.random() * 15) + 3;
+      const product = a * b;
+      return {
+        question: `The product of two numbers is ${product}. One number is ${a}.\nFind the other number.`,
+        answer: b.toString(),
+        working: `Working:\nOther number = Product ÷ known number\n= ${product} ÷ ${a} = ${b}`,
+      };
+    } else if (t === 1) {
+      const divisor = Math.floor(Math.random() * 9) + 4;
+      const quotient = Math.floor(Math.random() * 25) + 6;
+      const number = divisor * quotient;
+      return {
+        question: `A number divided by ${divisor} gives ${quotient}.\nWhat is the number?`,
+        answer: number.toString(),
+        working: `Working:\nNumber ÷ ${divisor} = ${quotient}\nSo the number = ${quotient} × ${divisor} = ${number}`,
+      };
+    } else if (t === 2) {
+      const purchases = ['a new bicycle', 'football boots', 'a birthday present', 'a school bag', 'holiday souvenirs'];
+      const purchase = purchases[Math.floor(Math.random() * purchases.length)];
+      const left = Math.floor(Math.random() * 200) + 50;
+      const spent = Math.floor(Math.random() * 300) + 100;
+      const start = spent + left;
+      return {
+        question: `After spending $${spent} on ${purchase}, ${name} has $${left} left.\nHow much money did ${name} start with?`,
+        answer: `$${start}`,
+        working: `Working:\nMoney at start = amount spent + amount left\n= $${spent} + $${left} = $${start}`,
+      };
+    } else {
+      const n = Math.floor(Math.random() * 50) + 10;
+      const sum = Math.floor(Math.random() * 200) + 100;
+      const number = sum - n;
+      return {
+        question: `${n} is added to a number to get ${sum}.\nFind the number.`,
+        answer: number.toString(),
+        working: `Working:\nnumber + ${n} = ${sum}\nnumber = ${sum} - ${n} = ${number}`,
+      };
+    }
+  }
+
+  private igcseEstimateFirst(): Question {
+    const t = Math.floor(Math.random() * 3);
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 700) + 150;
+      const b = Math.floor(Math.random() * 700) + 150;
+      const exact = a + b;
+      const ra = Math.round(a / 100) * 100;
+      const rb = Math.round(b / 100) * 100;
+      const estimate = ra + rb;
+      return {
+        question: `Estimate ${a} + ${b} by rounding each number to the nearest 100, then find the exact answer.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: ${estimate}, Exact: ${exact}`,
+        working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} + ${rb} = ${estimate}\nExact = ${a} + ${b} = ${exact}`,
+      };
+    } else if (t === 1) {
+      let a = Math.floor(Math.random() * 700) + 300;
+      let b = Math.floor(Math.random() * 400) + 100;
+      if (b > a) { [a, b] = [b, a]; }
+      const exact = a - b;
+      const ra = Math.round(a / 100) * 100;
+      const rb = Math.round(b / 100) * 100;
+      const estimate = ra - rb;
+      return {
+        question: `Estimate ${a} - ${b} by rounding each number to the nearest 100, then find the exact answer.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: ${estimate}, Exact: ${exact}`,
+        working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} - ${rb} = ${estimate}\nExact = ${a} - ${b} = ${exact}`,
+      };
+    } else {
+      const items = ['postcards', 'notebooks', 'badges', 'storybooks', 'pencil cases'];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const qty = Math.floor(Math.random() * 6) + 4;
+      const price = Math.floor(Math.random() * 40) + 12;
+      const exact = qty * price;
+      const rp = Math.round(price / 10) * 10;
+      const estimate = qty * rp;
+      return {
+        question: `A shop sells ${item} at $${price} each. Estimate the cost of ${qty} ${item} by rounding the price to the nearest $10, then find the exact cost.\nGive both your estimate and the exact answer.`,
+        answer: `Estimate: $${estimate}, Exact: $${exact}`,
+        working: `Working:\n$${price} rounds to $${rp}\nEstimate = ${qty} × $${rp} = $${estimate}\nExact = ${qty} × $${price} = $${exact}`,
+      };
+    }
+  }
+
+  private igcseSpotTheError(): Question {
+    const t = Math.floor(Math.random() * 2);
+    const name = this.randomInternationalName();
+
+    if (t === 0) {
+      const a = Math.floor(Math.random() * 11) + 4;
+      const b = Math.floor(Math.random() * 9) + 3;
+      const correct = a * b;
+      const mistakes = [correct + a, correct - a, correct + b, correct - b];
+      let wrong = mistakes[Math.floor(Math.random() * mistakes.length)];
+      if (wrong === correct || wrong <= 0) wrong = correct + a;
+      return {
+        question: `${name} calculated ${a} × ${b} = ${wrong}.\nIs this correct? If not, what is the right answer?`,
+        answer: `No, the correct answer is ${correct}`,
+        working: `Working:\n${a} × ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
+      };
+    } else {
+      const a = Math.floor(Math.random() * 300) + 100;
+      const b = Math.floor(Math.random() * 250) + 50;
+      const correct = a + b;
+      const delta = Math.floor(Math.random() * 15) + 1;
+      const wrong = Math.random() < 0.5 ? correct + delta : correct - delta;
+      return {
+        question: `${name} added ${a} + ${b} and got ${wrong}.\nIs this correct? If not, what is the right answer?`,
+        answer: `No, the correct answer is ${correct}`,
+        working: `Working:\n${a} + ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
+      };
+    }
+  }
+
+  private igcseLogicalReasoning(): Question {
+    const t = Math.floor(Math.random() * 2);
+
+    if (t === 0) {
+      const settings = ['a garden wall', 'a playground fence', 'a new footpath', 'a community hall', 'a bike shed'];
+      const setting = settings[Math.floor(Math.random() * settings.length)];
+      const settingNoun = setting.replace(/^a\s+/, '');
+      const w1 = Math.floor(Math.random() * 6) + 3;
+      const d1 = Math.floor(Math.random() * 8) + 4;
+      const totalWork = w1 * d1;
+      const divisors: number[] = [];
+      for (let i = 2; i <= 12; i++) { if (totalWork % i === 0 && i !== w1) divisors.push(i); }
+      const w2 = divisors.length > 0 ? divisors[Math.floor(Math.random() * divisors.length)] : w1 * 2;
+      const d2 = totalWork / w2;
+      return {
+        question: `${w1} workers can build ${setting} in ${d1} days.\nHow many days will ${w2} workers take to build the same ${settingNoun}?`,
+        answer: `${d2} days`,
+        working: `Working:\nTotal work = ${w1} workers × ${d1} days = ${totalWork} worker-days\n${w2} workers would take: ${totalWork} ÷ ${w2} = ${d2} days\n(More workers means fewer days — this is inverse proportion.)`,
+      };
+    } else {
+      const itemPairs: [string, string][] = [
+        ['oranges', 'orange'], ['badges', 'badge'], ['notebooks', 'notebook'], ['postcards', 'postcard'], ['pencils', 'pencil'],
+      ];
+      const [item, itemSingular] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
+      const items1 = Math.floor(Math.random() * 6) + 3;
+      const unitCost = Math.floor(Math.random() * 8) + 2;
+      const cost1 = items1 * unitCost;
+      const items2 = Math.floor(Math.random() * 10) + 5;
+      const cost2 = items2 * unitCost;
+      return {
+        question: `If ${items1} ${item} cost $${cost1}, how much do ${items2} ${item} cost?`,
+        answer: `$${cost2}`,
+        working: `Working:\nCost of 1 ${itemSingular} = $${cost1} ÷ ${items1} = $${unitCost}\nCost of ${items2} ${item} = ${items2} × $${unitCost} = $${cost2}\n(More items means more cost — this is direct proportion.)`,
+      };
+    }
+  }
+
+  private igcseMisleadingInfo(): Question {
+    const t = Math.floor(Math.random() * 2);
+    const name = this.randomInternationalName();
+
+    if (t === 0) {
+      const itemPairs: [string, string][] = [
+        ['marbles', 'stickers'], ['badges', 'postcards'], ['pencils', 'erasers'], ['stamps', 'coins'], ['ribbons', 'buttons'],
+      ];
+      const [item1, item2] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
+      const a = Math.floor(Math.random() * 30) + 20;
+      const b = Math.floor(Math.random() * 25) + 10;
+      const c = Math.floor(Math.random() * (a - 5)) + 1;
+      const left = a - c;
+      return {
+        question: `${name} has ${a} ${item1} and ${b} ${item2}.\n${name} gives away ${c} ${item1} to a friend.\nHow many ${item1} does ${name} have left?`,
+        answer: left.toString(),
+        working: `Working:\nThe number of ${item2} (${b}) is not needed for this question.\n${item1} left = ${a} - ${c} = ${left}`,
+      };
+    } else {
+      const items = ['sweets', 'storybooks', 'crayons', 'chocolate bars'];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const price = Math.floor(Math.random() * 8) + 3;
+      const qty = Math.floor(Math.random() * 8) + 4;
+      const age = Math.floor(Math.random() * 6) + 8;
+      const total = price * qty;
+      return {
+        question: `${name}, who is ${age} years old, buys ${qty} ${item} at $${price} each.\nHow much does ${name} spend in total?`,
+        answer: `$${total}`,
+        working: `Working:\nThe age (${age}) is not needed for this question.\nTotal cost = ${qty} × $${price} = $${total}`,
+      };
+    }
+  }
+
   private hardExplainReasoning(): Question {
     const t = Math.floor(Math.random() * 3);
 
@@ -1416,6 +2070,88 @@ export class MathQuestionGenerator {
       `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#374151" font-family="inherit">${degrees}°</text>` +
       `</svg>`
     );
+  }
+
+  private generateNumberLineSVG(min: number, max: number, marks: number[], highlightValue?: number): string {
+    const W = 320, H = 70;
+    const PAD = 20;
+    const y = 35;
+    const scale = (W - 2 * PAD) / (max - min);
+    const xOf = (v: number) => PAD + (v - min) * scale;
+
+    const ticks = marks.map(m => {
+      const x = xOf(m).toFixed(1);
+      return `<line x1="${x}" y1="${y - 6}" x2="${x}" y2="${y + 6}" stroke="#2563eb" stroke-width="2"/>` +
+        `<text x="${x}" y="${y + 22}" text-anchor="middle" font-size="12" fill="#374151" font-family="inherit">${m}</text>`;
+    }).join('');
+
+    let highlight = '';
+    if (highlightValue !== undefined) {
+      const hx = xOf(highlightValue).toFixed(1);
+      highlight = `<circle cx="${hx}" cy="${y}" r="6" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>`;
+    }
+
+    const ariaLabel = `Number line from ${min} to ${max}${highlightValue !== undefined ? `, with a marker at ${highlightValue}` : ''}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>` +
+      `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
+      ticks + highlight +
+      `</svg>`;
+  }
+
+  private generatePercentageGridSVG(percent: number): string {
+    const CELL = 18;
+    const COLS = 10, ROWS = 10;
+    const W = CELL * COLS, H = CELL * ROWS;
+    const filled = Math.max(0, Math.min(100, Math.round(percent)));
+
+    const cells: string[] = [];
+    for (let i = 0; i < 100; i++) {
+      const x = (i % COLS) * CELL;
+      const y = Math.floor(i / COLS) * CELL;
+      const fill = i < filled ? '#2563eb' : '#eff6ff';
+      cells.push(`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" fill="${fill}" stroke="#94a3b8" stroke-width="0.5"/>`);
+    }
+
+    const ariaLabel = `Percentage grid with ${filled} out of 100 squares shaded`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>${cells.join('')}</svg>`;
+  }
+
+  private generateLikelihoodScaleSVG(position: number): string {
+    const W = 340, H = 70;
+    const PAD = 20;
+    const y = 32;
+    const clamped = Math.max(0, Math.min(1, position));
+    const labels = ['Impossible', 'Unlikely', 'Even chance', 'Likely', 'Certain'];
+
+    const labelEls = labels.map((label, i) => {
+      const lx = (PAD + (i / (labels.length - 1)) * (W - 2 * PAD)).toFixed(1);
+      return `<line x1="${lx}" y1="${y - 5}" x2="${lx}" y2="${y + 5}" stroke="#2563eb" stroke-width="1.5"/>` +
+        `<text x="${lx}" y="${y + 24}" text-anchor="middle" font-size="10" fill="#374151" font-family="inherit">${label}</text>`;
+    }).join('');
+
+    const markerX = PAD + clamped * (W - 2 * PAD);
+    const marker = `<polygon points="${markerX.toFixed(1)},${y - 14} ${(markerX - 6).toFixed(1)},${y - 24} ${(markerX + 6).toFixed(1)},${y - 24}" fill="#f59e0b" stroke="#b45309" stroke-width="1"/>`;
+
+    const ariaLabel = `Likelihood scale from Impossible to Certain, with a marker showing the likelihood of this event`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>` +
+      `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` +
+      labelEls + marker +
+      `</svg>`;
+  }
+
+  private generateFractionWallSVG(denominator: number, shaded: number): string {
+    const W = 300, H = 50;
+    const cellW = W / denominator;
+
+    const cells: string[] = [];
+    for (let i = 0; i < denominator; i++) {
+      const x = (i * cellW).toFixed(1);
+      const fill = i < shaded ? '#2563eb' : '#eff6ff';
+      cells.push(`<rect x="${x}" y="0" width="${cellW.toFixed(1)}" height="${H}" fill="${fill}" stroke="#1e3a5f" stroke-width="1.5"/>`);
+    }
+
+    const ariaLabel = `Fraction wall divided into ${denominator} equal parts, ${shaded} of them shaded`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>${cells.join('')}</svg>`;
   }
 
   private easyTallyChart(): Question {
@@ -1596,53 +2332,171 @@ export class MathQuestionGenerator {
   }
 
   private hardSymmetry(): Question {
-    const shapes = ['Square', 'Rectangle', 'Circle', 'Triangle', 'Pentagon', 'Hexagon'];
-    const symmetryLines: Record<string, number | string> = {
-      'Square': 4,
-      'Rectangle': 2,
-      'Circle': 'Infinite',
-      'Triangle': 1,
-      'Pentagon': 5,
-      'Hexagon': 6,
-    };
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    const lines = symmetryLines[shape];
+    // Inverse reasoning: given a lines-of-symmetry count (and a rotational-symmetry clue),
+    // name a shape that fits — rather than looking up a fixed shape's symmetry count.
+    const options: { n: number; example: string }[] = [
+      { n: 2, example: 'a rectangle' },
+      { n: 3, example: 'an equilateral triangle' },
+      { n: 4, example: 'a square' },
+      { n: 5, example: 'a regular pentagon' },
+      { n: 6, example: 'a regular hexagon' },
+    ];
+    const choice = options[Math.floor(Math.random() * options.length)];
 
     return {
-      question: `How many lines of symmetry does a ${shape} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape)}`,
-      answer: lines === 'Infinite' ? 'Infinite' : lines.toString(),
-      working: `Working:\nA ${shape} has ${lines} line(s) of symmetry.\nA line of symmetry divides a shape into two identical halves.`,
+      question: `A shape has exactly ${choice.n} lines of symmetry, and it looks the same after being rotated part-way around its centre.\nName a shape it could be.`,
+      answer: `Any valid answer, e.g. ${choice.example}`,
+      working: `Working:\nA shape with ${choice.n} lines of symmetry that also has matching rotational symmetry is a regular ${choice.n}-sided figure (or, for 2, a non-square rectangle).\nOne example: ${choice.example}.`,
     };
   }
 
   private hardProbability(): Question {
+    const t = Math.floor(Math.random() * 3);
     const colors = ['Red', 'Blue', 'Green', 'Yellow'];
-    const marbles: Record<string, number> = {};
-    const totalMarbles = Math.floor(Math.random() * 15) + 15;
-    let remaining = totalMarbles;
 
-    colors.slice(0, 3).forEach((color, idx) => {
-      if (idx === colors.length - 2) {
-        marbles[color] = remaining;
-      } else {
-        const count = Math.floor(Math.random() * Math.floor(remaining / 2)) + 2;
-        marbles[color] = count;
-        remaining -= count;
-      }
-    });
+    if (t === 0) {
+      const marbles: Record<string, number> = {};
+      const totalMarbles = Math.floor(Math.random() * 15) + 15;
+      let remaining = totalMarbles;
 
-    const colorList = Object.entries(marbles)
-      .map(([color, count]) => `${count} ${color}`)
-      .join(', ');
-    const colorKeys = Object.keys(marbles);
-    const targetColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
-    const targetCount = marbles[targetColor];
-    const probability = `${targetCount}/${totalMarbles}`;
+      colors.slice(0, 3).forEach((color, idx) => {
+        if (idx === colors.length - 2) {
+          marbles[color] = remaining;
+        } else {
+          const count = Math.floor(Math.random() * Math.floor(remaining / 2)) + 2;
+          marbles[color] = count;
+          remaining -= count;
+        }
+      });
 
+      const colorList = Object.entries(marbles)
+        .map(([color, count]) => `${count} ${color}`)
+        .join(', ');
+      const colorKeys = Object.keys(marbles);
+      const targetColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+      const targetCount = marbles[targetColor];
+      const probability = `${targetCount}/${totalMarbles}`;
+
+      return {
+        question: `A bag contains: ${colorList}.\nIf you pick one marble without looking, what is the probability of picking a ${targetColor} marble?`,
+        answer: probability,
+        working: `Working:\nTotal marbles = ${totalMarbles}\n${targetColor} marbles = ${targetCount}\nProbability = ${targetCount}/${totalMarbles}`,
+      };
+    } else if (t === 1) {
+      // Build-a-scenario: given the total and a target probability, work out how many of one colour are needed.
+      const denomOptions = [4, 5, 10];
+      const denom = denomOptions[Math.floor(Math.random() * denomOptions.length)];
+      const numerator = Math.floor(Math.random() * (denom - 1)) + 1;
+      const scale = Math.floor(Math.random() * 4) + 2;
+      const total = denom * scale;
+      const count = numerator * scale;
+      const targetColor = colors[Math.floor(Math.random() * colors.length)];
+      return {
+        question: `A bag has ${total} marbles in total.\nYou want the probability of picking a ${targetColor} marble to be exactly ${numerator}/${denom}.\nHow many ${targetColor} marbles should be in the bag?`,
+        answer: count.toString(),
+        working: `Working:\n${numerator}/${denom} of ${total} marbles should be ${targetColor}.\n${targetColor} marbles = ${numerator}/${denom} × ${total} = ${count}`,
+      };
+    } else {
+      // Comparison: which of two bags gives a better chance of drawing the target colour.
+      const targetColor = colors[Math.floor(Math.random() * colors.length)];
+      const bagATotal = Math.floor(Math.random() * 10) + 10;
+      const bagACount = Math.floor(Math.random() * (bagATotal - 2)) + 1;
+      const bagBTotal = Math.floor(Math.random() * 10) + 10;
+      const bagBCount = Math.floor(Math.random() * (bagBTotal - 2)) + 1;
+      const probA = bagACount / bagATotal;
+      const probB = bagBCount / bagBTotal;
+      const answer = Math.abs(probA - probB) < 1e-9 ? 'Equally likely' : (probA > probB ? 'Bag A' : 'Bag B');
+      return {
+        question: `Bag A has ${bagACount} ${targetColor} marbles out of ${bagATotal} in total.\nBag B has ${bagBCount} ${targetColor} marbles out of ${bagBTotal} in total.\nFrom which bag are you more likely to pick a ${targetColor} marble?`,
+        answer,
+        working: `Working:\nBag A: ${bagACount}/${bagATotal} = ${probA.toFixed(3)}\nBag B: ${bagBCount}/${bagBTotal} = ${probB.toFixed(3)}\n${answer === 'Equally likely' ? 'Both bags give the same probability.' : `${answer} gives the higher probability, so it is more likely.`}`,
+      };
+    }
+  }
+
+  private numberLineQuestions(): Question {
+    const t = Math.floor(Math.random() * 2);
+
+    if (t === 0) {
+      const step = [2, 5, 10][Math.floor(Math.random() * 3)];
+      const min = 0;
+      const max = step * 10;
+      const marks = Array.from({ length: 11 }, (_, i) => i * step);
+      const highlightIndex = Math.floor(Math.random() * 9) + 1;
+      const highlightValue = marks[highlightIndex];
+      const svg = this.generateNumberLineSVG(min, max, marks, highlightValue);
+      return {
+        question: `Look at the number line.\n\n[[TALLY_SVG]]${svg}\n\nWhat number is the marker pointing to?`,
+        answer: highlightValue.toString(),
+        working: `Working:\nThe number line counts up in ${step}s from ${min} to ${max}.\nThe marker sits at ${highlightValue}.`,
+      };
+    } else {
+      const half = Math.floor(Math.random() * 20) + 1;
+      const a = half * 2;
+      const gap = (Math.floor(Math.random() * 5) + 1) * 2;
+      const b = a + gap;
+      const mid = (a + b) / 2;
+      const svg = this.generateNumberLineSVG(a, b, [a, b]);
+      return {
+        question: `Look at the number line from ${a} to ${b}.\n\n[[TALLY_SVG]]${svg}\n\nWhat number is halfway between ${a} and ${b}?`,
+        answer: mid.toString(),
+        working: `Working:\nHalfway = (${a} + ${b}) ÷ 2 = ${a + b} ÷ 2 = ${mid}`,
+      };
+    }
+  }
+
+  private percentageGridQuestions(): Question {
+    const t = Math.floor(Math.random() * 2);
+    const percent = (Math.floor(Math.random() * 18) + 1) * 5;
+    const svg = this.generatePercentageGridSVG(percent);
+
+    if (t === 0) {
+      return {
+        question: `What percentage of the grid is shaded?\n\n[[TALLY_SVG]]${svg}`,
+        answer: `${percent}%`,
+        working: `Working:\nThe grid has 100 equal squares.\n${percent} of them are shaded.\nPercentage shaded = ${percent}%`,
+      };
+    } else {
+      const g = this.gcd(percent, 100);
+      const simplNum = percent / g;
+      const simplDen = 100 / g;
+      const answer = `${simplNum}/${simplDen}`;
+      return {
+        question: `What fraction of the grid is shaded? Give your answer in simplest form.\n\n[[TALLY_SVG]]${svg}`,
+        answer,
+        working: `Working:\n${percent} out of 100 squares are shaded = ${percent}/100\nSimplify by dividing top and bottom by ${g}: ${answer}`,
+      };
+    }
+  }
+
+  private likelihoodQuestions(): Question {
+    const events: { text: string; position: number; label: string }[] = [
+      { text: 'Rolling a 7 on a standard six-sided die', position: 0, label: 'Impossible' },
+      { text: 'The sun rising tomorrow', position: 1, label: 'Certain' },
+      { text: 'Flipping a coin and it landing on heads', position: 0.5, label: 'Even chance' },
+      { text: 'Picking a red ball from a bag of 9 red balls and 1 blue ball', position: 0.9, label: 'Likely' },
+      { text: 'Picking a blue ball from a bag of 9 red balls and 1 blue ball', position: 0.1, label: 'Unlikely' },
+      { text: 'It snowing in a desert in July', position: 0.05, label: 'Unlikely' },
+      { text: 'A new day having 24 hours', position: 1, label: 'Certain' },
+      { text: 'Rolling an even number on a standard six-sided die', position: 0.5, label: 'Even chance' },
+    ];
+    const event = events[Math.floor(Math.random() * events.length)];
+    const svg = this.generateLikelihoodScaleSVG(event.position);
     return {
-      question: `A bag contains: ${colorList}.\nIf you pick one marble without looking, what is the probability of picking a ${targetColor} marble?`,
-      answer: probability,
-      working: `Working:\nTotal marbles = ${totalMarbles}\n${targetColor} marbles = ${targetCount}\nProbability = ${targetCount}/${totalMarbles}`,
+      question: `${event.text}.\nLook at the scale. Is this event impossible, unlikely, an even chance, likely, or certain?\n\n[[TALLY_SVG]]${svg}`,
+      answer: event.label,
+      working: `Working:\nThe marker sits at the "${event.label}" position on the scale.\n${event.text} is ${event.label.toLowerCase()}.`,
+    };
+  }
+
+  private fractionWallQuestions(): Question {
+    const denom = Math.floor(Math.random() * 7) + 4;
+    const shaded = Math.floor(Math.random() * (denom - 1)) + 1;
+    const svg = this.generateFractionWallSVG(denom, shaded);
+    return {
+      question: `What fraction of the bar is shaded?\n\n[[TALLY_SVG]]${svg}`,
+      answer: `${shaded}/${denom}`,
+      working: `Working:\nThe bar is divided into ${denom} equal parts.\n${shaded} of the ${denom} parts are shaded.\nFraction shaded = ${shaded}/${denom}`,
     };
   }
 

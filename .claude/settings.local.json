@@ -28,7 +28,16 @@
       "Bash(mkdir -p \"C:\\\\Users\\\\harsh\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-harsh-Documents-WindSurf-Projects-Maths-Learning-Website\\\\b713db67-bcd5-42a8-93cc-52c5a6a08da3\\\\scratchpad\")",
       "Bash(node_modules/.bin/tsc lib/questionGenerator.ts --outDir \"C:\\\\Users\\\\harsh\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-harsh-Documents-WindSurf-Projects-Maths-Learning-Website\\\\b713db67-bcd5-42a8-93cc-52c5a6a08da3\\\\scratchpad\\\\out\" --module commonjs --target es2017 --esModuleInterop --skipLibCheck)",
       "Bash(node run_test.js)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "Read(//c/Users/harsh/AppData/Local/Temp/claude/C--Users-harsh-Documents-WindSurf-Projects-Maths-Learning-Website/869b85da-38d8-4a43-aad0-ee9ef2edfd75/scratchpad/smoketest/**)",
+      "Bash(node -e ' *)",
+      "Bash(node run2.js)",
+      "Bash(node run.js)",
+      "Bash(npm view *)",
+      "Bash(npm -v)",
+      "Bash(node mockexam.js)",
+      "Bash(read -r line)",
+      "Bash(:)"
     ]
   }
 }
