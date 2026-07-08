@@ -26,12 +26,7 @@ export async function POST(request: NextRequest) {
   const structure = MOCK_EXAM_STRUCTURE[totalMarks as 25 | 50]
   const sections = gen.getMockExamQuestions(topics, totalMarks as 25 | 50)
 
-  const totalTime = Math.round(
-    (Object.keys(structure) as (keyof typeof structure)[]).reduce(
-      (sum, section) => sum + structure[section].count * structure[section].minutesEach,
-      0,
-    ),
-  )
+  const totalTime = Math.round(totalMarks * 1.2)
 
   return NextResponse.json({ sections, structure, totalMarks, totalTime, curriculum })
 }
