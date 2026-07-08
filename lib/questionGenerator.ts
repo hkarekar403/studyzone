@@ -369,29 +369,41 @@ export class MathQuestionGenerator {
       const pool = competencyFns.length > 0 ? competencyFns : candidates;
       const questions: Question[] = [];
       const seenInExam = new Set<string>();
+      const usedFns = new Set<() => Question>();
       const maxAttempts = count * 40;
       let attempts = 0;
 
+      // Prefer a generator FUNCTION not yet used in this section, so the same
+      // question template can't appear twice; only repeats a function once every
+      // unique generator in the pool has already been used.
+      const pickFn = (): (() => Question) => {
+        const unused = pool.filter(fn => !usedFns.has(fn));
+        const choices = unused.length > 0 ? unused : pool;
+        return choices[Math.floor(Math.random() * choices.length)];
+      };
+
       while (questions.length < count && attempts < maxAttempts) {
         attempts++;
-        const fn = pool[Math.floor(Math.random() * pool.length)];
+        const fn = pickFn();
         const raw = fn.call(this) as Question;
         if (raw.question.includes('[[TALLY_SVG]]')) continue;
         if (seenInExam.has(raw.question)) continue;
         seenInExam.add(raw.question);
+        usedFns.add(fn);
         questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
       }
 
       // Guarantee the exact requested count even if the pool ran out of unique,
       // non-SVG variety — repeats are preferable to a short exam paper.
       while (questions.length < count) {
-        const fn = pool[Math.floor(Math.random() * pool.length)];
+        const fn = pickFn();
         let raw = fn.call(this) as Question;
         let tries = 0;
         while (raw.question.includes('[[TALLY_SVG]]') && tries < 10) {
           raw = fn.call(this) as Question;
           tries++;
         }
+        usedFns.add(fn);
         questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
       }
 

@@ -498,11 +498,12 @@ export default function MathQuiz() {
   const sanitizePDFText = (text: string) =>
     text
       .replace(/₹/g, 'Rs.')
-      .replace(/²/g, '2')
-      .replace(/³/g, '3')
+      .replace(/²/g, '^2')
+      .replace(/³/g, '^3')
       .replace(/°/g, ' degrees')
       .replace(/×/g, 'x')
       .replace(/÷/g, '/')
+      .replace(/[−–—]/g, '-')
       .replace(/≤/g, '<=')
       .replace(/≥/g, '>=')
       .replace(/≠/g, '!=')
