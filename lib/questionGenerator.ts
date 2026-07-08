@@ -173,6 +173,18 @@ export class MathQuestionGenerator {
     [this.percentageGridQuestions, "Fractions"],
     [this.likelihoodQuestions, "Data Handling"],
     [this.fractionWallQuestions, "Fractions"],
+    [this.icseNumbers, "Numbers"],
+    [this.icseFactorsMultiples, "Factors & Multiples"],
+    [this.icseMixedNumbers, "Mixed Numbers"],
+    [this.icseDecimals, "Decimals"],
+    [this.icseWordProblems, "Word Problems"],
+    [this.igcseNumberSense, "Number Sense"],
+    [this.igcseDecimals, "Decimals & Percentages"],
+    [this.igcseNumberLine, "Number Line"],
+    [this.igcse3DShapes, "3D Shapes"],
+    [this.igcseTransformations, "Transformations"],
+    [this.igcseDataReasoning, "Data & Reasoning"],
+    [this.igcseReasoning, "Reasoning"],
   ]);
 
   // Maps each generator function to its Mock Exam competency tier (VSA/SA1/SA2/LA).
@@ -370,16 +382,29 @@ export class MathQuestionGenerator {
       const questions: Question[] = [];
       const seenInExam = new Set<string>();
       const usedFns = new Set<() => Question>();
+      const topicCounts = new Map<string, number>();
       const maxAttempts = count * 40;
       let attempts = 0;
 
-      // Prefer a generator FUNCTION not yet used in this section, so the same
-      // question template can't appear twice; only repeats a function once every
-      // unique generator in the pool has already been used.
+      const topicOf = (fn: () => Question): string => this.detectTopicMap.get(fn) || 'General';
+
+      // Prefer a topic that has appeared least often in this section so far (spreading
+      // across topics, not just generator functions), then within that topic prefer a
+      // generator FUNCTION not yet used, so the same question template can't repeat
+      // until every unique generator for that topic has already been used.
       const pickFn = (): (() => Question) => {
-        const unused = pool.filter(fn => !usedFns.has(fn));
-        const choices = unused.length > 0 ? unused : pool;
+        const minCount = Math.min(...pool.map(fn => topicCounts.get(topicOf(fn)) ?? 0));
+        const leastUsedTopicFns = pool.filter(fn => (topicCounts.get(topicOf(fn)) ?? 0) === minCount);
+        const unused = leastUsedTopicFns.filter(fn => !usedFns.has(fn));
+        const choices = unused.length > 0 ? unused : leastUsedTopicFns;
         return choices[Math.floor(Math.random() * choices.length)];
+      };
+
+      const record = (fn: () => Question, raw: Question) => {
+        usedFns.add(fn);
+        const topic = topicOf(fn);
+        topicCounts.set(topic, (topicCounts.get(topic) ?? 0) + 1);
+        questions.push({ ...raw, topic });
       };
 
       while (questions.length < count && attempts < maxAttempts) {
@@ -389,8 +414,7 @@ export class MathQuestionGenerator {
         if (raw.question.includes('[[TALLY_SVG]]')) continue;
         if (seenInExam.has(raw.question)) continue;
         seenInExam.add(raw.question);
-        usedFns.add(fn);
-        questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
+        record(fn, raw);
       }
 
       // Guarantee the exact requested count even if the pool ran out of unique,
@@ -403,8 +427,7 @@ export class MathQuestionGenerator {
           raw = fn.call(this) as Question;
           tries++;
         }
-        usedFns.add(fn);
-        questions.push({ ...raw, topic: this.detectTopicMap.get(fn) || 'General' });
+        record(fn, raw);
       }
 
       return questions;
@@ -454,7 +477,8 @@ export class MathQuestionGenerator {
 
   private easyAddition(): Question {
     const a = Math.floor(Math.random() * 90) + 10;
-    const b = Math.floor(Math.random() * 90) + 10;
+    let b = Math.floor(Math.random() * 90) + 10;
+    while (b === a) b = Math.floor(Math.random() * 90) + 10;
     const total = a + b;
     const t = Math.floor(Math.random() * 4);
     const shopItems = ['pens', 'books', 'chocolates', 'mangoes', 'apples', 'biscuits'];
@@ -473,13 +497,18 @@ export class MathQuestionGenerator {
 
   private easySubtraction(): Question {
     const a = Math.floor(Math.random() * 91) + 30;
-    const b = Math.floor(Math.random() * (a - 9)) + 10;
+    const b = Math.floor(Math.random() * (a - 10)) + 10;
     const difference = a - b;
     const t = Math.floor(Math.random() * 4);
     const fruits = ['mangoes', 'apples', 'oranges', 'bananas'];
     const fruit = fruits[Math.floor(Math.random() * fruits.length)];
-    const animals = ['birds', 'butterflies', 'cows', 'fish'];
-    const animal = animals[Math.floor(Math.random() * animals.length)];
+    const animalContexts = [
+      { animal: 'birds', place: 'a tree', action: 'fly away' },
+      { animal: 'fish', place: 'a pond', action: 'swim away' },
+      { animal: 'cows', place: 'a field', action: 'wander off' },
+      { animal: 'butterflies', place: 'a garden', action: 'fly away' },
+    ];
+    const ctx = animalContexts[Math.floor(Math.random() * animalContexts.length)];
     switch (t) {
       case 0:
         return { question: `What is ${a} - ${b}?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
@@ -488,7 +517,7 @@ export class MathQuestionGenerator {
       case 2:
         return { question: `Find the difference between ${a} and ${b}.`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
       default:
-        return { question: `There are ${a} ${animal} on a tree. ${b} fly away. How many remain?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
+        return { question: `There are ${a} ${ctx.animal} in ${ctx.place}. ${b} ${ctx.action}. How many remain?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
     }
   }
 
@@ -2552,7 +2581,8 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       const a = Math.floor(Math.random() * 89000) + 10000;
-      const b = Math.floor(Math.random() * 89000) + 10000;
+      let b = Math.floor(Math.random() * 89000) + 10000;
+      while (b === a) b = Math.floor(Math.random() * 89000) + 10000;
       const sym = a > b ? '>' : a < b ? '<' : '=';
       return {
         question: `Compare: ${a} ___ ${b}. Write >, < or =`,
