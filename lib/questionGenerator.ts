@@ -5,6 +5,7 @@ export interface Question {
   topic?: string;
   selfAssess?: boolean;
   modelAnswer?: string;
+  options?: string[];
 }
 
 // Competency tiers for the Mock Exam generator, mirroring a school exam's
@@ -25,6 +26,271 @@ export const MOCK_EXAM_STRUCTURE: Record<25 | 50, Record<Competency, { count: nu
     LA: { count: 1, marksEach: 5, minutesEach: 4.5 },
   },
 };
+
+// --- MCQ distractor engine ---
+// Detects the "shape" of an answer string and produces 1-3 plausible wrong
+// answers of the same shape. Order matters: more specific patterns (exact
+// word pools) are checked before the generic numeric-with-affix fallback,
+// since some pool words (e.g. shape names) contain no digits and would
+// never hit the numeric branch anyway, but keeping specific checks first
+// makes the intent obvious.
+// Kept as separate 2D/3D pools (rather than one combined list) so distractors
+// never mix dimensionality — a 2D-shape question only offers other 2D shapes.
+const SHAPE_POOL_2D = ['Triangle', 'Square', 'Rectangle', 'Pentagon', 'Hexagon', 'Circle'];
+const SHAPE_POOL_3D = ['Cube', 'Cuboid', 'Sphere', 'Cylinder', 'Cone', 'Triangular Prism', 'Square Pyramid'];
+const ANGLE_POOL = ['Acute', 'Right', 'Obtuse', 'Reflex'];
+const TRANSFORM_POOL = ['Reflection', 'Translation', 'Rotation'];
+const LIKELIHOOD_POOL = ['Impossible', 'Unlikely', 'Even chance', 'Likely', 'Certain'];
+const PLACE_NAME_POOL = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'lakhs'];
+const COMPARISON_POOL = ['<', '>', '='];
+const PROBABILITY_BAG_POOL = ['Bag A', 'Bag B', 'Equally likely'];
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Matches the correct answer's capitalisation style onto a pool word, so
+// e.g. a lowercase "cube" answer gets lowercase distractors like "sphere".
+function matchCase(template: string, value: string): string {
+  if (template === template.toUpperCase()) return value.toUpperCase();
+  if (template[0] === template[0]?.toLowerCase()) return value.charAt(0).toLowerCase() + value.slice(1);
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function poolDistractors(correct: string, pool: string[], max: number): string[] {
+  const lower = correct.toLowerCase();
+  const others = pool.filter(p => p.toLowerCase() !== lower);
+  return shuffleArray(others).slice(0, max).map(v => matchCase(correct, v));
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function digitLength(n: number): number {
+  return Math.trunc(Math.abs(n)).toString().length;
+}
+
+// Generates near-miss numeric candidates: off-by-small-amounts, off-by-ten,
+// digit swaps/substitutions — the common mistakes a student actually makes,
+// rather than wildly random numbers. A ×10/÷10 slip is deliberately excluded:
+// it changes the digit-length so visibly (e.g. 1150 → 11500) that a student
+// can eliminate it on length alone without doing any maths.
+function numericNearMiss(correct: number, isDecimal: boolean, allowNegative: boolean, need: number): number[] {
+  const correctLen = digitLength(correct);
+  const withinLength = (n: number) => Math.abs(digitLength(n) - correctLen) <= 1;
+
+  const candidates = new Set<number>();
+  const baseDeltas = isDecimal
+    ? [0.1, -0.1, 0.5, -0.5, 1, -1, 0.2, -0.2, 2, -2]
+    : [1, -1, 2, -2, 10, -10, 3, -3, 5, -5, 20, -20];
+
+  for (const d of baseDeltas) candidates.add(round2(correct + d));
+
+  if (!isDecimal) {
+    const absStr = Math.trunc(Math.abs(correct)).toString();
+
+    // Digit transposition (e.g. 1150 → 1510) — same digit-length by construction.
+    if (absStr.length >= 2) {
+      const arr = absStr.split('');
+      [arr[0], arr[1]] = [arr[1], arr[0]];
+      if (arr[0] !== '0') {
+        candidates.add(parseInt(arr.join(''), 10) * (correct < 0 ? -1 : 1));
+      }
+    }
+
+    // Single-digit substitution (e.g. 1150 → 1250) — a tight, same-length
+    // near-miss that mimics a simple misreading/miscopying error.
+    for (let attempt = 0; attempt < 6 && candidates.size < need * 4; attempt++) {
+      const pos = absStr.length > 1 ? 1 + Math.floor(Math.random() * (absStr.length - 1)) : 0;
+      const arr = absStr.split('');
+      const newDigit = Math.floor(Math.random() * 10).toString();
+      if (newDigit === arr[pos] || (pos === 0 && newDigit === '0')) continue;
+      arr[pos] = newDigit;
+      candidates.add(parseInt(arr.join(''), 10) * (correct < 0 ? -1 : 1));
+    }
+  }
+
+  candidates.delete(correct);
+  let pool = Array.from(candidates).filter(n => Number.isFinite(n) && withinLength(n));
+  if (!allowNegative) pool = pool.filter(n => n >= 0);
+
+  // Widen further on the rare occasion the above didn't yield enough options
+  // (e.g. correct answer is 0 or 1 with negatives disallowed) — still bounded
+  // by the same digit-length guard so nothing wildly-off slips through.
+  let widen = 1;
+  while (pool.length < need && widen < 30) {
+    const delta = (isDecimal ? widen * 0.3 : widen * 7) * (widen % 2 === 0 ? 1 : -1);
+    const candidate = isDecimal ? round2(correct + delta) : Math.round(correct + delta);
+    if (candidate !== correct && (allowNegative || candidate >= 0) && withinLength(candidate) && !pool.includes(candidate)) pool.push(candidate);
+    widen++;
+  }
+
+  return shuffleArray(pool).slice(0, need);
+}
+
+function fractionDistractors(n: number, d: number, need: number): string[] {
+  const candidates = new Set<string>();
+  const addFrac = (nn: number, dd: number) => {
+    if (nn > 0 && dd > 0 && !(nn === n && dd === d)) candidates.add(`${nn}/${dd}`);
+  };
+  let widen = 1;
+  while (candidates.size < need * 2 && widen < 10) {
+    addFrac(n + widen, d);
+    addFrac(Math.max(1, n - widen), d);
+    addFrac(n, d + widen);
+    addFrac(n, Math.max(1, d - widen));
+    if (widen === 1) addFrac(d, n);
+    widen++;
+  }
+  return shuffleArray(Array.from(candidates)).slice(0, need);
+}
+
+function mixedNumberDistractors(w: number, n: number, d: number, need: number): string[] {
+  const candidates = new Set<string>();
+  const addMixed = (ww: number, nn: number, dd: number) => {
+    if (ww >= 0 && nn > 0 && dd > 0 && nn < dd && !(ww === w && nn === n && dd === d)) candidates.add(`${ww} ${nn}/${dd}`);
+  };
+  let widen = 1;
+  while (candidates.size < need * 2 && widen < 10) {
+    addMixed(w + widen, n, d);
+    addMixed(Math.max(0, w - widen), n, d);
+    addMixed(w, Math.min(d - 1, n + widen), d);
+    addMixed(w, Math.max(1, n - widen), d);
+    widen++;
+  }
+  return shuffleArray(Array.from(candidates)).slice(0, need);
+}
+
+// Returns false for questions that fundamentally cannot become MCQ: answers
+// that require free-form self-assessment, or open-ended "any valid answer"
+// prompts where there is no fixed set of wrong answers to offer.
+export function canBeMCQ(question: Question): boolean {
+  if (question.selfAssess) return false;
+  if (/^any\b/i.test(question.answer.trim())) return false;
+  return true;
+}
+
+// Produces up to 3 plausible wrong answers matching the shape of correctAnswer.
+// Returns an empty array when the answer's format can't be confidently
+// detected (compound phrases, word-form numbers, ordered lists, etc.) —
+// callers should fall back to a typed input in that case.
+export function generateDistractors(correctAnswer: string, _questionContext?: string): string[] {
+  const a = correctAnswer.trim();
+  if (a.length === 0 || /^any\b/i.test(a)) return [];
+
+  if (/^(yes|no)$/i.test(a)) {
+    return [matchCase(a, /^yes$/i.test(a) ? 'No' : 'Yes')];
+  }
+
+  if (/^(odd|even)$/i.test(a)) {
+    return [matchCase(a, /^odd$/i.test(a) ? 'Even' : 'Odd')];
+  }
+
+  if (/^(prime|composite)$/i.test(a)) {
+    return [matchCase(a, /^prime$/i.test(a) ? 'Composite' : 'Prime')];
+  }
+
+  if (/^[<>=]$/.test(a)) {
+    return COMPARISON_POOL.filter(s => s !== a);
+  }
+
+  if (SHAPE_POOL_2D.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, SHAPE_POOL_2D, 3);
+  }
+
+  if (SHAPE_POOL_3D.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, SHAPE_POOL_3D, 3);
+  }
+
+  if (ANGLE_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, ANGLE_POOL, 3);
+  }
+
+  if (TRANSFORM_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, TRANSFORM_POOL, 2);
+  }
+
+  if (LIKELIHOOD_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, LIKELIHOOD_POOL, 3);
+  }
+
+  if (PROBABILITY_BAG_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, PROBABILITY_BAG_POOL, 2);
+  }
+
+  if (PLACE_NAME_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
+    return poolDistractors(a, PLACE_NAME_POOL, 3);
+  }
+
+  const qr = a.match(/^Quotient\s*=\s*(\d+),\s*Remainder\s*=\s*(\d+)$/i);
+  if (qr) {
+    const q = parseInt(qr[1], 10);
+    const r = parseInt(qr[2], 10);
+    const cands = new Set<string>();
+    const add = (qq: number, rr: number) => { if (qq >= 0 && rr >= 0 && !(qq === q && rr === r)) cands.add(`Quotient = ${qq}, Remainder = ${rr}`); };
+    add(q + 1, r);
+    add(Math.max(0, q - 1), r);
+    add(q, r + 1);
+    if (r > 0) add(q, r - 1);
+    add(q + 1, Math.max(0, r - 1));
+    add(Math.max(0, q - 1), r + 1);
+    return shuffleArray(Array.from(cands)).slice(0, 3);
+  }
+
+  const mixed = a.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixed) {
+    return mixedNumberDistractors(parseInt(mixed[1], 10), parseInt(mixed[2], 10), parseInt(mixed[3], 10), 3);
+  }
+
+  const frac = a.match(/^(\d+)\/(\d+)$/);
+  if (frac) {
+    return fractionDistractors(parseInt(frac[1], 10), parseInt(frac[2], 10), 3);
+  }
+
+  // Generic "text + one number + text" shape — covers plain integers,
+  // currency-prefixed (₹45, Rs.150, $45), unit-suffixed (24 cm, 24 cm², 45°,
+  // 35%, 5 days), and prefixed phrases (Profit of ₹120). The prefix/suffix
+  // text is preserved verbatim on every distractor.
+  const generic = a.match(/^([^\d]*)(-?\d+(?:\.\d+)?)([^\d]*)$/);
+  if (generic) {
+    const [, prefix, numStr, suffix] = generic;
+    const correctNum = parseFloat(numStr);
+    const isDecimal = numStr.includes('.');
+    const allowNegative = correctNum < 0;
+    const decimalPlaces = numStr.split('.')[1]?.length ?? 1;
+    const nearMiss = numericNearMiss(correctNum, isDecimal, allowNegative, 3);
+    return nearMiss.map(n => `${prefix}${isDecimal ? n.toFixed(decimalPlaces) : n}${suffix}`);
+  }
+
+  return [];
+}
+
+// Combines canBeMCQ + generateDistractors into the final options array
+// (correct answer + distractors, shuffled), or null if this question can't
+// be turned into MCQ — either because it's inherently open-ended, or because
+// no distractor pattern matched its answer format.
+export function buildMCQOptions(question: Question): string[] | null {
+  if (!canBeMCQ(question)) return null;
+  const distractors = generateDistractors(question.answer, question.question);
+  if (distractors.length < 1) return null;
+
+  const seen = new Set<string>();
+  const options: string[] = [];
+  for (const opt of [question.answer, ...distractors]) {
+    const key = opt.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    options.push(opt);
+  }
+  if (options.length < 2) return null;
+  return shuffleArray(options);
+}
 
 export class MathQuestionGenerator {
   private askedQuestions: Set<string> = new Set();
@@ -377,7 +643,7 @@ export class MathQuestionGenerator {
       if (competency) bySection[competency].push(fn);
     }
 
-    const generateSection = (count: number, competencyFns: (() => Question)[]): Question[] => {
+    const generateSection = (count: number, competencyFns: (() => Question)[], mcqOnly = false): Question[] => {
       const pool = competencyFns.length > 0 ? competencyFns : candidates;
       const questions: Question[] = [];
       const seenInExam = new Set<string>();
@@ -400,11 +666,11 @@ export class MathQuestionGenerator {
         return choices[Math.floor(Math.random() * choices.length)];
       };
 
-      const record = (fn: () => Question, raw: Question) => {
+      const record = (fn: () => Question, raw: Question, options?: string[]) => {
         usedFns.add(fn);
         const topic = topicOf(fn);
         topicCounts.set(topic, (topicCounts.get(topic) ?? 0) + 1);
-        questions.push({ ...raw, topic });
+        questions.push({ ...raw, topic, ...(options ? { options } : {}) });
       };
 
       while (questions.length < count && attempts < maxAttempts) {
@@ -413,28 +679,48 @@ export class MathQuestionGenerator {
         const raw = fn.call(this) as Question;
         if (raw.question.includes('[[TALLY_SVG]]')) continue;
         if (seenInExam.has(raw.question)) continue;
+        let options: string[] | undefined;
+        if (mcqOnly) {
+          options = buildMCQOptions(raw) ?? undefined;
+          if (!options) continue;
+        }
         seenInExam.add(raw.question);
-        record(fn, raw);
+        record(fn, raw, options);
       }
 
       // Guarantee the exact requested count even if the pool ran out of unique,
-      // non-SVG variety — repeats are preferable to a short exam paper.
+      // non-SVG variety — repeats are preferable to a short exam paper. For MCQ-only
+      // sections, also retry (bounded) for a question whose answer can become MCQ;
+      // if that budget runs out, accept it without options rather than loop forever.
       while (questions.length < count) {
         const fn = pickFn();
         let raw = fn.call(this) as Question;
         let tries = 0;
-        while (raw.question.includes('[[TALLY_SVG]]') && tries < 10) {
-          raw = fn.call(this) as Question;
-          tries++;
+        let options: string[] | undefined;
+        while (tries < 20) {
+          if (raw.question.includes('[[TALLY_SVG]]')) {
+            raw = fn.call(this) as Question;
+            tries++;
+            continue;
+          }
+          if (mcqOnly) {
+            options = buildMCQOptions(raw) ?? undefined;
+            if (!options) {
+              raw = fn.call(this) as Question;
+              tries++;
+              continue;
+            }
+          }
+          break;
         }
-        record(fn, raw);
+        record(fn, raw, options);
       }
 
       return questions;
     };
 
     return {
-      VSA: generateSection(structure.VSA.count, bySection.VSA),
+      VSA: generateSection(structure.VSA.count, bySection.VSA, true),
       SA1: generateSection(structure.SA1.count, bySection.SA1),
       SA2: generateSection(structure.SA2.count, bySection.SA2),
       LA: generateSection(structure.LA.count, bySection.LA),

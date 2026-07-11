@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, KeyboardEvent as ReactKeyboardEvent } from "react"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
 import jsPDF from "jspdf"
 import { QRCodeSVG } from "qrcode.react"
 import confetti from "canvas-confetti"
 import FocusTrap from "focus-trap-react"
+import { buildMCQOptions } from "@/lib/questionGenerator"
 
 interface SessionRecord {
   number: number
@@ -53,6 +54,13 @@ export default function MathQuiz() {
   const [streak, setStreak] = useState<number>(0)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
   const [curriculum, setCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>('CBSE')
+
+  // MCQ mode
+  const [mcqMode, setMcqMode] = useState<boolean>(false)
+  const [mcqOptions, setMcqOptions] = useState<string[]>([])
+  const [mcqSelected, setMcqSelected] = useState<string | null>(null)
+  const [mcqWrongOptions, setMcqWrongOptions] = useState<string[]>([])
+  const mcqOptionRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   // UI-only state
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -131,6 +139,11 @@ export default function MathQuiz() {
   useEffect(() => {
     const saved = localStorage.getItem('timer-disabled')
     if (saved !== null) setTimerDisabled(saved === 'true')
+  }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('mcq-mode')
+    if (saved !== null) setMcqMode(saved === 'true')
   }, [])
 
   useEffect(() => {
@@ -280,6 +293,19 @@ export default function MathQuiz() {
       setCurrentTopic(questionData.topic || "General")
       setUserAnswer("")
       setShowAnswer(false)
+      if (mcqMode) {
+        const options = buildMCQOptions({
+          question: questionData.question,
+          answer: questionData.answer,
+          working: questionData.working,
+          selfAssess: questionData.selfAssess,
+        })
+        setMcqOptions(options ?? [])
+      } else {
+        setMcqOptions([])
+      }
+      setMcqSelected(null)
+      setMcqWrongOptions([])
       setFeedback("")
       setFeedbackColor("")
       setCurrentAttempts(0)
@@ -312,7 +338,9 @@ export default function MathQuiz() {
     }
   }
 
-  const checkAnswer = async () => {
+  const checkAnswer = async (answerOverride?: string) => {
+    const answerToCheck = answerOverride ?? userAnswer
+
     if (!currentAnswer) {
       setFeedback("Generate a question first.")
       setFeedbackColor("#d62828")
@@ -325,7 +353,7 @@ export default function MathQuiz() {
       return
     }
 
-    if (!userAnswer.trim()) {
+    if (!answerToCheck.trim()) {
       setFeedback("Please enter an answer.")
       setFeedbackColor("#d62828")
       return
@@ -338,7 +366,7 @@ export default function MathQuiz() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_answer: userAnswer,
+          user_answer: answerToCheck,
           correct_answer: currentAnswer,
         }),
       })
@@ -356,10 +384,10 @@ export default function MathQuiz() {
       }
 
       if (currentRecord) {
-        const updatedRecord = { ...currentRecord, kidAnswer: userAnswer }
+        const updatedRecord = { ...currentRecord, kidAnswer: answerToCheck }
         if (isCorrect) {
           updatedRecord.isCorrect = true
-          updatedRecord.attempts.push({ answer: userAnswer, result: "Correct" })
+          updatedRecord.attempts.push({ answer: answerToCheck, result: "Correct" })
           setCurrentRecord(updatedRecord)
           setSessionRecords((prev) => prev.map((r) => (r.number === currentRecord.number ? updatedRecord : r)))
           setCorrectAnswers((prev) => prev + 1)
@@ -378,11 +406,12 @@ export default function MathQuiz() {
         } else {
           setCurrentAttempts((prev) => prev + 1)
           updatedRecord.isCorrect = false
-          updatedRecord.attempts.push({ answer: userAnswer, result: "Not quite" })
+          updatedRecord.attempts.push({ answer: answerToCheck, result: "Not quite" })
           setCurrentRecord(updatedRecord)
           setSessionRecords((prev) => prev.map((r) => (r.number === currentRecord.number ? updatedRecord : r)))
           setStreak(0)
           if (soundEnabled) playSound("incorrect")
+          if (mcqMode) setMcqWrongOptions((prev) => [...prev, answerToCheck])
 
           if (currentAttempts + 1 >= 3) {
             setQuestionLocked(true)
@@ -399,6 +428,33 @@ export default function MathQuiz() {
       }
     } catch {
       setApiError("Couldn't check your answer. Please try again.")
+    }
+  }
+
+  const handleMcqSelect = (option: string) => {
+    if (questionLocked || mcqWrongOptions.includes(option) || isGenerating) return
+    setMcqSelected(option)
+    setUserAnswer(option)
+    checkAnswer(option)
+  }
+
+  const handleMcqKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (questionLocked) return
+    const focusedIndex = mcqOptionRefs.current.findIndex((el) => el === document.activeElement)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = ((focusedIndex >= 0 ? focusedIndex : -1) + 1 + mcqOptions.length) % mcqOptions.length
+      mcqOptionRefs.current[next]?.focus()
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prev = ((focusedIndex >= 0 ? focusedIndex : 0) - 1 + mcqOptions.length) % mcqOptions.length
+      mcqOptionRefs.current[prev]?.focus()
+    } else {
+      const letterIndex = ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase())
+      if (letterIndex >= 0 && letterIndex < mcqOptions.length) {
+        e.preventDefault()
+        handleMcqSelect(mcqOptions[letterIndex])
+      }
     }
   }
 
@@ -692,7 +748,7 @@ export default function MathQuiz() {
     }
   }
 
-  type MockQuestion = { question: string; answer: string; working: string }
+  type MockQuestion = { question: string; answer: string; working: string; options?: string[] }
   type MockSections = { VSA: MockQuestion[]; SA1: MockQuestion[]; SA2: MockQuestion[]; LA: MockQuestion[] }
   type MockSectionMeta = { count: number; marksEach: number; minutesEach: number }
   type MockStructure = { VSA: MockSectionMeta; SA1: MockSectionMeta; SA2: MockSectionMeta; LA: MockSectionMeta }
@@ -796,10 +852,20 @@ export default function MathQuiz() {
       marksEach: number,
       blankLines: number,
       startNumber: number,
+      mcqSection = false,
     ) => {
       sectionHeader(label, questions.length * marksEach)
+      if (mcqSection) {
+        checkPage(8)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'italic')
+        doc.text('Choose the correct option and write its letter (A/B/C/D).', 15, y)
+        doc.setFont('helvetica', 'normal')
+        y += 7
+      }
       questions.forEach((q, i) => {
-        checkPage(16 + blankLines * 7)
+        const hasOptions = mcqSection && !!q.options && q.options.length > 0
+        checkPage(16 + (hasOptions ? 12 : blankLines * 7))
         doc.setFontSize(10)
         doc.setFont('helvetica', 'bold')
         doc.text(`${startNumber + i}.`, 15, y)
@@ -812,16 +878,26 @@ export default function MathQuiz() {
         doc.setTextColor(0, 0, 0)
         doc.setFontSize(10)
         y += qLines.length * 5 + 3
-        doc.setDrawColor(210, 210, 210)
-        for (let ln = 0; ln < blankLines; ln++) {
-          y += 7
-          doc.line(24, y, 190, y)
+        if (hasOptions) {
+          const letters = ['A', 'B', 'C', 'D']
+          const optText = q.options!.map((opt, oi) => `(${letters[oi]}) ${sanitizePDFText(opt)}`).join('     ')
+          const optLines = doc.splitTextToSize(optText, 166)
+          doc.text(optLines, 24, y)
+          y += optLines.length * 5 + 6
+          doc.text('Answer: ______', 24, y)
+          y += 8
+        } else {
+          doc.setDrawColor(210, 210, 210)
+          for (let ln = 0; ln < blankLines; ln++) {
+            y += 7
+            doc.line(24, y, 190, y)
+          }
+          y += 8
         }
-        y += 8
       })
     }
 
-    renderSection('SECTION A — Very Short Answer (VSA)', secVSA, structure.VSA.marksEach, 1, 1)
+    renderSection('SECTION A — Very Short Answer (VSA)', secVSA, structure.VSA.marksEach, 1, 1, true)
     renderSection('SECTION B — Short Answer I (SA1)', secSA1, structure.SA1.marksEach, 2, secVSA.length + 1)
     renderSection('SECTION C — Short Answer II (SA2)', secSA2, structure.SA2.marksEach, 3, secVSA.length + secSA1.length + 1)
     renderSection('SECTION D — Long Answer (LA)', secLA, structure.LA.marksEach, 5, secVSA.length + secSA1.length + secSA2.length + 1)
@@ -891,6 +967,7 @@ export default function MathQuiz() {
       questions: MockQuestion[],
       startNumber: number,
       showWorking: boolean,
+      mcqSection = false,
     ) => {
       checkPage(16)
       doc.setFontSize(12)
@@ -904,7 +981,13 @@ export default function MathQuiz() {
         doc.setFont('helvetica', 'bold')
         doc.text(`Q${startNumber + i} [${marksEach} mark${marksEach > 1 ? 's' : ''}]:`, 15, y)
         doc.setFont('helvetica', 'normal')
-        const ansLines = doc.splitTextToSize(sanitizePDFText(q.answer), 128)
+        let answerDisplay = q.answer
+        if (mcqSection && q.options && q.options.length > 0) {
+          const letters = ['A', 'B', 'C', 'D']
+          const idx = q.options.findIndex((o) => o === q.answer)
+          if (idx >= 0) answerDisplay = `(${letters[idx]}) ${q.answer}`
+        }
+        const ansLines = doc.splitTextToSize(sanitizePDFText(answerDisplay), 128)
         doc.text(ansLines, 64, y)
         y += Math.max(ansLines.length * 5, 5) + 2
         if (showWorking && q.working) {
@@ -923,7 +1006,7 @@ export default function MathQuiz() {
       y += 6
     }
 
-    akSection('Section A (VSA)', structure.VSA.marksEach, secVSA, 1, false)
+    akSection('Section A (VSA)', structure.VSA.marksEach, secVSA, 1, false, true)
     akSection('Section B (SA1)', structure.SA1.marksEach, secSA1, secVSA.length + 1, false)
     akSection('Section C (SA2)', structure.SA2.marksEach, secSA2, secVSA.length + secSA1.length + 1, true)
     akSection('Section D (LA)', structure.LA.marksEach, secLA, secVSA.length + secSA1.length + secSA2.length + 1, true)
@@ -1385,6 +1468,46 @@ export default function MathQuiz() {
             </div>
           </div>
 
+          {/* MCQ MODE TOGGLE */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Answer Mode</span>
+            <div
+              className="inline-flex rounded-full border border-blue-200 bg-blue-50 p-1"
+              title="Switch between typing answers and choosing from options"
+            >
+              <button
+                onClick={() => {
+                  setMcqMode(false)
+                  localStorage.setItem('mcq-mode', 'false')
+                }}
+                aria-pressed={!mcqMode}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+                  !mcqMode ? 'bg-[#2563eb] text-white' : 'text-blue-700'
+                }`}
+              >
+                ✏️ Typed
+              </button>
+              <button
+                onClick={() => {
+                  setMcqMode(true)
+                  localStorage.setItem('mcq-mode', 'true')
+                  if (currentQuestion && currentAnswer && !questionLocked) {
+                    const options = buildMCQOptions({ question: currentQuestion, answer: currentAnswer, working: currentWorking })
+                    setMcqOptions(options ?? [])
+                    setMcqSelected(null)
+                    setMcqWrongOptions([])
+                  }
+                }}
+                aria-pressed={mcqMode}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+                  mcqMode ? 'bg-[#2563eb] text-white' : 'text-blue-700'
+                }`}
+              >
+                🔘 Multiple Choice
+              </button>
+            </div>
+          </div>
+
           {/* CONTROLS ROW */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
@@ -1595,24 +1718,66 @@ export default function MathQuiz() {
                 </div>
               )}
 
-              {/* Answer input */}
-              <input
-                type="text"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") checkAnswer() }}
-                aria-label="Your answer"
-                placeholder="Type your answer and press Enter..."
-                disabled={questionLocked || !currentQuestion || isGenerating}
-                className={`w-full p-4 text-lg font-semibold border-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed mb-4 shadow-sm transition-colors ${
-                  feedback.startsWith("Incorrect") && !questionLocked
-                    ? "border-red-400 focus:ring-red-300 animate-shake"
-                    : "border-blue-300 focus:ring-blue-400"
-                }`}
-              />
+              {/* Answer input: MCQ options or typed input */}
+              {mcqMode && currentQuestion && mcqOptions.length > 0 ? (
+                <div
+                  role="radiogroup"
+                  aria-label="Answer options"
+                  onKeyDown={handleMcqKeyDown}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"
+                >
+                  {mcqOptions.map((opt, i) => {
+                    const isCorrectOpt = opt === currentAnswer
+                    const isWrongPick = mcqWrongOptions.includes(opt)
+                    const revealCorrect = questionLocked && isCorrectOpt
+                    return (
+                      <button
+                        key={opt}
+                        ref={(el) => { mcqOptionRefs.current[i] = el }}
+                        type="button"
+                        role="radio"
+                        aria-checked={mcqSelected === opt}
+                        aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
+                        disabled={questionLocked || isWrongPick || isGenerating}
+                        onClick={() => handleMcqSelect(opt)}
+                        className={`min-h-[44px] rounded-xl border-2 px-4 py-3 text-left text-lg font-semibold shadow-sm transition-colors disabled:cursor-not-allowed ${
+                          revealCorrect
+                            ? "border-green-500 bg-green-100 text-green-800"
+                            : isWrongPick
+                            ? "border-red-400 bg-red-100 text-red-700 animate-shake"
+                            : "border-blue-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
+                        }`}
+                      >
+                        <span className="mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>
+                        {opt}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <>
+                  {mcqMode && currentQuestion && !isGenerating && (
+                    <p className="text-sm italic text-gray-500 mb-2">Type your answer for this one</p>
+                  )}
+                  <input
+                    type="text"
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") checkAnswer() }}
+                    aria-label="Your answer"
+                    placeholder="Type your answer and press Enter..."
+                    disabled={questionLocked || !currentQuestion || isGenerating}
+                    className={`w-full p-4 text-lg font-semibold border-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed mb-4 shadow-sm transition-colors ${
+                      feedback.startsWith("Incorrect") && !questionLocked
+                        ? "border-red-400 focus:ring-red-300 animate-shake"
+                        : "border-blue-300 focus:ring-blue-400"
+                    }`}
+                  />
+                </>
+              )}
 
               {/* Format hint — inferred from the correct answer shape */}
-              {!questionLocked && currentQuestion && (() => {
+              {!mcqMode && !questionLocked && currentQuestion && (() => {
                 const ans = currentAnswer.toLowerCase();
                 if (/\bquotient\b/.test(ans)) {
                   return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write as: Quotient = [number], Remainder = [number]</p>;
@@ -1695,14 +1860,16 @@ export default function MathQuiz() {
                 {isGenerating ? "Generating..." : "New Question"}
               </button>
 
-              <button
-                onClick={checkAnswer}
-                disabled={!currentQuestion || questionLocked || isGenerating}
-                className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
-              >
-                <CheckCircle className="w-5 h-5" />
-                Check Answer
-              </button>
+              {!(mcqMode && mcqOptions.length > 0) && (
+                <button
+                  onClick={() => checkAnswer()}
+                  disabled={!currentQuestion || questionLocked || isGenerating}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Check Answer
+                </button>
+              )}
 
               <button
                 onClick={handleShowAnswer}
