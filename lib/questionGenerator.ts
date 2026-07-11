@@ -39,6 +39,10 @@ export const MOCK_EXAM_STRUCTURE: Record<25 | 50, Record<Competency, { count: nu
 const SHAPE_POOL_2D = ['Triangle', 'Square', 'Rectangle', 'Pentagon', 'Hexagon', 'Circle'];
 const SHAPE_POOL_3D = ['Cube', 'Cuboid', 'Sphere', 'Cylinder', 'Cone', 'Triangular Prism', 'Square Pyramid'];
 const ANGLE_POOL = ['Acute', 'Right', 'Obtuse', 'Reflex'];
+// A triangle's interior angle can never be reflex (all three must sum to
+// 180°), so triangle-classification questions get a 3-option pool matching
+// the "Acute, Right, or Obtuse" wording in the question text itself.
+const ANGLE_POOL_TRIANGLE = ['Acute', 'Right', 'Obtuse'];
 const TRANSFORM_POOL = ['Reflection', 'Translation', 'Rotation'];
 const LIKELIHOOD_POOL = ['Impossible', 'Unlikely', 'Even chance', 'Likely', 'Certain'];
 const PLACE_NAME_POOL = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'lakhs'];
@@ -180,7 +184,7 @@ export function canBeMCQ(question: Question): boolean {
 // Returns an empty array when the answer's format can't be confidently
 // detected (compound phrases, word-form numbers, ordered lists, etc.) —
 // callers should fall back to a typed input in that case.
-export function generateDistractors(correctAnswer: string, _questionContext?: string): string[] {
+export function generateDistractors(correctAnswer: string, questionContext?: string): string[] {
   const a = correctAnswer.trim();
   if (a.length === 0 || /^any\b/i.test(a)) return [];
 
@@ -209,7 +213,11 @@ export function generateDistractors(correctAnswer: string, _questionContext?: st
   }
 
   if (ANGLE_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
-    return poolDistractors(a, ANGLE_POOL, 3);
+    // Triangle-classification questions can never have a reflex interior
+    // angle — restrict to the 3-option pool that matches the question text.
+    const isTriangleContext = /\btriangle\b/i.test(questionContext ?? '');
+    const pool = isTriangleContext ? ANGLE_POOL_TRIANGLE : ANGLE_POOL;
+    return poolDistractors(a, pool, pool.length - 1);
   }
 
   if (TRANSFORM_POOL.some(s => s.toLowerCase() === a.toLowerCase())) {
