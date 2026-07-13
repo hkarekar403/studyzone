@@ -810,6 +810,13 @@ export default function MathQuiz() {
       .replace(/½/g, '1/2')
       .replace(/¼/g, '1/4')
       .replace(/¾/g, '3/4')
+      .replace(/≈/g, '~=')
+      .replace(/√/g, 'sqrt')
+      .replace(/→/g, '->')
+      .replace(/←/g, '<-')
+      .replace(/⇒/g, '=>')
+      .replace(/↑/g, 'up')
+      .replace(/↓/g, 'down')
 
   const buildWorksheetPDF = (
     questions: { number: number; question: string; answer: string; working: string }[],

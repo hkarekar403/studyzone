@@ -2292,7 +2292,16 @@ export class MathQuestionGenerator {
         selfAssess: true,
         modelAnswer: isPrimeQ
           ? `A number is prime if it has exactly two factors: 1 and itself. When I check ${num}, no other whole number divides it evenly except 1 and ${num}, so it is a prime number.`
-          : `A number is composite if it has more than two factors. When I check ${num}, I can find at least one other number besides 1 and ${num} that divides it evenly, so it is a composite number.`,
+          : (() => {
+              const factors: number[] = [];
+              for (let f = 2; f < num && factors.length < 2; f++) {
+                if (num % f === 0) factors.push(f);
+              }
+              const factorText = factors.length === 2
+                ? `${num} can be divided evenly by ${factors[0]} (${num} ÷ ${factors[0]} = ${num / factors[0]}), and also by ${factors[1]} (${num} ÷ ${factors[1]} = ${num / factors[1]})`
+                : `${num} can be divided evenly by ${factors[0]} (${num} ÷ ${factors[0]} = ${num / factors[0]})`;
+              return `A number is composite if it has more than two factors. ${factorText}. Since it has factors other than just 1 and ${num}, it is a composite number.`;
+            })(),
       };
     } else if (t === 4) {
       const b = [2, 3, 4, 5, 6, 9, 10][Math.floor(Math.random() * 7)];
