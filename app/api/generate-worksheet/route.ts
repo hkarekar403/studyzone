@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     attempts++
     const q = gen.generate(difficulty, topic)
     if (q.question.includes('[[TALLY_SVG]]')) continue
+    if (q.selfAssess) continue
     questions.push({
       number: questions.length + 1,
       question: q.question,

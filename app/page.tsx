@@ -8,6 +8,8 @@ import confetti from "canvas-confetti"
 import FocusTrap from "focus-trap-react"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 
+type SelfGrade = 'correct' | 'partial' | 'review'
+
 interface SessionRecord {
   number: number
   difficulty: string
@@ -19,6 +21,9 @@ interface SessionRecord {
   working: string
   isCorrect: boolean | null
   generatedAt: Date
+  selfAssess?: boolean
+  modelAnswer?: string
+  selfGrade?: SelfGrade | null
 }
 
 export default function MathQuiz() {
@@ -55,6 +60,17 @@ export default function MathQuiz() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
   const [curriculum, setCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>('CBSE')
 
+  // Self-assessment mode ("Explain & Reason" questions) — no auto-grading;
+  // the student writes an explanation, reveals a model answer, and self-grades.
+  const [currentSelfAssess, setCurrentSelfAssess] = useState<boolean>(false)
+  const [currentModelAnswer, setCurrentModelAnswer] = useState<string>("")
+  const [selfAssessText, setSelfAssessText] = useState<string>("")
+  const [showModelAnswer, setShowModelAnswer] = useState<boolean>(false)
+  const [selfGrade, setSelfGrade] = useState<SelfGrade | null>(null)
+
+  // Guaranteed Explain & Reason cadence (every 6th question, when topic is Random)
+  const [reasoningEnabled, setReasoningEnabled] = useState<boolean>(true)
+
   // MCQ mode
   const [mcqMode, setMcqMode] = useState<boolean>(false)
   const [mcqOptions, setMcqOptions] = useState<string[]>([])
@@ -73,6 +89,7 @@ export default function MathQuiz() {
   const [copiedScore, setCopiedScore] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
+  const [pdfExporting, setPdfExporting] = useState(false)
   const [inlineShareFeedback, setInlineShareFeedback] = useState("")
 
   // Feedback form
@@ -147,6 +164,11 @@ export default function MathQuiz() {
   }, [])
 
   useEffect(() => {
+    const saved = localStorage.getItem('reasoning-enabled')
+    if (saved !== null) setReasoningEnabled(saved === 'true')
+  }, [])
+
+  useEffect(() => {
     const interval = setInterval(() => {
       const elapsed = (new Date().getTime() - sessionStartedAt.current.getTime()) / 1000 / 60
       if (elapsed >= 20 && !sessionStartWarning) {
@@ -204,6 +226,8 @@ export default function MathQuiz() {
     setCurrentAnswer("")
     setCurrentTopic("")
     setTimerActive(false)
+    setCurrentSelfAssess(false)
+    setShowModelAnswer(false)
   }, [curriculum])
 
   useEffect(() => {
@@ -266,13 +290,19 @@ export default function MathQuiz() {
       const resolvedDifficulty = difficulty === 'Random'
         ? (['Easy', 'Medium', 'Hard'] as const)[Math.floor(Math.random() * 3)]
         : difficulty
+      // Guaranteed cadence: every 6th question is an Explain & Reason question,
+      // unless the user picked a specific topic (their choice wins) or turned the
+      // toggle off. Explain & Reason only exists in the Hard pool.
+      const isForcedReasoning = reasoningEnabled && topic === 'Random' && (questionsGenerated + 1) % 6 === 0
+      const effectiveDifficulty = isForcedReasoning ? 'Hard' : resolvedDifficulty
       interface GenerateQuestionRequest {
         difficulty: string
         curriculum: string
         topic?: string
       }
-      const requestBody: GenerateQuestionRequest = { difficulty: resolvedDifficulty, curriculum }
+      const requestBody: GenerateQuestionRequest = { difficulty: effectiveDifficulty, curriculum }
       if (topic !== 'Random') requestBody.topic = topic
+      else if (isForcedReasoning) requestBody.topic = 'Explain & Reason'
 
       const response = await fetch('/api/generate-question', {
         method: 'POST',
@@ -293,6 +323,12 @@ export default function MathQuiz() {
       setCurrentTopic(questionData.topic || "General")
       setUserAnswer("")
       setShowAnswer(false)
+      const isSelfAssess = questionData.selfAssess === true
+      setCurrentSelfAssess(isSelfAssess)
+      setCurrentModelAnswer(questionData.modelAnswer || "")
+      setSelfAssessText("")
+      setShowModelAnswer(false)
+      setSelfGrade(null)
       if (mcqMode) {
         const options = buildMCQOptions({
           question: questionData.question,
@@ -310,15 +346,18 @@ export default function MathQuiz() {
       setFeedbackColor("")
       setCurrentAttempts(0)
       setQuestionLocked(false)
-      setCurrentDifficulty(resolvedDifficulty)
-      const timerDuration = resolvedDifficulty === 'Easy' ? 45 : resolvedDifficulty === 'Medium' ? 90 : 120
+      setCurrentDifficulty(effectiveDifficulty)
+      const timerDuration = effectiveDifficulty === 'Easy' ? 45 : effectiveDifficulty === 'Medium' ? 90 : 120
       setTimerDuration(timerDuration)
       setTimeLeft(timerDuration)
-      if (!timerDisabled) setTimerActive(true)
+      // Self-assess questions involve writing an explanation, which takes longer
+      // than the fixed per-difficulty timer allows — simplest fix is to disable
+      // the timer entirely for these rather than special-casing a longer duration.
+      if (!timerDisabled && !isSelfAssess) setTimerActive(true)
 
       const newRecord: SessionRecord = {
         number: questionsGenerated + 1,
-        difficulty: resolvedDifficulty,
+        difficulty: effectiveDifficulty,
         topic: questionData.topic || "General",
         question: questionData.question,
         kidAnswer: "",
@@ -327,6 +366,9 @@ export default function MathQuiz() {
         working: questionData.working,
         isCorrect: null,
         generatedAt: new Date(),
+        selfAssess: isSelfAssess,
+        modelAnswer: questionData.modelAnswer || "",
+        selfGrade: null,
       }
       setCurrentRecord(newRecord)
       setSessionRecords((prev) => [...prev, newRecord])
@@ -458,6 +500,42 @@ export default function MathQuiz() {
     }
   }
 
+  const handleSelfGrade = (grade: SelfGrade) => {
+    if (questionLocked || !currentRecord) return
+
+    setSelfGrade(grade)
+    setTopicAttempted((prev) => ({ ...prev, [currentTopic]: (prev[currentTopic] ?? 0) + 1 }))
+
+    if (grade === 'correct') {
+      setTopicCorrect((prev) => ({ ...prev, [currentTopic]: (prev[currentTopic] ?? 0) + 1 }))
+      setCorrectAnswers((prev) => prev + 1)
+      setStreak((prev) => prev + 1)
+      if (soundEnabled) playSound("correct")
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#7c3aed', '#f59e0b', '#16a34a'],
+      })
+    } else if (grade === 'review') {
+      // Breaks the streak and (via the accuracy-based weakness analysis) surfaces
+      // this topic as "needs practice" since it's attempted but not correct.
+      setStreak(0)
+    }
+    // 'partial' is deliberately gentle: attempted, not correct, but no streak break.
+
+    const updatedRecord: SessionRecord = {
+      ...currentRecord,
+      kidAnswer: selfAssessText,
+      isCorrect: grade === 'correct' ? true : grade === 'review' ? false : null,
+      selfGrade: grade,
+    }
+    setCurrentRecord(updatedRecord)
+    setSessionRecords((prev) => prev.map((r) => (r.number === currentRecord.number ? updatedRecord : r)))
+    setQuestionLocked(true)
+    setTimerActive(false)
+  }
+
   const toggleDarkMode = () => {
     const next = !isDarkMode
     setIsDarkMode(next)
@@ -476,65 +554,229 @@ export default function MathQuiz() {
     }
   }
 
-  const exportPDF = () => {
-    const doc = new jsPDF()
-    const endedAt = new Date()
-
-    doc.setFontSize(20)
-    doc.text("Class 4 Mathematics Practice Session Report", 20, 20)
-
-    doc.setFontSize(12)
-    doc.text(`Session Start: ${sessionStartedAt.current.toLocaleString()}`, 20, 35)
-    doc.text(`Session End: ${endedAt.toLocaleString()}`, 20, 45)
-    doc.text(`Questions Generated: ${questionsGenerated}`, 20, 55)
-    doc.text(`Correct Answers: ${correctAnswers}`, 20, 65)
-
-    let yPosition = 80
-    sessionRecords.forEach((record) => {
-      if (yPosition > 270) {
-        doc.addPage()
-        yPosition = 20
+  // Rasterizes an inline SVG string to a PNG data URL via an off-screen canvas,
+  // so jsPDF can embed it as an image (jsPDF has no native SVG support). Renders
+  // at 3x the SVG's declared size for crisper output at print resolution.
+  const svgToPngDataUrl = (svgString: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const svg64 = btoa(unescape(encodeURIComponent(svgString)))
+        const img = new Image()
+        img.onload = () => {
+          try {
+            const scale = 3
+            const width = img.naturalWidth || img.width || 300
+            const height = img.naturalHeight || img.height || 100
+            const canvas = document.createElement('canvas')
+            canvas.width = width * scale
+            canvas.height = height * scale
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              reject(new Error('Canvas 2D context unavailable'))
+              return
+            }
+            // White background — SVGs have no fill of their own and jsPDF images are opaque.
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            resolve(canvas.toDataURL('image/png'))
+          } catch (err) {
+            reject(err instanceof Error ? err : new Error('SVG rasterization failed'))
+          }
+        }
+        img.onerror = () => reject(new Error('SVG failed to load as an image'))
+        img.src = `data:image/svg+xml;base64,${svg64}`
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error('SVG encoding failed'))
       }
-
-      doc.setFontSize(14)
-      doc.text(`Question ${record.number} - ${record.difficulty} - ${record.topic}`, 20, yPosition)
-      yPosition += 10
-
-      doc.setFontSize(10)
-      const questionLines = doc.splitTextToSize(record.question, 170)
-      doc.text(questionLines, 20, yPosition)
-      yPosition += questionLines.length * 5 + 5
-
-      doc.text(`Child's Answer: ${record.kidAnswer || "No answer entered"}`, 20, yPosition)
-      yPosition += 7
-
-      const resultText = record.isCorrect === true ? "Correct" : record.isCorrect === false ? "Incorrect" : "Not checked"
-      doc.text(`Result: ${resultText}`, 20, yPosition)
-      yPosition += 7
-
-      if (record.attempts.length > 0) {
-        doc.text("Attempts:", 20, yPosition)
-        yPosition += 5
-        record.attempts.forEach((attempt, idx) => {
-          doc.text(`  Attempt ${idx + 1}: ${attempt.answer} (${attempt.result})`, 20, yPosition)
-          yPosition += 5
-        })
-      }
-
-      doc.setFillColor(255, 247, 214)
-      doc.rect(20, yPosition, 170, 20, "F")
-      doc.setTextColor(15, 81, 50)
-      let answerText = `Answer: ${record.correctAnswer}`
-      if (record.difficulty === "Hard") {
-        answerText += `\n\n${record.working}`
-      }
-      const answerLines = doc.splitTextToSize(answerText, 160)
-      doc.text(answerLines, 25, yPosition + 5)
-      doc.setTextColor(0, 0, 0)
-      yPosition += 25
     })
+  }
 
-    doc.save(`math_session_${endedAt.getTime()}.pdf`)
+  // Writes a question's text to the PDF, rendering any embedded [[TALLY_SVG]]
+  // diagram as an actual image (never as raw markup). Falls back to a note if
+  // the SVG can't be parsed or rasterized. Returns the updated yPosition.
+  const writeQuestionWithDiagram = async (doc: jsPDF, question: string, yStart: number): Promise<number> => {
+    let yPosition = yStart
+    const sentinel = '[[TALLY_SVG]]'
+    const sentinelIdx = question.indexOf(sentinel)
+
+    if (sentinelIdx === -1) {
+      const questionLines = doc.splitTextToSize(sanitizePDFText(question), 170)
+      doc.text(questionLines, 20, yPosition)
+      return yPosition + questionLines.length * 5 + 5
+    }
+
+    const textBefore = sanitizePDFText(question.slice(0, sentinelIdx).trim())
+    const svgAndAfter = question.slice(sentinelIdx + sentinel.length)
+    const svgCloseIdx = svgAndAfter.indexOf('</svg>')
+
+    if (textBefore) {
+      const beforeLines = doc.splitTextToSize(textBefore, 170)
+      doc.text(beforeLines, 20, yPosition)
+      yPosition += beforeLines.length * 5 + 5
+    }
+
+    if (svgCloseIdx === -1) {
+      doc.setFont('helvetica', 'italic')
+      doc.text('(diagram could not be included)', 20, yPosition)
+      doc.setFont('helvetica', 'normal')
+      return yPosition + 7
+    }
+
+    const rawSvg = svgAndAfter.slice(0, svgCloseIdx + 6)
+    const textAfter = sanitizePDFText(svgAndAfter.slice(svgCloseIdx + 6).trim())
+    const safeSvg = sanitizeSVG(rawSvg)
+
+    let embedded = false
+    if (safeSvg) {
+      try {
+        const pngDataUrl = await svgToPngDataUrl(safeSvg)
+        const dims = safeSvg.match(/width="([\d.]+)"\s+height="([\d.]+)"/)
+        const svgW = dims ? parseFloat(dims[1]) : 300
+        const svgH = dims ? parseFloat(dims[2]) : 100
+        const maxWidthPt = 120
+        const imgWidthPt = Math.min(maxWidthPt, svgW)
+        const imgHeightPt = imgWidthPt * (svgH / svgW)
+
+        if (yPosition + imgHeightPt > 270) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        doc.addImage(pngDataUrl, 'PNG', 20, yPosition, imgWidthPt, imgHeightPt)
+        yPosition += imgHeightPt + 8
+        embedded = true
+      } catch {
+        embedded = false
+      }
+    }
+
+    if (!embedded) {
+      doc.setFont('helvetica', 'italic')
+      doc.text('(diagram could not be included)', 20, yPosition)
+      doc.setFont('helvetica', 'normal')
+      yPosition += 7
+    }
+
+    if (textAfter) {
+      const afterLines = doc.splitTextToSize(textAfter, 170)
+      doc.text(afterLines, 20, yPosition)
+      yPosition += afterLines.length * 5 + 5
+    }
+
+    return yPosition
+  }
+
+  const exportPDF = async () => {
+    setPdfExporting(true)
+    try {
+      const doc = new jsPDF()
+      const endedAt = new Date()
+
+      doc.setFontSize(20)
+      doc.text("Class 4 Mathematics Practice Session Report", 20, 20)
+
+      doc.setFontSize(12)
+      doc.text(`Session Start: ${sessionStartedAt.current.toLocaleString()}`, 20, 35)
+      doc.text(`Session End: ${endedAt.toLocaleString()}`, 20, 45)
+      doc.text(`Questions Generated: ${questionsGenerated}`, 20, 55)
+      doc.text(`Correct Answers: ${correctAnswers}`, 20, 65)
+
+      let yPosition = 80
+      for (const record of sessionRecords) {
+        if (yPosition > 270) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        doc.setFontSize(14)
+        doc.text(`Question ${record.number} - ${record.difficulty} - ${record.topic}`, 20, yPosition)
+        yPosition += 10
+
+        doc.setFontSize(10)
+        yPosition = await writeQuestionWithDiagram(doc, record.question, yPosition)
+
+        if (yPosition > 260) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        if (record.selfAssess) {
+          const explanationLines = doc.splitTextToSize(
+            `Your explanation: ${sanitizePDFText(record.kidAnswer || "No explanation written")}`,
+            170,
+          )
+          doc.text(explanationLines, 20, yPosition)
+          yPosition += explanationLines.length * 5 + 5
+
+          const selfGradeText =
+            record.selfGrade === "correct"
+              ? "Self-graded: I got it right"
+              : record.selfGrade === "partial"
+              ? "Self-graded: Partly right"
+              : record.selfGrade === "review"
+              ? "Self-graded: I need to review this"
+              : "Self-graded: Not graded"
+          doc.text(selfGradeText, 20, yPosition)
+          yPosition += 7
+
+          if (yPosition > 250) {
+            doc.addPage()
+            yPosition = 20
+          }
+
+          const modelAnswerLines = doc.splitTextToSize(sanitizePDFText(record.modelAnswer || ""), 160)
+          const boxHeight = Math.max(20, modelAnswerLines.length * 5 + 10)
+          doc.setFillColor(255, 247, 214)
+          doc.rect(20, yPosition, 170, boxHeight, "F")
+          doc.setTextColor(15, 81, 50)
+          doc.text("Model Answer:", 25, yPosition + 6)
+          doc.text(modelAnswerLines, 25, yPosition + 12)
+          doc.setTextColor(0, 0, 0)
+          yPosition += boxHeight + 5
+          continue
+        }
+
+        doc.text(`Child's Answer: ${sanitizePDFText(record.kidAnswer || "No answer entered")}`, 20, yPosition)
+        yPosition += 7
+
+        const resultText = record.isCorrect === true ? "Correct" : record.isCorrect === false ? "Incorrect" : "Not checked"
+        doc.text(`Result: ${resultText}`, 20, yPosition)
+        yPosition += 7
+
+        if (record.attempts.length > 0) {
+          doc.text("Attempts:", 20, yPosition)
+          yPosition += 5
+          record.attempts.forEach((attempt, idx) => {
+            doc.text(`  Attempt ${idx + 1}: ${sanitizePDFText(attempt.answer)} (${attempt.result})`, 20, yPosition)
+            yPosition += 5
+          })
+        }
+
+        let answerText = `Answer: ${sanitizePDFText(record.correctAnswer)}`
+        if (record.difficulty === "Hard") {
+          answerText += `\n\n${sanitizePDFText(record.working)}`
+        }
+        const answerLines = doc.splitTextToSize(answerText, 160)
+        const answerBoxHeight = Math.max(20, answerLines.length * 5 + 10)
+
+        if (yPosition + answerBoxHeight > 280) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        doc.setFillColor(255, 247, 214)
+        doc.rect(20, yPosition, 170, answerBoxHeight, "F")
+        doc.setTextColor(15, 81, 50)
+        doc.text(answerLines, 25, yPosition + 5)
+        doc.setTextColor(0, 0, 0)
+        yPosition += answerBoxHeight + 5
+      }
+
+      doc.save(`math_session_${endedAt.getTime()}.pdf`)
+    } finally {
+      setPdfExporting(false)
+    }
   }
 
   const getWeaknessAnalysis = () => {
@@ -1508,6 +1750,40 @@ export default function MathQuiz() {
             </div>
           </div>
 
+          {/* REASONING CADENCE TOGGLE */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">🧠 Reasoning Questions</span>
+            <div
+              className="inline-flex rounded-full border border-blue-200 bg-blue-50 p-1"
+              title="Every 6th question asks you to explain your thinking"
+            >
+              <button
+                onClick={() => {
+                  setReasoningEnabled(true)
+                  localStorage.setItem('reasoning-enabled', 'true')
+                }}
+                aria-pressed={reasoningEnabled}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+                  reasoningEnabled ? 'bg-[#2563eb] text-white' : 'text-blue-700'
+                }`}
+              >
+                On
+              </button>
+              <button
+                onClick={() => {
+                  setReasoningEnabled(false)
+                  localStorage.setItem('reasoning-enabled', 'false')
+                }}
+                aria-pressed={!reasoningEnabled}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+                  !reasoningEnabled ? 'bg-[#2563eb] text-white' : 'text-blue-700'
+                }`}
+              >
+                Off
+              </button>
+            </div>
+          </div>
+
           {/* CONTROLS ROW */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
@@ -1577,9 +1853,11 @@ export default function MathQuiz() {
                 {timeLeft === 10 && timerActive ? 'Warning: 10 seconds remaining' : ''}
                 {timeLeft === 0 ? 'Time is up' : ''}
               </div>
-              {timerDisabled ? (
+              {timerDisabled || currentSelfAssess ? (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-sm font-semibold text-gray-500">Relaxed mode</span>
+                  <span className="text-sm font-semibold text-gray-500">
+                    {currentSelfAssess && !timerDisabled ? "Take your time ✍️" : "Relaxed mode"}
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -1598,7 +1876,7 @@ export default function MathQuiz() {
                   </span>
                 </div>
               )}
-              {!timerDisabled && (
+              {!timerDisabled && !currentSelfAssess && (
                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ease-linear ${
@@ -1718,8 +1996,84 @@ export default function MathQuiz() {
                 </div>
               )}
 
-              {/* Answer input: MCQ options or typed input */}
-              {mcqMode && currentQuestion && mcqOptions.length > 0 ? (
+              {/* Answer input: self-assess / MCQ options / typed input */}
+              {currentSelfAssess && currentQuestion ? (
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 mb-3">
+                    ✍️ This one is about your thinking — write how you would solve it, then compare with the model answer.
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={selfAssessText}
+                    onChange={(e) => setSelfAssessText(e.target.value)}
+                    aria-label="Your explanation"
+                    placeholder="Write your explanation here..."
+                    disabled={questionLocked || isGenerating}
+                    className="w-full p-4 text-base font-medium border-2 rounded-2xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed mb-3 shadow-sm transition-colors resize-none border-blue-300"
+                  />
+
+                  {!showModelAnswer ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowModelAnswer(true)}
+                      disabled={selfAssessText.trim().length < 10 || isGenerating}
+                      title={selfAssessText.trim().length < 10 ? "Write your explanation first" : undefined}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
+                    >
+                      <Eye className="w-5 h-5" />
+                      Show Model Answer
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Your explanation</p>
+                        <p className="text-base text-gray-800 whitespace-pre-wrap leading-relaxed">{selfAssessText}</p>
+                      </div>
+                      <div className="bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2">💡 Model Answer</p>
+                        <p className="text-base text-gray-800 whitespace-pre-wrap leading-relaxed">{currentModelAnswer}</p>
+                      </div>
+
+                      {!questionLocked ? (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-600 mb-2 text-center">How did you do?</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSelfGrade('correct')}
+                              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors"
+                            >
+                              ✅ I got it right
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSelfGrade('partial')}
+                              className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors"
+                            >
+                              🤔 Partly right
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSelfGrade('review')}
+                              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-3 rounded-xl text-sm transition-colors"
+                            >
+                              📚 I need to review this
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-center text-sm font-semibold text-gray-500">
+                          {selfGrade === 'correct'
+                            ? "✅ Recorded — great job!"
+                            : selfGrade === 'partial'
+                            ? "🤔 Recorded — partly right."
+                            : "📚 Recorded — added to topics to review."}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : mcqMode && currentQuestion && mcqOptions.length > 0 ? (
                 <div
                   role="radiogroup"
                   aria-label="Answer options"
@@ -1777,7 +2131,7 @@ export default function MathQuiz() {
               )}
 
               {/* Format hint — inferred from the correct answer shape */}
-              {!mcqMode && !questionLocked && currentQuestion && (() => {
+              {!mcqMode && !currentSelfAssess && !questionLocked && currentQuestion && (() => {
                 const ans = currentAnswer.toLowerCase();
                 if (/\bquotient\b/.test(ans)) {
                   return <p className="text-sm italic text-gray-500 mt-1 mb-3">💡 Write as: Quotient = [number], Remainder = [number]</p>;
@@ -1860,7 +2214,7 @@ export default function MathQuiz() {
                 {isGenerating ? "Generating..." : "New Question"}
               </button>
 
-              {!(mcqMode && mcqOptions.length > 0) && (
+              {!currentSelfAssess && !(mcqMode && mcqOptions.length > 0) && (
                 <button
                   onClick={() => checkAnswer()}
                   disabled={!currentQuestion || questionLocked || isGenerating}
@@ -1871,22 +2225,37 @@ export default function MathQuiz() {
                 </button>
               )}
 
-              <button
-                onClick={handleShowAnswer}
-                disabled={!currentQuestion || isGenerating}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
-              >
-                <Eye className="w-5 h-5" />
-                Show Answer
-              </button>
+              {/* Self-assess questions use their own "Show Model Answer" flow inline. */}
+              {!currentSelfAssess && (
+                <button
+                  onClick={handleShowAnswer}
+                  disabled={!currentQuestion || isGenerating}
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
+                >
+                  <Eye className="w-5 h-5" />
+                  Show Answer
+                </button>
+              )}
 
               <button
                 onClick={exportPDF}
-                disabled={sessionRecords.length === 0}
+                disabled={sessionRecords.length === 0 || pdfExporting}
                 className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
               >
-                <Download className="w-5 h-5" />
-                Export PDF
+                {pdfExporting ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    Export PDF
+                  </>
+                )}
               </button>
 
               <button
@@ -1974,7 +2343,15 @@ export default function MathQuiz() {
                       {record.kidAnswer || "—"}
                     </span>
                     <span className="flex-shrink-0 text-base">
-                      {record.isCorrect === true
+                      {record.selfAssess
+                        ? record.selfGrade === 'correct'
+                          ? "✅"
+                          : record.selfGrade === 'partial'
+                          ? "🤔"
+                          : record.selfGrade === 'review'
+                          ? "📚"
+                          : "⏳"
+                        : record.isCorrect === true
                         ? "✅"
                         : record.isCorrect === false
                         ? "❌"
@@ -2174,10 +2551,23 @@ export default function MathQuiz() {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={exportPDF}
-                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                  disabled={pdfExporting}
+                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-4 h-4" />
-                  Export PDF
+                  {pdfExporting ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Export PDF
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleShare}
@@ -2280,7 +2670,7 @@ export default function MathQuiz() {
                   disabled={worksheetLoading}
                   className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
                 >
-                  {availableTopics.map((t) => (
+                  {availableTopics.filter((t) => t !== 'Explain & Reason').map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
@@ -2421,7 +2811,7 @@ export default function MathQuiz() {
                       />
                       All Topics
                     </label>
-                    {availableTopics.map((t) => (
+                    {availableTopics.filter((t) => t !== 'Explain & Reason').map((t) => (
                       <label key={t} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer">
                         <input
                           type="checkbox"

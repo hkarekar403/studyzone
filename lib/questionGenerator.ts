@@ -356,6 +356,7 @@ export class MathQuestionGenerator {
       this.hardLogicalReasoning,
       this.hardMisleadingInfo,
       this.numberLineQuestions,
+      this.hardExplainReasoning,
     ],
   };
 
@@ -391,6 +392,7 @@ export class MathQuestionGenerator {
       this.hardLogicalReasoning,
       this.hardMisleadingInfo,
     ],
+    "Explain & Reason": [this.hardExplainReasoning],
   };
 
   // Maps each generator function to its display topic when randomly selected.
@@ -459,6 +461,7 @@ export class MathQuestionGenerator {
     [this.igcseTransformations, "Transformations"],
     [this.igcseDataReasoning, "Data & Reasoning"],
     [this.igcseReasoning, "Reasoning"],
+    [this.hardExplainReasoning, "Explain & Reason"],
   ]);
 
   // Maps each generator function to its Mock Exam competency tier (VSA/SA1/SA2/LA).
@@ -564,6 +567,7 @@ export class MathQuestionGenerator {
         "Data Handling": [this.easyTallyChart, this.mediumBarGraph, this.likelihoodQuestions],
         "Patterns": [this.hardPatterns],
         "Number Line": [this.numberLineQuestions],
+        "Explain & Reason": [this.hardExplainReasoning],
       };
     }
     if (this.curriculum === 'IGCSE') {
@@ -594,6 +598,7 @@ export class MathQuestionGenerator {
           this.igcseShopkeeperChallenge,
           this.igcseMisleadingContext,
         ],
+        "Explain & Reason": [this.hardExplainReasoning],
       };
     }
     return this.topicGenerators;
@@ -621,10 +626,15 @@ export class MathQuestionGenerator {
 
   // Resolves the candidate generator functions for a Mock Exam topic filter.
   // Empty/["All Topics"] falls back to every generator function this curriculum knows about.
+  // Self-assess generators (e.g. hardExplainReasoning / "Explain & Reason") are excluded
+  // here — a mock exam paper needs a fixed, printable mark scheme, which self-assess
+  // questions don't have. If a topic filter resolves to nothing but self-assess
+  // generators, this falls back to the full (non-self-assess) pool rather than an
+  // empty set.
   private getCandidateFunctionsForTopics(topics: string[]): (() => Question)[] {
     const topicGens = this.getTopicGenerators();
     const allFns = new Set<() => Question>();
-    Object.values(topicGens).forEach(fns => fns.forEach(fn => allFns.add(fn)));
+    Object.values(topicGens).forEach(fns => fns.forEach(fn => { if (fn !== this.hardExplainReasoning) allFns.add(fn) }));
 
     if (!topics || topics.length === 0 || topics.includes('All Topics')) {
       return Array.from(allFns);
@@ -633,7 +643,7 @@ export class MathQuestionGenerator {
     const filtered = new Set<() => Question>();
     for (const t of topics) {
       const fns = topicGens[t];
-      if (fns) fns.forEach(fn => filtered.add(fn));
+      if (fns) fns.forEach(fn => { if (fn !== this.hardExplainReasoning) filtered.add(fn) });
     }
     return filtered.size > 0 ? Array.from(filtered) : Array.from(allFns);
   }
@@ -686,6 +696,7 @@ export class MathQuestionGenerator {
         const fn = pickFn();
         const raw = fn.call(this) as Question;
         if (raw.question.includes('[[TALLY_SVG]]')) continue;
+        if (raw.selfAssess) continue;
         if (seenInExam.has(raw.question)) continue;
         let options: string[] | undefined;
         if (mcqOnly) {
@@ -706,7 +717,7 @@ export class MathQuestionGenerator {
         let tries = 0;
         let options: string[] | undefined;
         while (tries < 20) {
-          if (raw.question.includes('[[TALLY_SVG]]')) {
+          if (raw.question.includes('[[TALLY_SVG]]') || raw.selfAssess) {
             raw = fn.call(this) as Question;
             tries++;
             continue;
@@ -1121,7 +1132,7 @@ export class MathQuestionGenerator {
     } else if (t === 1) {
       const num = Math.floor(Math.random() * 7) + 1;
       const greaterNum = num + Math.floor(Math.random() * (9 - num)) + 1;
-      return { question: `Write a fraction greater than ${num}/10.`, answer: `${greaterNum}/10`, working: `Working:\nA fraction with denominator 10 is greater if its numerator is larger.\n${num}/10 < ${greaterNum}/10 because ${num} < ${greaterNum}` };
+      return { question: `Write a fraction greater than ${num}/10.`, answer: `Any valid answer, e.g. ${greaterNum}/10`, working: `Working:\nA fraction with denominator 10 is greater if its numerator is larger.\n${num}/10 < ${greaterNum}/10 because ${num} < ${greaterNum}` };
     } else if (t === 2) {
       let n1 = Math.floor(Math.random() * 8) + 1;
       let n2 = Math.floor(Math.random() * 8) + 1;
@@ -1152,10 +1163,11 @@ export class MathQuestionGenerator {
     } else {
       const num = Math.floor(Math.random() * 12) + 2;
       const multiple = Math.floor(Math.random() * 6) + 1;
+      const multipleOrdinal = this.ordinal(multiple);
       return {
-        question: `What is the ${multiple}th multiple of ${num}?`,
+        question: `What is the ${multipleOrdinal} multiple of ${num}?`,
         answer: (num * multiple).toString(),
-        working: `Working:\n${multiple}th multiple of ${num} = ${num} × ${multiple} = ${num * multiple}`,
+        working: `Working:\n${multipleOrdinal} multiple of ${num} = ${num} × ${multiple} = ${num * multiple}`,
       };
     }
   }
@@ -2228,8 +2240,14 @@ export class MathQuestionGenerator {
     }
   }
 
+  // "Explain your reasoning" prompts — self-assessed, never auto-graded. Every
+  // branch must set selfAssess: true and a non-empty, child-friendly modelAnswer;
+  // canBeMCQ() and the Mock Exam / worksheet generators key off selfAssess to
+  // exclude these from anything that needs a fixed, gradable answer.
   private hardExplainReasoning(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(Math.random() * 8);
+    const currency = this.curriculum === 'IGCSE' ? '$' : '₹';
+    const name = this.curriculum === 'IGCSE' ? this.randomInternationalName() : this.randomIndianName();
 
     if (t === 0) {
       const l = Math.floor(Math.random() * 10) + 4;
@@ -2239,20 +2257,20 @@ export class MathQuestionGenerator {
         answer: 'SELF_ASSESS',
         working: `Working:\nArea = length × width = ${l} × ${w} = ${l * w} cm²`,
         selfAssess: true,
-        modelAnswer: `To find the area, multiply the length by the width: ${l} cm × ${w} cm = ${l * w} cm². I know to use multiplication (not addition) because area measures the space covered by a 2D shape, and the rectangle can be thought of as ${l} rows of ${w} unit squares each.`,
+        modelAnswer: `To find the area, I multiply the length by the width: ${l} cm × ${w} cm = ${l * w} cm². I use multiplication, not addition, because area measures the space covered by a flat shape — it's like counting ${l} rows of ${w} little squares each.`,
       };
     } else if (t === 1) {
       const qty = Math.floor(Math.random() * 8) + 4;
       const cp = Math.floor(Math.random() * 30) + 20;
       const sp = cp + Math.floor(Math.random() * 15) + 5;
       return {
-        question: `A shopkeeper buys ${qty} toys at ₹${cp} each and sells all of them at ₹${sp} each.\nExplain how you would find out whether the shopkeeper made a profit or a loss, and by how much.`,
+        question: `${name} buys ${qty} toys at ${currency}${cp} each and sells all of them at ${currency}${sp} each.\nExplain how you would find out whether ${name} made a profit or a loss, and by how much.`,
         answer: 'SELF_ASSESS',
-        working: `Working:\nTotal cost = ${qty} × ₹${cp} = ₹${qty * cp}\nTotal revenue = ${qty} × ₹${sp} = ₹${qty * sp}\nProfit = ₹${qty * sp} - ₹${qty * cp} = ₹${qty * (sp - cp)}`,
+        working: `Working:\nTotal cost = ${qty} × ${currency}${cp} = ${currency}${qty * cp}\nTotal revenue = ${qty} × ${currency}${sp} = ${currency}${qty * sp}\nProfit = ${currency}${qty * sp} - ${currency}${qty * cp} = ${currency}${qty * (sp - cp)}`,
         selfAssess: true,
-        modelAnswer: `First, find the total cost price by multiplying the quantity by the cost price per toy. Then find the total selling price the same way. Since the selling price per toy is higher than the cost price, I know there's a profit. Subtract the total cost from the total revenue to find the profit amount.`,
+        modelAnswer: `First, I'd find the total cost by multiplying the quantity by the cost price: ${qty} × ${currency}${cp}. Then I'd find the total money made by multiplying the quantity by the selling price: ${qty} × ${currency}${sp}. Since the selling price is higher than the cost price, there's a profit — I subtract the total cost from the total revenue to find how much.`,
       };
-    } else {
+    } else if (t === 2) {
       const d1 = Math.floor(Math.random() * 4) + 2;
       const d2 = Math.floor(Math.random() * 4) + 2;
       return {
@@ -2260,7 +2278,73 @@ export class MathQuestionGenerator {
         answer: 'SELF_ASSESS',
         working: `Working:\nLCM of ${d1} and ${d2} = ${this.lcm(d1, d2)}`,
         selfAssess: true,
-        modelAnswer: `I would list the multiples of both numbers: multiples of ${d1} and multiples of ${d2}, then find the smallest number that appears in both lists. That smallest common number is the LCM, which is ${this.lcm(d1, d2)}.`,
+        modelAnswer: `I would list the multiples of both numbers: multiples of ${d1} and multiples of ${d2}. Then I'd look for the smallest number that appears in both lists. That smallest common number is the LCM, which is ${this.lcm(d1, d2)}.`,
+      };
+    } else if (t === 3) {
+      const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31];
+      const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 21, 22];
+      const isPrimeQ = Math.random() < 0.5;
+      const num = isPrimeQ ? primes[Math.floor(Math.random() * primes.length)] : composites[Math.floor(Math.random() * composites.length)];
+      return {
+        question: `Explain why ${num} is a ${isPrimeQ ? 'prime' : 'composite'} number.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\n${isPrimeQ ? `${num} has only two factors: 1 and ${num}. It is prime.` : `${num} has more than two factors. It is composite.`}`,
+        selfAssess: true,
+        modelAnswer: isPrimeQ
+          ? `A number is prime if it has exactly two factors: 1 and itself. When I check ${num}, no other whole number divides it evenly except 1 and ${num}, so it is a prime number.`
+          : `A number is composite if it has more than two factors. When I check ${num}, I can find at least one other number besides 1 and ${num} that divides it evenly, so it is a composite number.`,
+      };
+    } else if (t === 4) {
+      const b = [2, 3, 4, 5, 6, 9, 10][Math.floor(Math.random() * 7)];
+      const multiplier = Math.floor(Math.random() * 15) + 5;
+      const a = b * multiplier;
+      return {
+        question: `Explain how you would check if ${a} is divisible by ${b}.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\n${a} ÷ ${b} = ${a / b}, no remainder, so ${a} is divisible by ${b}.`,
+        selfAssess: true,
+        modelAnswer: `I would divide ${a} by ${b}. If it divides exactly with no remainder left over, then ${a} is divisible by ${b}. When I try it, ${a} ÷ ${b} = ${a / b} exactly, so yes — ${a} is divisible by ${b}.`,
+      };
+    } else if (t === 5) {
+      const claims = [
+        { claim: `all even numbers are multiples of 4`, why: `Even numbers only need to divide evenly by 2. For example, 6 is even, but 6 ÷ 4 leaves a remainder, so 6 is not a multiple of 4. Multiples of 4 are a smaller group inside the even numbers, like 4, 8, 12, 16.` },
+        { claim: `1/4 is bigger than 1/3 because 4 is a bigger number than 3`, why: `When the top number (numerator) is 1, a bigger bottom number (denominator) means the whole is cut into more, smaller pieces. So 1/4 is actually smaller than 1/3 — sharing one chocolate bar between 4 people gives each person less than sharing it between 3.` },
+        { claim: `multiplying two numbers always makes the answer bigger`, why: `Multiplying by 1 keeps a number the same, like 5 × 1 = 5, and multiplying by 0 makes it 0, like 5 × 0 = 0. So multiplying does not always make the answer bigger — it depends on the numbers used.` },
+        { claim: `a number ending in 0, like 30, is a multiple of 10 but not a multiple of 5`, why: `Since 10 = 2 × 5, every multiple of 10 is automatically also a multiple of 5. So a number ending in 0, like 30, is both a multiple of 10 and a multiple of 5.` },
+      ];
+      const pick = claims[Math.floor(Math.random() * claims.length)];
+      return {
+        question: `A friend says "${pick.claim}". Explain why they are wrong.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\n${pick.why}`,
+        selfAssess: true,
+        modelAnswer: pick.why,
+      };
+    } else if (t === 6) {
+      const num = Math.floor(Math.random() * 9000) + 1000;
+      const numStr = num.toString();
+      const idx = Math.floor(Math.random() * numStr.length);
+      const digit = numStr[idx];
+      const placeName = this.getPlaceName(numStr.length - idx - 1);
+      const placeValue = parseInt(digit) * Math.pow(10, numStr.length - idx - 1);
+      return {
+        question: `Explain the difference between the place value and face value of ${digit} in ${num}.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\nFace value of ${digit} = ${digit}\nPlace value of ${digit} = ${digit} × ${Math.pow(10, numStr.length - idx - 1)} = ${placeValue} (it is in the ${placeName} place)`,
+        selfAssess: true,
+        modelAnswer: `The face value of a digit is just the digit itself, so the face value of ${digit} is ${digit}. The place value depends on where the digit sits in the number — since ${digit} is in the ${placeName} place, its place value is ${placeValue}. Face value never changes, but place value changes depending on the digit's position.`,
+      };
+    } else {
+      const a = Math.floor(Math.random() * 400) + 100;
+      const b = Math.floor(Math.random() * 400) + 100;
+      const roundedA = Math.round(a / 10) * 10;
+      const roundedB = Math.round(b / 10) * 10;
+      return {
+        question: `Explain how you would estimate ${a} + ${b} without calculating the exact answer.`,
+        answer: 'SELF_ASSESS',
+        working: `Working:\nRound ${a} to the nearest 10 = ${roundedA}\nRound ${b} to the nearest 10 = ${roundedB}\nEstimate = ${roundedA} + ${roundedB} = ${roundedA + roundedB}\n(Exact answer: ${a + b})`,
+        selfAssess: true,
+        modelAnswer: `To estimate, I round each number to the nearest 10 first: ${a} rounds to ${roundedA}, and ${b} rounds to ${roundedB}. Then I add the rounded numbers: ${roundedA} + ${roundedB} = ${roundedA + roundedB}. This gives me a quick answer that's close to the real total without doing the exact addition.`,
       };
     }
   }
@@ -2268,6 +2352,18 @@ export class MathQuestionGenerator {
   private getPlaceName(power: number): string {
     const places = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands'];
     return places[power] || 'higher place';
+  }
+
+  // 1→1st, 2→2nd, 3→3rd, 4-20→th (including 11-13), 21→21st, 22→22nd, 23→23rd, ...
+  private ordinal(n: number): string {
+    const rem100 = n % 100;
+    if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+    switch (n % 10) {
+      case 1: return `${n}st`;
+      case 2: return `${n}nd`;
+      case 3: return `${n}rd`;
+      default: return `${n}th`;
+    }
   }
 
   private lcm(a: number, b: number): number {
