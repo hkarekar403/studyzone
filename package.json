@@ -10,13 +10,11 @@
   },
   "dependencies": {
     "@types/canvas-confetti": "^1.9.0",
-    "@types/katex": "^0.16.8",
     "@vercel/analytics": "^2.0.1",
     "@vercel/kv": "^3.0.0",
     "canvas-confetti": "^1.9.4",
     "focus-trap-react": "^12.0.3",
     "jspdf": "^2.5.1",
-    "katex": "^0.17.0",
     "lucide-react": "^0.400.0",
     "next": "14.2.5",
     "qrcode.react": "^4.2.0",

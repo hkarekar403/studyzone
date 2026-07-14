@@ -767,12 +767,12 @@ function generateMensuration(
   if (difficulty === 'Easy') {
     // Area of trapezium
     const a = randInt(6, 14);
-    const b = randInt(a + 2, a + 8);
+    let b = randInt(a + 2, a + 8);
     const h = randInt(4, 10);
 
-    // Ensure (a+b)*h is even
-    while (((a + b) * h) % 2 !== 0) {
-      a;
+    // Ensure (a+b)*h is even so the area divides evenly
+    if (((a + b) * h) % 2 !== 0) {
+      b += 1;
     }
 
     const area = Math.floor(((a + b) * h) / 2);
@@ -862,9 +862,7 @@ function generateQuadrilaterals(
     const a = randInt(40, 100);
     const b = randInt(40, 100);
     const c = randInt(40, 100);
-    while (a + b + c >= 360) {
-      // Ensure sum < 360
-    }
+    // a, b, c each max out at 100, so their sum is always < 360 — no adjustment needed.
     const fourth = 360 - a - b - c;
 
     return {
