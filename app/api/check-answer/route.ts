@@ -127,6 +127,25 @@ function normalizeQuotientRemainder(value: string): string {
   return value;
 }
 
+// Operation-flower "spot the mistake" answers look like "× 100 should be 5800"
+// or, for two errors, "× 100 should be 5800, ÷ 100 should be 0.58". Free text
+// like this can't be exact-matched reliably, so extract the corrected number(s)
+// from the correct answer and accept the user's answer if it mentions all of
+// them — whether typed as bare numbers or wrapped in the fuller phrasing.
+function extractShouldBeValues(value: string): string[] {
+  return Array.from(value.matchAll(/should be\s+(-?\d+(?:\.\d+)?)/gi), m => m[1]);
+}
+
+function checkSpotTheErrorAnswer(userAnswer: string, correctAnswer: string): boolean | null {
+  const requiredValues = extractShouldBeValues(correctAnswer);
+  if (requiredValues.length === 0) return null;
+
+  const requiredSet = requiredValues.map(v => parseFloat(v).toString());
+  const userNumbers = Array.from(userAnswer.matchAll(/-?\d+(?:\.\d+)?/g), m => parseFloat(m[0]).toString());
+
+  return requiredSet.every(v => userNumbers.includes(v));
+}
+
 function normalizeAnswer(value: string): string {
   let s = value.toLowerCase().trim();
 
@@ -201,6 +220,14 @@ export async function POST(request: NextRequest) {
   const normalCorrect = normalizeAnswer(correct_answer);
 
   let is_correct = normalUser === normalCorrect;
+
+  // Spot-the-error diagram: accept if the user's answer mentions every
+  // corrected value, in any phrasing (checked on raw text, before unit/word
+  // normalisation strips the numbers apart from their operation labels).
+  if (!is_correct) {
+    const spotCheck = checkSpotTheErrorAnswer(user_answer, correct_answer);
+    if (spotCheck !== null) is_correct = spotCheck;
+  }
 
   // Profit/loss partial match: if correct answer is "profit N" or "loss N",
   // accept if user supplies just the number (and correct type keyword matches)

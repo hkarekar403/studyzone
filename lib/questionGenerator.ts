@@ -177,6 +177,9 @@ function mixedNumberDistractors(w: number, n: number, d: number, need: number): 
 export function canBeMCQ(question: Question): boolean {
   if (question.selfAssess) return false;
   if (/^any\b/i.test(question.answer.trim())) return false;
+  // Operation-flower "spot the mistake" diagrams take free-text corrections
+  // (e.g. "× 100 should be 5800") — there's no fixed wrong-answer set to offer.
+  if (question.question.startsWith('Find and correct the mistakes in this diagram.')) return false;
   return true;
 }
 
@@ -357,6 +360,7 @@ export class MathQuestionGenerator {
       this.hardMisleadingInfo,
       this.numberLineQuestions,
       this.hardExplainReasoning,
+      this.hardSpotTheErrorDiagram,
     ],
   };
 
@@ -365,7 +369,7 @@ export class MathQuestionGenerator {
     "Subtraction": [this.easySubtraction],
     "Multiplication": [this.easyMultiplication, this.mediumMultiplication, this.hardMultiStep],
     "Division": [this.mediumDivision, this.hardDivisionRemainder],
-    "Place Value": [this.easyPlaceValue],
+    "Place Value": [this.easyPlaceValue, this.hardSpotTheErrorDiagram],
     "Odd/Even": [this.easyOddEven],
     "Fractions": [this.easyFraction, this.mediumFractionAddition, this.hardFractionUnlike, this.fractionWallQuestions, this.percentageGridQuestions],
     "Factors & Multiples": [this.mediumFactorsMultiples, this.hardFindAllSolutions],
@@ -392,7 +396,7 @@ export class MathQuestionGenerator {
       this.hardLogicalReasoning,
       this.hardMisleadingInfo,
     ],
-    "Explain & Reason": [this.hardExplainReasoning],
+    "Explain & Reason": [this.hardExplainReasoning, this.hardSpotTheErrorDiagram],
   };
 
   // Maps each generator function to its display topic when randomly selected.
@@ -462,6 +466,7 @@ export class MathQuestionGenerator {
     [this.igcseDataReasoning, "Data & Reasoning"],
     [this.igcseReasoning, "Reasoning"],
     [this.hardExplainReasoning, "Explain & Reason"],
+    [this.hardSpotTheErrorDiagram, "Place Value"],
   ]);
 
   // Maps each generator function to its Mock Exam competency tier (VSA/SA1/SA2/LA).
@@ -567,7 +572,7 @@ export class MathQuestionGenerator {
         "Data Handling": [this.easyTallyChart, this.mediumBarGraph, this.likelihoodQuestions],
         "Patterns": [this.hardPatterns],
         "Number Line": [this.numberLineQuestions],
-        "Explain & Reason": [this.hardExplainReasoning],
+        "Explain & Reason": [this.hardExplainReasoning, this.hardSpotTheErrorDiagram],
       };
     }
     if (this.curriculum === 'IGCSE') {
@@ -598,7 +603,7 @@ export class MathQuestionGenerator {
           this.igcseShopkeeperChallenge,
           this.igcseMisleadingContext,
         ],
-        "Explain & Reason": [this.hardExplainReasoning],
+        "Explain & Reason": [this.hardExplainReasoning, this.hardSpotTheErrorDiagram],
       };
     }
     return this.topicGenerators;
@@ -1977,6 +1982,81 @@ export class MathQuestionGenerator {
     }
   }
 
+  // Operation-flower "spot the mistake" diagram (BOOK_ANALYSIS.md §1.1, "Find &
+  // correct the mistake (diagram)"). Tests place-value understanding, not
+  // computation speed: the student must recognise which ×/÷ 10/100/1000
+  // transitions were computed wrongly and state the correct value(s).
+  private readonly FLOWER_OPS: { op: string; compute: (c: number) => number }[] = [
+    { op: '× 10', compute: c => c * 10 },
+    { op: '÷ 10', compute: c => Math.round((c / 10) * 10) / 10 },
+    { op: '× 100', compute: c => c * 100 },
+    { op: '÷ 100', compute: c => Math.round((c / 100) * 100) / 100 },
+    { op: '× 1000', compute: c => c * 1000 },
+  ];
+
+  private formatFlowerNumber(n: number): string {
+    return String(Math.round(n * 1000) / 1000);
+  }
+
+  // A plausible child mistake for a ×/÷ power-of-ten step: shifting by one extra
+  // or one too few power of ten (wrong number of zeros / decimal point one place
+  // out) — never a random unrelated number.
+  private plausibleWrongResult(correct: number): number {
+    const raw = Math.random() < 0.5 ? correct * 10 : correct / 10;
+    return Math.round(raw * 1000) / 1000;
+  }
+
+  private flowerPlaceValueRule(op: string): string {
+    const rules: Record<string, string> = {
+      '× 10': 'multiplying by 10 moves every digit one place to the left (adds one zero)',
+      '÷ 10': 'dividing by 10 moves every digit one place to the right (shifts the decimal point one place left)',
+      '× 100': 'multiplying by 100 moves every digit two places to the left (adds two zeros)',
+      '÷ 100': 'dividing by 100 moves every digit two places to the right (shifts the decimal point two places left)',
+      '× 1000': 'multiplying by 1000 moves every digit three places to the left (adds three zeros)',
+    };
+    return rules[op] || 'the digits shift according to the place-value rule for this operation';
+  }
+
+  private hardSpotTheErrorDiagram(): Question {
+    const centre = Math.floor(Math.random() * 898) + 2; // 2-899: 1, 2, or 3 digits
+
+    const branchCount = Math.random() < 0.5 ? 4 : 5;
+    const chosenOps = shuffleArray(this.FLOWER_OPS).slice(0, branchCount);
+
+    const numErrors = Math.random() < 0.35 ? 2 : 1;
+    const errorIndices = new Set<number>();
+    while (errorIndices.size < Math.min(numErrors, branchCount - 2)) {
+      errorIndices.add(Math.floor(Math.random() * branchCount));
+    }
+
+    const branches = chosenOps.map((o, i) => {
+      const correctResult = o.compute(centre);
+      const isCorrect = !errorIndices.has(i);
+      const shownResult = isCorrect ? correctResult : this.plausibleWrongResult(correctResult);
+      return { operation: o.op, correctResult, shownResult, isCorrect };
+    });
+
+    const svg = this.generateOperationFlowerSVG(
+      centre,
+      branches.map(({ operation, shownResult, isCorrect }) => ({ operation, shownResult, isCorrect }))
+    );
+
+    const wrongBranches = branches.filter(b => !b.isCorrect);
+    const answer = wrongBranches
+      .map(b => `${b.operation} should be ${this.formatFlowerNumber(b.correctResult)}`)
+      .join(', ');
+
+    const workingLines = wrongBranches.map(b =>
+      `${centre} ${b.operation} = ${this.formatFlowerNumber(b.correctResult)}, not ${this.formatFlowerNumber(b.shownResult)} — ${this.flowerPlaceValueRule(b.operation)}.`
+    );
+
+    return {
+      question: `Find and correct the mistakes in this diagram.\n\n[[TALLY_SVG]]${svg}\n\nWhich branch(es) are wrong, and what should the answer be?`,
+      answer,
+      working: `Working:\nCentre number: ${centre}\n${workingLines.join('\n')}`,
+    };
+  }
+
   private hardLogicalReasoning(): Question {
     const t = Math.floor(Math.random() * 2);
 
@@ -2592,6 +2672,81 @@ export class MathQuestionGenerator {
 
     const ariaLabel = `Fraction wall divided into ${denominator} equal parts, ${shaded} of them shaded`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>${cells.join('')}</svg>`;
+  }
+
+  // Central number in a circle with 4-5 branches radiating outward, each branch
+  // an operation box (× 10, ÷ 100, etc.) with an arrow to a shown result value.
+  // Rendering is identical for correct and wrong branches — the diagram must not
+  // visually hint which results are wrong; that's for the student to work out.
+  private generateOperationFlowerSVG(
+    centre: number,
+    branches: { operation: string; shownResult: number; isCorrect: boolean }[]
+  ): string {
+    const W = 400, H = 300;
+    const cx = 200, cy = 150;
+    const R = 30;
+    const boxDist = 85;
+    const resultDist = 135;
+    const boxW = 62, boxH = 26;
+    const stroke = '#2563eb';
+    const textFill = '#374151';
+    const n = branches.length;
+    const startAngle = -90;
+    const stepAngle = 360 / n;
+
+    const parts: string[] = [];
+
+    branches.forEach((b, i) => {
+      const angle = startAngle + i * stepAngle;
+      const rad = (angle * Math.PI) / 180;
+      const ux = Math.cos(rad);
+      const uy = Math.sin(rad);
+      const px = -uy;
+      const py = ux;
+
+      const lineStartX = cx + R * ux;
+      const lineStartY = cy + R * uy;
+      const lineEndDist = boxDist - 18;
+      const lineEndX = cx + lineEndDist * ux;
+      const lineEndY = cy + lineEndDist * uy;
+
+      const boxCenterX = cx + boxDist * ux;
+      const boxCenterY = cy + boxDist * uy;
+
+      const arrowStartDist = boxDist + 18;
+      const arrowStartX = cx + arrowStartDist * ux;
+      const arrowStartY = cy + arrowStartDist * uy;
+      const arrowEndDist = resultDist - 12;
+      const tipX = cx + arrowEndDist * ux;
+      const tipY = cy + arrowEndDist * uy;
+
+      const headLen = 8, headW = 5;
+      const baseX = tipX - ux * headLen;
+      const baseY = tipY - uy * headLen;
+      const baseLeftX = (baseX + px * headW).toFixed(1);
+      const baseLeftY = (baseY + py * headW).toFixed(1);
+      const baseRightX = (baseX - px * headW).toFixed(1);
+      const baseRightY = (baseY - py * headW).toFixed(1);
+
+      const resultX = cx + resultDist * ux;
+      const resultY = cy + resultDist * uy;
+
+      parts.push(`<line x1="${lineStartX.toFixed(1)}" y1="${lineStartY.toFixed(1)}" x2="${lineEndX.toFixed(1)}" y2="${lineEndY.toFixed(1)}" stroke="${stroke}" stroke-width="2"/>`);
+      parts.push(`<rect x="${(boxCenterX - boxW / 2).toFixed(1)}" y="${(boxCenterY - boxH / 2).toFixed(1)}" width="${boxW}" height="${boxH}" rx="4" fill="#eff6ff" stroke="${stroke}" stroke-width="2"/>`);
+      parts.push(`<text x="${boxCenterX.toFixed(1)}" y="${boxCenterY.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="${textFill}" font-family="inherit">${b.operation}</text>`);
+      parts.push(`<line x1="${arrowStartX.toFixed(1)}" y1="${arrowStartY.toFixed(1)}" x2="${tipX.toFixed(1)}" y2="${tipY.toFixed(1)}" stroke="${stroke}" stroke-width="2"/>`);
+      parts.push(`<polygon points="${tipX.toFixed(1)},${tipY.toFixed(1)} ${baseLeftX},${baseLeftY} ${baseRightX},${baseRightY}" fill="${stroke}"/>`);
+      parts.push(`<text x="${resultX.toFixed(1)}" y="${resultY.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="700" fill="#1e40af" font-family="inherit">${b.shownResult}</text>`);
+    });
+
+    const ariaDetail = branches.map(b => `${b.operation} shows ${b.shownResult}`).join(', ');
+    const ariaLabel = `Operation flower diagram: centre number ${centre}, branches: ${ariaDetail}`;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}"><title>${ariaLabel}</title>` +
+      `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#eff6ff" stroke="${stroke}" stroke-width="2.5"/>` +
+      `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="700" fill="#1e3a5f" font-family="inherit">${centre}</text>` +
+      parts.join('') +
+      `</svg>`;
   }
 
   private easyTallyChart(): Question {
