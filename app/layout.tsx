@@ -37,10 +37,11 @@ export const metadata: Metadata = {
     description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
     type: "website",
     locale: "en_IN",
-    siteName: "Class 4 Maths Practice",
+    siteName: "StudyZone",
+    url: "https://studyzone.co.in",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Free Class 4 Maths Practice | Interactive Quiz",
     description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback.",
   },
@@ -49,8 +50,6 @@ export const metadata: Metadata = {
     follow: true,
   },
   other: {
-    'og:site_name': 'StudyZone',
-    'og:locale': 'en_IN',
     'application-name': 'StudyZone',
     'msapplication-TileColor': '#2563eb',
     'msapplication-config': '/browserconfig.xml',

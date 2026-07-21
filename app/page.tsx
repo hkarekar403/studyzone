@@ -1,12 +1,41 @@
 "use client"
 
 import { useState, useEffect, useRef, KeyboardEvent as ReactKeyboardEvent } from "react"
+import dynamic from "next/dynamic"
+import type jsPDF from "jspdf"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
-import jsPDF from "jspdf"
-import { QRCodeSVG } from "qrcode.react"
-import confetti from "canvas-confetti"
 import FocusTrap from "focus-trap-react"
 import { buildMCQOptions } from "@/lib/questionGenerator"
+
+const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeSVG), { ssr: false })
+
+const getJsPDF = async () => (await import("jspdf")).default
+
+type ConfettiOptions = { particleCount: number; spread: number; origin: { y: number }; colors: string[] }
+const fireConfetti = (options: ConfettiOptions) => {
+  import("canvas-confetti").then(({ default: confetti }) => confetti(options))
+}
+
+const faqItems = [
+  { q: "Is this completely free?", a: "Yes, completely free. No login, no subscription, no hidden fees. Just open and start practising." },
+  { q: "Which syllabus does this follow?", a: "Supports three curricula — CBSE, ICSE and IGCSE Cambridge Primary Stage 4. Switch between them using the Curriculum selector. Each curriculum has its own topic set and question style." },
+  { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
+  { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
+  { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 19 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
+  { q: "What age group is this for?", a: "This app is designed for Class 4 students, typically aged 9-10 years. The Easy difficulty is suitable for beginners while Hard questions challenge advanced learners." },
+  { q: "Can I track my child's progress?", a: "Yes. The Session History panel shows every question attempted with the child's answer and whether it was correct. You can also export a full PDF report at the end of each session." },
+  { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
+]
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqItems.map((faq) => ({
+    "@type": "Question",
+    "name": faq.q,
+    "acceptedAnswer": { "@type": "Answer", "text": faq.a },
+  })),
+}
 
 type SelfGrade = 'correct' | 'partial' | 'review'
 
@@ -138,7 +167,7 @@ export default function MathQuiz() {
       const accuracy = questionsGenerated > 0
         ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
       if (accuracy >= 70) {
-        confetti({
+        fireConfetti({
           particleCount: 80,
           spread: 60,
           origin: { y: 0.6 },
@@ -439,7 +468,7 @@ export default function MathQuiz() {
           setFeedbackColor("#1f9d46")
           setStreak((prev) => prev + 1)
           if (soundEnabled) playSound("correct")
-          confetti({
+          fireConfetti({
             particleCount: 80,
             spread: 60,
             origin: { y: 0.6 },
@@ -511,7 +540,7 @@ export default function MathQuiz() {
       setCorrectAnswers((prev) => prev + 1)
       setStreak((prev) => prev + 1)
       if (soundEnabled) playSound("correct")
-      confetti({
+      fireConfetti({
         particleCount: 80,
         spread: 60,
         origin: { y: 0.6 },
@@ -670,6 +699,7 @@ export default function MathQuiz() {
   const exportPDF = async () => {
     setPdfExporting(true)
     try {
+      const jsPDF = await getJsPDF()
       const doc = new jsPDF()
       const endedAt = new Date()
 
@@ -818,12 +848,13 @@ export default function MathQuiz() {
       .replace(/↑/g, 'up')
       .replace(/↓/g, 'down')
 
-  const buildWorksheetPDF = (
+  const buildWorksheetPDF = async (
     questions: { number: number; question: string; answer: string; working: string }[],
     wsDifficulty: string,
     wsTopic: string,
     wsCurriculum: string,
   ) => {
+    const jsPDF = await getJsPDF()
     const doc = new jsPDF()
     const dateStr = new Date().toLocaleDateString()
     const safeDateStr = new Date().toISOString().split('T')[0]
@@ -882,12 +913,13 @@ export default function MathQuiz() {
     doc.save(`worksheet_${wsDifficulty}_${safeDateStr}.pdf`)
   }
 
-  const buildAnswerKeyPDF = (
+  const buildAnswerKeyPDF = async (
     questions: { number: number; question: string; answer: string; working: string }[],
     wsDifficulty: string,
     wsTopic: string,
     wsCurriculum: string,
   ) => {
+    const jsPDF = await getJsPDF()
     const doc = new jsPDF()
     const dateStr = new Date().toLocaleDateString()
     const safeDateStr = new Date().toISOString().split('T')[0]
@@ -987,8 +1019,8 @@ export default function MathQuiz() {
       }
 
       const displayDifficulty = wseDifficulty === 'Random' ? 'Mixed' : wseDifficulty
-      buildWorksheetPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
-      if (withAnswerKey) buildAnswerKeyPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
+      await buildWorksheetPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
+      if (withAnswerKey) await buildAnswerKeyPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
       setShowWorksheetModal(false)
     } catch {
       // leave modal open so user can retry
@@ -1002,13 +1034,14 @@ export default function MathQuiz() {
   type MockSectionMeta = { count: number; marksEach: number; minutesEach: number }
   type MockStructure = { VSA: MockSectionMeta; SA1: MockSectionMeta; SA2: MockSectionMeta; LA: MockSectionMeta }
 
-  const buildMockExamPDF = (
+  const buildMockExamPDF = async (
     sections: MockSections,
     structure: MockStructure,
     totalMarks: number,
     totalTime: number,
     examCurriculum: string,
   ) => {
+    const jsPDF = await getJsPDF()
     const doc = new jsPDF()
     const safeDateStr = new Date().toISOString().split('T')[0]
     const footerText = 'StudyZone — studyzone.co.in'
@@ -1155,12 +1188,13 @@ export default function MathQuiz() {
     doc.save(`mock_exam_${examCurriculum}_${safeDateStr}.pdf`)
   }
 
-  const buildMockExamAnswerKey = (
+  const buildMockExamAnswerKey = async (
     sections: MockSections,
     structure: MockStructure,
     totalMarks: number,
     examCurriculum: string,
   ) => {
+    const jsPDF = await getJsPDF()
     const doc = new jsPDF()
     const safeDateStr = new Date().toISOString().split('T')[0]
     let y = 20
@@ -1275,8 +1309,8 @@ export default function MathQuiz() {
       })
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
-      buildMockExamPDF(data.sections, data.structure, data.totalMarks, data.totalTime, data.curriculum)
-      if (withAnswerKey) buildMockExamAnswerKey(data.sections, data.structure, data.totalMarks, data.curriculum)
+      await buildMockExamPDF(data.sections, data.structure, data.totalMarks, data.totalTime, data.curriculum)
+      if (withAnswerKey) await buildMockExamAnswerKey(data.sections, data.structure, data.totalMarks, data.curriculum)
       setShowMockExamModal(false)
     } catch {
       // leave modal open so user can retry
@@ -1469,9 +1503,9 @@ export default function MathQuiz() {
                 <span className="inline-block mb-3 bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">
                   ✨ Free for all students
                 </span>
-                <h2 className="font-heading text-4xl font-bold text-white mb-3 leading-tight">
+                <h1 className="font-heading text-4xl font-bold text-white mb-3 leading-tight">
                   Make Maths Fun!
-                </h2>
+                </h1>
                 <p className="text-white/80 text-lg mb-6 leading-relaxed">
                   Interactive practice for Class 4 · CBSE · ICSE · IGCSE
                 </p>
@@ -1544,19 +1578,14 @@ export default function MathQuiz() {
 
         {/* FAQ */}
         <div ref={faqRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          />
           <h3 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Frequently Asked Questions</h3>
           <p className="text-center text-sm text-gray-500 mb-6">Everything parents and teachers need to know</p>
           <div>
-            {[
-              { q: "Is this completely free?", a: "Yes, completely free. No login, no subscription, no hidden fees. Just open and start practising." },
-              { q: "Which syllabus does this follow?", a: "Supports three curricula — CBSE, ICSE and IGCSE Cambridge Primary Stage 4. Switch between them using the Curriculum selector. Each curriculum has its own topic set and question style." },
-              { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
-              { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
-              { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 19 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
-              { q: "What age group is this for?", a: "This app is designed for Class 4 students, typically aged 9-10 years. The Easy difficulty is suitable for beginners while Hard questions challenge advanced learners." },
-              { q: "Can I track my child's progress?", a: "Yes. The Session History panel shows every question attempted with the child's answer and whether it was correct. You can also export a full PDF report at the end of each session." },
-              { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
-            ].map((faq, idx, arr) => (
+            {faqItems.map((faq, idx, arr) => (
               <div key={idx} className={idx < arr.length - 1 ? "border-b border-gray-200" : ""}>
                 <button
                   className="w-full flex items-center justify-between py-4 text-left gap-4"
