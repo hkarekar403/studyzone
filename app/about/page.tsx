@@ -111,7 +111,7 @@ export default function About() {
           </section>
 
           {/* Section 5 */}
-          <section className="mb-4">
+          <section className="mb-8">
             <h2 className="font-heading text-xl font-bold text-gray-800 mb-3">5. How can I contact you?</h2>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="font-bold text-blue-800 mb-1">
@@ -122,6 +122,44 @@ export default function About() {
               </p>
               <p className="text-blue-700 text-sm">We read every message. Response within 7 days.</p>
             </div>
+          </section>
+
+          {/* Section 6 — Embeddable widget for teachers/bloggers */}
+          <section className="mb-4">
+            <h2 className="font-heading text-xl font-bold text-gray-800 mb-3">
+              6. For teachers &amp; bloggers: link to StudyZone
+            </h2>
+            <p className="text-gray-600 leading-relaxed mb-3">
+              If StudyZone has been useful for your class or your readers, feel free to copy this badge onto your own
+              website or class blog — it&apos;s a free, no-strings-attached way to let other parents and teachers know
+              the tool exists.
+            </p>
+            <div className="flex justify-center bg-white rounded-xl p-4 mb-3 border border-gray-200">
+              <a
+                href="https://studyzone.co.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  background: '#eff6ff',
+                  border: '1px solid #93c5fd',
+                  color: '#1e3a5f',
+                  fontFamily: 'sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                🚀 Free Class 4 Maths Practice — StudyZone
+              </a>
+            </div>
+            <pre className="bg-gray-900 text-gray-100 text-xs rounded-xl p-4 overflow-x-auto"><code>{`<a href="https://studyzone.co.in" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a5f;font-family:sans-serif;font-size:13px;font-weight:600;text-decoration:none;">
+  🚀 Free Class 4 Maths Practice — StudyZone
+</a>`}</code></pre>
           </section>
         </div>
       </div>
