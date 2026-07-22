@@ -19,8 +19,8 @@ const nunito = Nunito({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://studyzone.co.in'),
-  title: "Free Class 4 Maths Practice | Addition, Fractions, Geometry & More",
-  description: "Interactive maths quiz for Class 4 students. Practice addition, subtraction, multiplication, division, fractions, geometry, time, money and more. Free, instant, no login required.",
+  title: "Free Class 4 Maths Practice - CBSE, ICSE & IGCSE",
+  description: "Free interactive Class 4 maths practice: addition, subtraction, multiplication, division, fractions, geometry and more. No login needed. CBSE, ICSE & IGCSE.",
   keywords: "class 4 maths, grade 4 mathematics, maths practice, maths quiz, primary school maths, fractions, geometry, multiplication, division, free maths practice",
   category: 'education',
   alternates: {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     title: 'StudyZone',
   },
   openGraph: {
-    title: "Free Class 4 Maths Practice | Interactive Quiz",
+    title: "Free Class 4 Maths Practice - CBSE, ICSE & IGCSE",
     description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
     type: "website",
     locale: "en_IN",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free Class 4 Maths Practice | Interactive Quiz",
+    title: "Free Class 4 Maths Practice - CBSE, ICSE & IGCSE",
     description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback.",
   },
   robots: {
@@ -123,6 +123,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <script
           type="application/ld+json"

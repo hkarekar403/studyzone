@@ -4,6 +4,9 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "About | StudyZone",
   description: "About StudyZone — a free Class 4 maths practice platform built by a parent, for children everywhere.",
+  alternates: {
+    canonical: 'https://studyzone.co.in/about',
+  },
   robots: { index: true, follow: true },
 }
 

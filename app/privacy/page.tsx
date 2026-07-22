@@ -4,6 +4,9 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "Privacy Policy | StudyZone",
   description: "Privacy policy for StudyZone — free Class 4 maths practice platform for Indian students.",
+  alternates: {
+    canonical: 'https://studyzone.co.in/privacy',
+  },
   robots: { index: true, follow: true },
 }
 

@@ -27,6 +27,31 @@ const faqItems = [
   { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
 ]
 
+const topicSummaries = [
+  { name: "Addition", desc: "Add multi-digit numbers with carrying." },
+  { name: "Subtraction", desc: "Subtract numbers with borrowing across place values." },
+  { name: "Multiplication", desc: "Multiply numbers up to 3 digits, including multi-step word problems." },
+  { name: "Division", desc: "Divide with and without remainders." },
+  { name: "Place Value", desc: "Understand ones, tens, hundreds and thousands, and spot place-value errors." },
+  { name: "Odd & Even Numbers", desc: "Identify and classify odd and even numbers." },
+  { name: "Fractions", desc: "Compare, add and subtract fractions, plus fraction walls and percentage grids." },
+  { name: "Factors & Multiples", desc: "Find factors, multiples, HCF and LCM." },
+  { name: "Prime & Composite Numbers", desc: "Classify numbers as prime or composite." },
+  { name: "Squares & Cubes", desc: "Calculate squares and cubes of numbers." },
+  { name: "Geometry", desc: "Angles, symmetry and 3D shapes." },
+  { name: "Perimeter & Area", desc: "Calculate the perimeter and area of shapes." },
+  { name: "Money", desc: "Solve real-world rupee and paise problems, including shopkeeper-style questions." },
+  { name: "Time", desc: "Read clocks and calculate durations." },
+  { name: "Patterns", desc: "Recognise and extend number and shape patterns." },
+  { name: "Algebra", desc: "Solve simple equations for an unknown value." },
+  { name: "Measurement", desc: "Convert and compare units of length, weight and capacity." },
+  { name: "Data Handling", desc: "Read tally charts, bar graphs and probability questions." },
+  { name: "2D Shapes", desc: "Identify and classify 2D shapes and their properties." },
+  { name: "Number Line", desc: "Locate numbers, midpoints and equal parts on a number line." },
+  { name: "Word Problems", desc: "Apply maths skills to real-life, multi-step problems." },
+  { name: "Explain & Reason", desc: "Explain your thinking and spot errors in worked examples." },
+]
+
 const faqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -149,6 +174,7 @@ export default function MathQuiz() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const quizRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
+  const topicsRef = useRef<HTMLDivElement>(null)
   const faqRef = useRef<HTMLDivElement>(null)
   const feedbackRef = useRef<HTMLDivElement>(null)
 
@@ -1431,24 +1457,34 @@ export default function MathQuiz() {
             <span className="font-heading text-xl font-bold text-blue-700">MathsQuiz</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            <a
+              href="#how-it-works"
+              onClick={(e) => { e.preventDefault(); howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
             >
               How it works
-            </button>
-            <button
-              onClick={() => faqRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            </a>
+            <a
+              href="#topics-covered"
+              onClick={(e) => { e.preventDefault(); topicsRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
+              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
+            >
+              Topics
+            </a>
+            <a
+              href="#faq"
+              onClick={(e) => { e.preventDefault(); faqRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
             >
               FAQ
-            </button>
-            <button
-              onClick={() => feedbackRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            </a>
+            <a
+              href="#feedback"
+              onClick={(e) => { e.preventDefault(); feedbackRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
             >
               Feedback
-            </button>
+            </a>
             <a
               href="/privacy"
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
@@ -1504,10 +1540,10 @@ export default function MathQuiz() {
                   ✨ Free for all students
                 </span>
                 <h1 className="font-heading text-4xl font-bold text-white mb-3 leading-tight">
-                  Make Maths Fun!
+                  Make Class 4 Maths Fun!
                 </h1>
                 <p className="text-white/80 text-lg mb-6 leading-relaxed">
-                  Interactive practice for Class 4 · CBSE · ICSE · IGCSE
+                  Interactive, fun maths practice for Class 4 · CBSE · ICSE · IGCSE
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -1556,8 +1592,8 @@ export default function MathQuiz() {
         </div>
 
         {/* HOW IT WORKS */}
-        <div ref={howItWorksRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
-          <h3 className="font-heading text-2xl font-bold text-blue-700 text-center mb-6">How it works</h3>
+        <div ref={howItWorksRef} id="how-it-works" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-6">How it works</h2>
           <div className="flex flex-col sm:flex-row gap-6">
             {[
               { step: '1', emoji: '🎯', title: 'Pick a Topic', desc: 'Choose from 19 maths topics or go Random. Select Easy, Medium or Hard.' },
@@ -1576,13 +1612,31 @@ export default function MathQuiz() {
           </div>
         </div>
 
+        {/* TOPICS COVERED */}
+        <div ref={topicsRef} id="topics-covered" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Topics Covered</h2>
+          <p className="text-center text-sm text-gray-500 mb-6 max-w-2xl mx-auto">
+            StudyZone covers the full Class 4 maths syllabus with unlimited practice questions across
+            CBSE, ICSE and IGCSE curricula. Every topic below is available in Easy, Medium and Hard
+            difficulty, so students can start with the basics and work up to exam-level word problems.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {topicSummaries.map((t) => (
+              <div key={t.name} className="bg-white rounded-xl p-4 shadow-sm">
+                <p className="font-bold text-blue-700 text-sm mb-1">{t.name}</p>
+                <p className="text-xs text-gray-600 leading-relaxed">{t.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* FAQ */}
-        <div ref={faqRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+        <div ref={faqRef} id="faq" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
           />
-          <h3 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Frequently Asked Questions</h3>
+          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Frequently Asked Questions</h2>
           <p className="text-center text-sm text-gray-500 mb-6">Everything parents and teachers need to know</p>
           <div>
             {faqItems.map((faq, idx, arr) => (
@@ -1609,15 +1663,15 @@ export default function MathQuiz() {
         </div>
 
         {/* FEEDBACK */}
-        <div ref={feedbackRef} className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
+        <div ref={feedbackRef} id="feedback" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
           <div className="flex justify-center mb-3">
             <span className="bg-amber-100 text-amber-800 text-xs font-bold px-4 py-1.5 rounded-full border border-amber-300">
               👨‍👩‍👧 For Parents &amp; Teachers Only
             </span>
           </div>
-          <h3 className="font-heading text-2xl font-bold text-center mb-1" style={{ color: '#2563eb' }}>
+          <h2 className="font-heading text-2xl font-bold text-center mb-1" style={{ color: '#2563eb' }}>
             💬 Share Your Feedback
-          </h3>
+          </h2>
           <p className="text-center text-sm text-gray-500 mb-6">Help us improve StudyZone for students everywhere</p>
 
           {feedbackSubmitted ? (
@@ -2458,12 +2512,50 @@ export default function MathQuiz() {
           </div>
           <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
             StudyZone is a practice tool only. It does not assess or reflect a child&apos;s academic capability.
-            Real evaluation should be done by qualified teachers.
+            Real evaluation should be done by qualified teachers. Topics are designed to align with{" "}
+            <a
+              href="https://ncert.nic.in/textbook.php"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-600 underline underline-offset-2 transition-colors"
+            >
+              NCERT Class 4 Maths guidelines
+            </a>.
           </p>
           <p className="text-xs text-gray-500">
             <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
             {" "}|{" "}
             <a href="/about" className="hover:text-gray-600 underline underline-offset-2 transition-colors">About</a>
+          </p>
+          <p className="text-xs text-gray-500 flex items-center gap-3">
+            <span>Share StudyZone:</span>
+            <a
+              href="https://wa.me/?text=Free%20Class%204%20maths%20practice%20on%20StudyZone%3A%20https%3A%2F%2Fstudyzone.co.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share on WhatsApp"
+              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              WhatsApp
+            </a>
+            <a
+              href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fstudyzone.co.in&text=Free%20Class%204%20maths%20practice%20on%20StudyZone"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share on X (Twitter)"
+              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              X
+            </a>
+            <a
+              href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fstudyzone.co.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share on Facebook"
+              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              Facebook
+            </a>
           </p>
         </footer>
       </div>
