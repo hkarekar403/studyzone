@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { Metadata } from "next"
+import BadgeEmbed from "../components/BadgeEmbed"
 
 export const metadata: Metadata = {
   title: "About | StudyZone",
@@ -134,32 +135,7 @@ export default function About() {
               website or class blog — it&apos;s a free, no-strings-attached way to let other parents and teachers know
               the tool exists.
             </p>
-            <div className="flex justify-center bg-white rounded-xl p-4 mb-3 border border-gray-200">
-              <a
-                href="https://studyzone.co.in"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  background: '#eff6ff',
-                  border: '1px solid #93c5fd',
-                  color: '#1e3a5f',
-                  fontFamily: 'sans-serif',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                🚀 Free Class 4 Maths Practice — StudyZone
-              </a>
-            </div>
-            <pre className="bg-gray-900 text-gray-100 text-xs rounded-xl p-4 overflow-x-auto"><code>{`<a href="https://studyzone.co.in" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a5f;font-family:sans-serif;font-size:13px;font-weight:600;text-decoration:none;">
-  🚀 Free Class 4 Maths Practice — StudyZone
-</a>`}</code></pre>
+            <BadgeEmbed />
           </section>
         </div>
       </div>
