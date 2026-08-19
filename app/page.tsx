@@ -3,12 +3,16 @@
 import { useState, useEffect, useRef, KeyboardEvent as ReactKeyboardEvent } from "react"
 import dynamic from "next/dynamic"
 import type jsPDF from "jspdf"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, FileText, LogOut } from "lucide-react"
 import FocusTrap from "focus-trap-react"
 import FeedbackForm from "./components/FeedbackForm"
 import HowItWorks from "./components/HowItWorks"
 import TopicsCovered from "./components/TopicsCovered"
 import FaqSection from "./components/FaqSection"
+import SiteNavbar from "./components/SiteNavbar"
+import Hero from "./components/Hero"
+import SiteFooter from "./components/SiteFooter"
+import BreakReminder from "./components/BreakReminder"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 import { CLASSES } from "@/lib/topicConfigs"
 
@@ -1389,162 +1393,39 @@ export default function MathQuiz() {
       >
         Skip to quiz
       </a>
-      {/* BREAK REMINDER */}
-      {sessionStartWarning && (
-        <div className="fixed top-16 left-0 right-0 z-30 bg-amber-50 border-b border-amber-200 py-2 px-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-amber-800">
-            👋 You&apos;ve been practising for 20 minutes — great effort! Consider taking a short break.
-          </p>
-          <button
-            onClick={() => setSessionStartWarning(false)}
-            className="text-xs font-bold text-amber-700 hover:text-amber-900 flex-shrink-0"
-          >
-            Got it ✓
-          </button>
-        </div>
-      )}
+      {sessionStartWarning && <BreakReminder onDismiss={() => setSessionStartWarning(false)} />}
 
-      {/* STICKY NAVBAR */}
-      <nav className="sticky top-0 z-40 h-14 bg-white/90 backdrop-blur-sm shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
-            <span className="font-heading text-xl font-bold text-blue-700">MathsQuiz</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="#how-it-works"
-              onClick={(e) => { e.preventDefault(); howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              How it works
-            </a>
-            <a
-              href="#topics-covered"
-              onClick={(e) => { e.preventDefault(); topicsRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              Topics
-            </a>
-            <a
-              href="#faq"
-              onClick={(e) => { e.preventDefault(); faqRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              FAQ
-            </a>
-            <a
-              href="#feedback"
-              onClick={(e) => { e.preventDefault(); feedbackRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              Feedback
-            </a>
-            <a
-              href="/privacy"
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              Privacy
-            </a>
-            <a
-              href="/about"
-              className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
-            >
-              About
-            </a>
-            <button
-              onClick={() => setShowQRModal(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              Share
-            </button>
-            <button
-              onClick={() => {
-                const next = !soundEnabled
-                setSoundEnabled(next)
-                localStorage.setItem('soundEnabled', String(next))
-              }}
-              title="Toggle sound"
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
-            >
-              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              onClick={toggleDarkMode}
-              title="Toggle dark mode"
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-white shadow-sm"
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            </button>
-            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-300 tracking-widest uppercase">
-              BETA
-            </span>
-          </div>
-        </div>
-      </nav>
+      <SiteNavbar
+        howItWorksRef={howItWorksRef}
+        topicsRef={topicsRef}
+        faqRef={faqRef}
+        feedbackRef={feedbackRef}
+        onShare={() => setShowQRModal(true)}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => {
+          const next = !soundEnabled
+          setSoundEnabled(next)
+          localStorage.setItem('soundEnabled', String(next))
+        }}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
+      />
 
       <div className="p-4 md:p-8">
 
-        {/* HERO */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="rounded-2xl p-8 bg-gradient-to-r from-[#2563eb] to-[#7c3aed]">
-            <div className="flex flex-col lg:flex-row items-center gap-8">
-              <div className="flex-1">
-                <span className="inline-block mb-3 bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">
-                  ✨ Free for all students
-                </span>
-                <h1 className="font-heading text-4xl font-bold text-white mb-3 leading-tight">
-                  Make Class 4 Maths Fun!
-                </h1>
-                <p className="text-white/80 text-lg mb-6 leading-relaxed">
-                  Interactive, fun maths practice for Class 4 · CBSE · ICSE · IGCSE
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => quizRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                    className="bg-white text-blue-700 font-bold px-5 py-2.5 rounded-xl hover:bg-blue-50 transition-colors shadow-md"
-                  >
-                    Start Practising →
-                  </button>
-                  <button
-                    onClick={() => {
-                      quizRef.current?.scrollIntoView({ behavior: 'smooth' })
-                      setWorksheetCurriculum(curriculum)
-                      setTimeout(() => setShowWorksheetModal(true), 400)
-                    }}
-                    className="bg-transparent text-white font-bold px-5 py-2.5 rounded-xl border-2 border-white hover:bg-white/10 transition-colors"
-                  >
-                    Get Worksheet
-                  </button>
-                  <button
-                    onClick={() => {
-                      quizRef.current?.scrollIntoView({ behavior: 'smooth' })
-                      setMockExamCurriculum(curriculum)
-                      setTimeout(() => setShowMockExamModal(true), 400)
-                    }}
-                    className="bg-white/15 text-white font-bold px-5 py-2.5 rounded-xl border border-white/40 hover:bg-white/25 transition-colors"
-                  >
-                    Mock Exam 📝
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 flex-shrink-0">
-                {[
-                  { value: '19', label: 'Topics covered' },
-                  { value: '3', label: 'Difficulty levels' },
-                  { value: '∞', label: 'Questions' },
-                  { value: '📄', label: 'PDF export' },
-                ].map((stat) => (
-                  <div key={stat.label} className="bg-white/15 rounded-xl p-4 text-center min-w-[110px]">
-                    <p className="text-3xl font-bold text-white leading-none mb-1">{stat.value}</p>
-                    <p className="text-white/70 text-xs font-medium">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <Hero
+          onStartPractising={() => quizRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          onGetWorksheet={() => {
+            quizRef.current?.scrollIntoView({ behavior: 'smooth' })
+            setWorksheetCurriculum(curriculum)
+            setTimeout(() => setShowWorksheetModal(true), 400)
+          }}
+          onMockExam={() => {
+            quizRef.current?.scrollIntoView({ behavior: 'smooth' })
+            setMockExamCurriculum(curriculum)
+            setTimeout(() => setShowMockExamModal(true), 400)
+          }}
+        />
 
         <HowItWorks sectionRef={howItWorksRef} />
 
@@ -2279,70 +2160,7 @@ export default function MathQuiz() {
           )
         })()}
 
-        {/* FOOTER */}
-        <footer className="pb-6 px-1 flex flex-col gap-2">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm text-gray-500">
-              Built with ❤️ for curious minds · Class 4 Mathematics
-            </p>
-            {visitorCount > 0 && (
-              <p className="text-sm text-gray-500">
-                🎯 {visitorCount} students have practised here
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
-            StudyZone is a practice tool only. It does not assess or reflect a child&apos;s academic capability.
-            Real evaluation should be done by qualified teachers. Topics are designed to align with{" "}
-            <a
-              href="https://ncert.nic.in/textbook.php"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-600 underline underline-offset-2 transition-colors"
-            >
-              NCERT Class 4 Maths guidelines
-            </a>.
-          </p>
-          <p className="text-xs text-gray-500">
-            <a href={`/${CLASSES[0].slug}/topics`} className="hover:text-gray-600 underline underline-offset-2 transition-colors">All Topics</a>
-            {" "}|{" "}
-            <a href="/teachers" className="hover:text-gray-600 underline underline-offset-2 transition-colors">For Teachers</a>
-            {" "}|{" "}
-            <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
-            {" "}|{" "}
-            <a href="/about" className="hover:text-gray-600 underline underline-offset-2 transition-colors">About</a>
-          </p>
-          <p className="text-xs text-gray-500 flex items-center gap-3">
-            <span>Share StudyZone:</span>
-            <a
-              href="https://wa.me/?text=Free%20Class%204%20maths%20practice%20on%20StudyZone%3A%20https%3A%2F%2Fstudyzone.co.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Share on WhatsApp"
-              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
-            >
-              WhatsApp
-            </a>
-            <a
-              href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fstudyzone.co.in&text=Free%20Class%204%20maths%20practice%20on%20StudyZone"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Share on X (Twitter)"
-              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
-            >
-              X
-            </a>
-            <a
-              href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fstudyzone.co.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Share on Facebook"
-              className="hover:text-gray-700 underline underline-offset-2 transition-colors"
-            >
-              Facebook
-            </a>
-          </p>
-        </footer>
+        <SiteFooter visitorCount={visitorCount} />
       </div>
       </div>
 
