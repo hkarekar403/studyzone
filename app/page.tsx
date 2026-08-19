@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, KeyboardEvent as ReactKeyboardEvent } from "react"
 import dynamic from "next/dynamic"
 import type jsPDF from "jspdf"
-import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
+import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun } from "lucide-react"
 import FocusTrap from "focus-trap-react"
+import FeedbackForm from "./components/FeedbackForm"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 import { CLASSES } from "@/lib/topicConfigs"
 
@@ -124,14 +125,6 @@ export default function MathQuiz() {
   const [inlineShareFeedback, setInlineShareFeedback] = useState("")
 
   // Feedback form
-  const [feedbackName, setFeedbackName] = useState("")
-  const [feedbackRating, setFeedbackRating] = useState(0)
-  const [feedbackMessage, setFeedbackMessage] = useState("")
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
-  const [feedbackError, setFeedbackError] = useState("")
-  const [hoverRating, setHoverRating] = useState(0)
-  const [feedbackTouched, setFeedbackTouched] = useState(false)
   const [timerDisabled, setTimerDisabled] = useState(false)
   const [sessionStartWarning, setSessionStartWarning] = useState(false)
   const [wseDifficulty, setWseDifficulty] = useState("Random")
@@ -1372,39 +1365,6 @@ export default function MathQuiz() {
     })
   }
 
-  const handleFeedbackSubmit = async () => {
-    setFeedbackSubmitting(true)
-    setFeedbackError("")
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: feedbackName,
-          rating: feedbackRating,
-          message: feedbackMessage,
-          curriculum,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setFeedbackSubmitted(true)
-        setTimeout(() => {
-          setFeedbackSubmitted(false)
-          setFeedbackName("")
-          setFeedbackRating(0)
-          setFeedbackMessage("")
-          setHoverRating(0)
-        }, 5000)
-      } else {
-        setFeedbackError(data.error || "Something went wrong. Please try again.")
-      }
-    } catch {
-      setFeedbackError("Something went wrong. Please try again.")
-    } finally {
-      setFeedbackSubmitting(false)
-    }
-  }
 
   const sanitizeSVG = (svg: string): string => {
     const start = svg.indexOf('<svg')
@@ -1690,116 +1650,7 @@ export default function MathQuiz() {
           </div>
         </div>
 
-        {/* FEEDBACK */}
-        <div ref={feedbackRef} id="feedback" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
-          <div className="flex justify-center mb-3">
-            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-4 py-1.5 rounded-full border border-amber-300">
-              👨‍👩‍👧 For Parents &amp; Teachers Only
-            </span>
-          </div>
-          <h2 className="font-heading text-2xl font-bold text-center mb-1" style={{ color: '#2563eb' }}>
-            💬 Share Your Feedback
-          </h2>
-          <p className="text-center text-sm text-gray-500 mb-6">Help us improve StudyZone for students everywhere</p>
-
-          {feedbackSubmitted ? (
-            <div className="flex flex-col items-center justify-center gap-3 bg-green-50 border border-green-200 rounded-2xl py-10 px-6 text-center">
-              <span className="text-5xl">🎉</span>
-              <p className="font-heading text-xl font-bold text-green-700">Thank you for your feedback!</p>
-              <p className="text-sm text-gray-600">Your response helps us make StudyZone better for students everywhere.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 max-w-lg mx-auto">
-              {/* Star rating */}
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-bold text-gray-600">Rate your experience</p>
-                <div className="flex gap-1" role="radiogroup" aria-label="Rate your experience, 1 to 5 stars">
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const filled = star <= (hoverRating || feedbackRating)
-                    return (
-                      <button
-                        key={star}
-                        onClick={() => { setFeedbackRating(star); setFeedbackTouched(true) }}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        className="transition-transform hover:scale-110"
-                        aria-label={`${star} ${star === 1 ? 'star' : 'stars'} out of 5`}
-                        aria-checked={feedbackRating === star}
-                      >
-                        <Star
-                          className="w-8 h-8 transition-colors"
-                          fill={filled ? '#f59e0b' : 'none'}
-                          stroke={filled ? '#f59e0b' : '#d1d5db'}
-                        />
-                      </button>
-                    )
-                  })}
-                </div>
-                {feedbackTouched && feedbackRating === 0 && (
-                  <p className="text-xs text-amber-600 font-semibold">Please select a rating</p>
-                )}
-              </div>
-
-              {/* Name */}
-              <div>
-                <label htmlFor="feedback-name" className="sr-only">Your name</label>
-                <input
-                  id="feedback-name"
-                  type="text"
-                  value={feedbackName}
-                  onChange={(e) => setFeedbackName(e.target.value)}
-                  placeholder="Your name — parent or teacher (optional)"
-                  className="w-full p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Curriculum (read-only) */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-500">
-                <span className="font-semibold text-gray-700">Curriculum:</span>
-                <span className="font-bold text-blue-700">{curriculum}</span>
-              </div>
-
-              {/* Message */}
-              <div>
-                <label htmlFor="feedback-message" className="sr-only">Your feedback message</label>
-                <textarea
-                  id="feedback-message"
-                  value={feedbackMessage}
-                  onChange={(e) => setFeedbackMessage(e.target.value)}
-                  placeholder="What do you think of StudyZone? Any suggestions for improvement?"
-                  rows={4}
-                  className="w-full p-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400 resize-none"
-                />
-              </div>
-
-              {feedbackError && (
-                <p className="text-sm font-semibold text-red-600 text-center" aria-live="polite">{feedbackError}</p>
-              )}
-
-              {/* Submit */}
-              <button
-                onClick={handleFeedbackSubmit}
-                disabled={!feedbackMessage.trim() || feedbackRating === 0 || feedbackSubmitting}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-2xl text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                {feedbackSubmitting ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Send Feedback
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
+        <FeedbackForm curriculum={curriculum} sectionRef={feedbackRef} />
 
         <div className="max-w-6xl mx-auto">
         {/* MAIN CARD */}
