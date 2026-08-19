@@ -119,7 +119,7 @@ const jsonLd = {
 // pointing it at our own homepage (as this previously did) tells them nothing.
 // Add each URL only once it is live and publicly reachable.
 const PROFILE_URLS: string[] = [
-  // e.g. 'https://github.com/<owner>/<repo>' once the repository is public
+  'https://github.com/hkarekar403/studyzone',
 ]
 
 const orgJsonLd = {
