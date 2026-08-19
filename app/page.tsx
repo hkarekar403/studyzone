@@ -22,7 +22,7 @@ const faqItems = [
   { q: "Which syllabus does this follow?", a: "Supports three curricula — CBSE, ICSE and IGCSE Cambridge Primary Stage 4. Switch between them using the Curriculum selector. Each curriculum has its own topic set and question style." },
   { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
   { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
-  { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 19 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
+  { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 22 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
   { q: "What age group is this for?", a: "This app is designed for Class 4 students, typically aged 9-10 years. The Easy difficulty is suitable for beginners while Hard questions challenge advanced learners." },
   { q: "Can I track my child's progress?", a: "Yes. The Session History panel shows every question attempted with the child's answer and whether it was correct. You can also export a full PDF report at the end of each session." },
   { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
@@ -1611,7 +1611,7 @@ export default function MathQuiz() {
           <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-6">How it works</h2>
           <div className="flex flex-col sm:flex-row gap-6">
             {[
-              { step: '1', emoji: '🎯', title: 'Pick a Topic', desc: 'Choose from 19 maths topics or go Random. Select Easy, Medium or Hard.' },
+              { step: '1', emoji: '🎯', title: 'Pick a Topic', desc: 'Choose from 22 maths topics or go Random. Select Easy, Medium or Hard.' },
               { step: '2', emoji: '✏️', title: 'Answer Questions', desc: 'Type your answer and press Enter. Get instant feedback with audio and confetti!' },
               { step: '3', emoji: '📄', title: 'Track Progress', desc: 'View your session history, export a PDF report, or download a printable worksheet.' },
             ].map((s) => (

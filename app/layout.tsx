@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Free Class 4 Maths Practice - CBSE, ICSE & IGCSE",
-    description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
+    description: "Practice maths the fun way! 22 topics, 3 difficulty levels, instant feedback. Free for all Class 4 students.",
     type: "website",
     locale: "en_IN",
     siteName: "StudyZone",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Free Class 4 Maths Practice - CBSE, ICSE & IGCSE",
-    description: "Practice maths the fun way! 19 topics, 3 difficulty levels, instant feedback.",
+    description: "Practice maths the fun way! 22 topics, 3 difficulty levels, instant feedback.",
   },
   robots: {
     index: true,
@@ -69,7 +69,7 @@ const jsonLd = {
   "name": "StudyZone - Class 4 Maths Practice",
   "alternateName": "StudyZone",
   "url": "https://studyzone.co.in",
-  "description": "Free interactive maths practice for Class 4 students. 19 topics including fractions, geometry, multiplication, division and more. Supports CBSE, ICSE and IGCSE curricula. Instant feedback, PDF reports and printable worksheets.",
+  "description": "Free interactive maths practice for Class 4 students. 22 topics including fractions, geometry, multiplication, division and more. Supports CBSE, ICSE and IGCSE curricula. Instant feedback, PDF reports and printable worksheets.",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Any",
   "isAccessibleForFree": true,

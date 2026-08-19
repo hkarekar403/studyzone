@@ -33,7 +33,7 @@ export default function About() {
             <h2 className="font-heading text-xl font-bold text-gray-800 mb-3">1. What is StudyZone?</h2>
             <p className="text-gray-600 leading-relaxed">
               StudyZone is a free, interactive mathematics practice platform for Class 4 students. It supports CBSE,
-              ICSE and IGCSE curricula with 19 topics, 3 difficulty levels, instant feedback, printable worksheets —
+              ICSE and IGCSE curricula with 22 topics, 3 difficulty levels, instant feedback, printable worksheets —
               and it costs nothing. No login. No subscription. No ads.
             </p>
           </section>
