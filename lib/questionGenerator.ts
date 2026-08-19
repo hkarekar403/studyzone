@@ -1,3 +1,4 @@
+import { rng } from "@/lib/rng"
 export interface Question {
   question: string;
   answer: string;
@@ -52,7 +53,7 @@ const PROBABILITY_BAG_POOL = ['Bag A', 'Bag B', 'Equally likely'];
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -111,9 +112,9 @@ function numericNearMiss(correct: number, isDecimal: boolean, allowNegative: boo
     // Single-digit substitution (e.g. 1150 → 1250) — a tight, same-length
     // near-miss that mimics a simple misreading/miscopying error.
     for (let attempt = 0; attempt < 6 && candidates.size < need * 4; attempt++) {
-      const pos = absStr.length > 1 ? 1 + Math.floor(Math.random() * (absStr.length - 1)) : 0;
+      const pos = absStr.length > 1 ? 1 + Math.floor(rng() * (absStr.length - 1)) : 0;
       const arr = absStr.split('');
-      const newDigit = Math.floor(Math.random() * 10).toString();
+      const newDigit = Math.floor(rng() * 10).toString();
       if (newDigit === arr[pos] || (pos === 0 && newDigit === '0')) continue;
       arr[pos] = newDigit;
       candidates.add(parseInt(arr.join(''), 10) * (correct < 0 ? -1 : 1));
@@ -686,7 +687,7 @@ export class MathQuestionGenerator {
         const leastUsedTopicFns = pool.filter(fn => (topicCounts.get(topicOf(fn)) ?? 0) === minCount);
         const unused = leastUsedTopicFns.filter(fn => !usedFns.has(fn));
         const choices = unused.length > 0 ? unused : leastUsedTopicFns;
-        return choices[Math.floor(Math.random() * choices.length)];
+        return choices[Math.floor(rng() * choices.length)];
       };
 
       const record = (fn: () => Question, raw: Question, options?: string[]) => {
@@ -762,11 +763,11 @@ export class MathQuestionGenerator {
       let q: Question;
       if (topic && topic in this.getTopicGenerators()) {
         const fns = this.getTopicGenerators()[topic];
-        const fn = fns[Math.floor(Math.random() * fns.length)];
+        const fn = fns[Math.floor(rng() * fns.length)];
         q = { ...fn.call(this), topic };
       } else {
         const generators = this.getDifficultyGenerators(difficulty);
-        const fn = generators[Math.floor(Math.random() * generators.length)];
+        const fn = generators[Math.floor(rng() * generators.length)];
         const result = fn.call(this) as Question;
         q = { ...result, topic: this.detectTopicMap.get(fn) || "General" };
       }
@@ -786,13 +787,13 @@ export class MathQuestionGenerator {
   }
 
   private easyAddition(): Question {
-    const a = Math.floor(Math.random() * 90) + 10;
-    let b = Math.floor(Math.random() * 90) + 10;
-    while (b === a) b = Math.floor(Math.random() * 90) + 10;
+    const a = Math.floor(rng() * 90) + 10;
+    let b = Math.floor(rng() * 90) + 10;
+    while (b === a) b = Math.floor(rng() * 90) + 10;
     const total = a + b;
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const shopItems = ['pens', 'books', 'chocolates', 'mangoes', 'apples', 'biscuits'];
-    const item = shopItems[Math.floor(Math.random() * shopItems.length)];
+    const item = shopItems[Math.floor(rng() * shopItems.length)];
     switch (t) {
       case 0:
         return { question: `What is ${a} + ${b}?`, answer: total.toString(), working: `Working:\n${a} + ${b} = ${total}` };
@@ -806,19 +807,19 @@ export class MathQuestionGenerator {
   }
 
   private easySubtraction(): Question {
-    const a = Math.floor(Math.random() * 91) + 30;
-    const b = Math.floor(Math.random() * (a - 10)) + 10;
+    const a = Math.floor(rng() * 91) + 30;
+    const b = Math.floor(rng() * (a - 10)) + 10;
     const difference = a - b;
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const fruits = ['mangoes', 'apples', 'oranges', 'bananas'];
-    const fruit = fruits[Math.floor(Math.random() * fruits.length)];
+    const fruit = fruits[Math.floor(rng() * fruits.length)];
     const animalContexts = [
       { animal: 'birds', place: 'a tree', action: 'fly away' },
       { animal: 'fish', place: 'a pond', action: 'swim away' },
       { animal: 'cows', place: 'a field', action: 'wander off' },
       { animal: 'butterflies', place: 'a garden', action: 'fly away' },
     ];
-    const ctx = animalContexts[Math.floor(Math.random() * animalContexts.length)];
+    const ctx = animalContexts[Math.floor(rng() * animalContexts.length)];
     switch (t) {
       case 0:
         return { question: `What is ${a} - ${b}?`, answer: difference.toString(), working: `Working:\n${a} - ${b} = ${difference}` };
@@ -832,14 +833,14 @@ export class MathQuestionGenerator {
   }
 
   private easyMultiplication(): Question {
-    const a = Math.floor(Math.random() * 11) + 2;
-    const b = Math.floor(Math.random() * 9) + 2;
+    const a = Math.floor(rng() * 11) + 2;
+    const b = Math.floor(rng() * 9) + 2;
     const product = a * b;
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const rowItems = ['apples', 'mangoes', 'oranges', 'chocolates'];
-    const rowItem = rowItems[Math.floor(Math.random() * rowItems.length)];
+    const rowItem = rowItems[Math.floor(rng() * rowItems.length)];
     const handItems = ['pencils', 'notebooks', 'books', 'pens'];
-    const handItem = handItems[Math.floor(Math.random() * handItems.length)];
+    const handItem = handItems[Math.floor(rng() * handItems.length)];
     switch (t) {
       case 0:
         return { question: `What is ${a} × ${b}?`, answer: product.toString(), working: `Working:\n${a} × ${b} = ${product}` };
@@ -853,27 +854,27 @@ export class MathQuestionGenerator {
   }
 
   private mediumWordProblem(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const boxes = Math.floor(Math.random() * 7) + 3;
-      const pencils = Math.floor(Math.random() * 5) + 4;
+      const boxes = Math.floor(rng() * 7) + 3;
+      const pencils = Math.floor(rng() * 5) + 4;
       return {
         question: `A shopkeeper has ${boxes} boxes. Each box has ${pencils} pencils.\nHow many pencils are there in all?`,
         answer: (boxes * pencils).toString(),
         working: `Working:\n${boxes} boxes × ${pencils} pencils = ${boxes * pencils} pencils`,
       };
     } else if (t === 1) {
-      const coaches = Math.floor(Math.random() * 8) + 3;
-      const seats = Math.floor(Math.random() * 12) + 8;
+      const coaches = Math.floor(rng() * 8) + 3;
+      const seats = Math.floor(rng() * 12) + 8;
       return {
         question: `A train has ${coaches} coaches. Each coach has ${seats} seats.\nHow many seats are there in total?`,
         answer: (coaches * seats).toString(),
         working: `Working:\n${coaches} coaches × ${seats} seats = ${coaches * seats} seats`,
       };
     } else if (t === 2) {
-      const rows = Math.floor(Math.random() * 6) + 3;
-      const perRow = Math.floor(Math.random() * 7) + 4;
+      const rows = Math.floor(rng() * 6) + 3;
+      const perRow = Math.floor(rng() * 7) + 4;
       const students = rows * perRow;
       return {
         question: `${students} students sit in ${rows} equal rows.\nHow many students are in each row?`,
@@ -881,8 +882,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${students} ÷ ${rows} = ${perRow} students per row`,
       };
     } else {
-      const rows = Math.floor(Math.random() * 6) + 3;
-      const perRow = Math.floor(Math.random() * 8) + 4;
+      const rows = Math.floor(rng() * 6) + 3;
+      const perRow = Math.floor(rng() * 8) + 4;
       const trees = rows * perRow;
       return {
         question: `A farmer plants ${trees} trees in ${rows} equal rows.\nHow many trees are in each row?`,
@@ -893,10 +894,10 @@ export class MathQuestionGenerator {
   }
 
   private mediumMultiplication(): Question {
-    const a = Math.floor(Math.random() * 19) + 11;
-    const b = Math.floor(Math.random() * 7) + 3;
+    const a = Math.floor(rng() * 19) + 11;
+    const b = Math.floor(rng() * 7) + 3;
     const product = a * b;
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
       return {
@@ -926,14 +927,14 @@ export class MathQuestionGenerator {
   }
 
   private mediumDivision(): Question {
-    const divisor = Math.floor(Math.random() * 7) + 3;
-    const quotient = Math.floor(Math.random() * 9) + 4;
+    const divisor = Math.floor(rng() * 7) + 3;
+    const quotient = Math.floor(rng() * 9) + 4;
     const dividend = divisor * quotient;
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const shareItems = ['chocolates', 'mangoes', 'apples', 'biscuits'];
-    const shareItem = shareItems[Math.floor(Math.random() * shareItems.length)];
+    const shareItem = shareItems[Math.floor(rng() * shareItems.length)];
     const arrangeItems = ['books', 'notebooks', 'pencils', 'pens'];
-    const arrangeItem = arrangeItems[Math.floor(Math.random() * arrangeItems.length)];
+    const arrangeItem = arrangeItems[Math.floor(rng() * arrangeItems.length)];
     switch (t) {
       case 0:
         return { question: `What is ${dividend} ÷ ${divisor}?`, answer: quotient.toString(), working: `Working:\n${dividend} ÷ ${divisor} = ${quotient}` };
@@ -947,12 +948,12 @@ export class MathQuestionGenerator {
   }
 
   private hardMultiStep(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const rows = Math.floor(Math.random() * 5) + 3;
-      const perRow = Math.floor(Math.random() * 7) + 6;
-      const extra = Math.floor(Math.random() * 16) + 10;
+      const rows = Math.floor(rng() * 5) + 3;
+      const perRow = Math.floor(rng() * 7) + 6;
+      const extra = Math.floor(rng() * 16) + 10;
       const total = rows * perRow + extra;
       return {
         question: `There are ${rows} rows of chairs with ${perRow} chairs in each row.\n${extra} extra chairs are added later. How many chairs are there now?`,
@@ -960,9 +961,9 @@ export class MathQuestionGenerator {
         working: `Working:\nChairs in rows = ${rows} × ${perRow} = ${rows * perRow}\nAdd extra chairs = ${rows * perRow} + ${extra} = ${total}`,
       };
     } else if (t === 1) {
-      const sold = Math.floor(Math.random() * 30) + 10;
-      const added = Math.floor(Math.random() * 20) + 5;
-      const initial = sold + Math.floor(Math.random() * 20) + 15;
+      const sold = Math.floor(rng() * 30) + 10;
+      const added = Math.floor(rng() * 20) + 5;
+      const initial = sold + Math.floor(rng() * 20) + 15;
       const result = initial - sold + added;
       return {
         question: `A shopkeeper had ${initial} items. He sold ${sold} items and then received ${added} new ones.\nHow many items does he have now?`,
@@ -970,9 +971,9 @@ export class MathQuestionGenerator {
         working: `Working:\nStart: ${initial}\nAfter selling: ${initial} - ${sold} = ${initial - sold}\nAfter receiving: ${initial - sold} + ${added} = ${result}`,
       };
     } else if (t === 2) {
-      const initial = Math.floor(Math.random() * 20) + 30;
-      const left = Math.floor(Math.random() * 10) + 5;
-      const joined = Math.floor(Math.random() * 10) + 5;
+      const initial = Math.floor(rng() * 20) + 30;
+      const left = Math.floor(rng() * 10) + 5;
+      const joined = Math.floor(rng() * 10) + 5;
       const result = initial - left + joined;
       return {
         question: `A class has ${initial} students. ${left} students left and then ${joined} new students joined.\nHow many students are there now?`,
@@ -980,9 +981,9 @@ export class MathQuestionGenerator {
         working: `Working:\nStart: ${initial}\nAfter leaving: ${initial} - ${left} = ${initial - left}\nAfter joining: ${initial - left} + ${joined} = ${result}`,
       };
     } else {
-      const used = Math.floor(Math.random() * 30) + 10;
-      const added = Math.floor(Math.random() * 20) + 5;
-      const initial = used + Math.floor(Math.random() * 20) + 15;
+      const used = Math.floor(rng() * 30) + 10;
+      const added = Math.floor(rng() * 20) + 5;
+      const initial = used + Math.floor(rng() * 20) + 15;
       const result = initial - used + added;
       return {
         question: `A tank holds ${initial} litres of water. ${used} litres are used, then ${added} litres are added.\nHow many litres remain in the tank?`,
@@ -993,12 +994,12 @@ export class MathQuestionGenerator {
   }
 
   private hardDivisionRemainder(): Question {
-    const divisor = Math.floor(Math.random() * 6) + 4;
-    const quotient = Math.floor(Math.random() * 7) + 8;
-    const remainder = Math.floor(Math.random() * (divisor - 1)) + 1;
+    const divisor = Math.floor(rng() * 6) + 4;
+    const quotient = Math.floor(rng() * 7) + 8;
+    const remainder = Math.floor(rng() * (divisor - 1)) + 1;
     const dividend = divisor * quotient + remainder;
 
-    if (Math.random() < 0.5) {
+    if (rng() < 0.5) {
       return {
         question: `Divide ${dividend} by ${divisor}.\nWrite the answer as quotient and remainder.`,
         answer: `Quotient = ${quotient}, Remainder = ${remainder}`,
@@ -1015,8 +1016,8 @@ export class MathQuestionGenerator {
   }
 
   private hardMeasurement(): Question {
-    const metres = Math.floor(Math.random() * 7) + 2;
-    const centimetres = Math.floor(Math.random() * 86) + 10;
+    const metres = Math.floor(rng() * 7) + 2;
+    const centimetres = Math.floor(rng() * 86) + 10;
     const totalCm = metres * 100 + centimetres;
     return {
       question: `Convert this length into centimetres:\n${metres} m ${centimetres} cm = ?`,
@@ -1026,12 +1027,12 @@ export class MathQuestionGenerator {
   }
 
   private easyPlaceValue(): Question {
-    const num = Math.floor(Math.random() * 900000) + 100000;
+    const num = Math.floor(rng() * 900000) + 100000;
     const numStr = num.toString();
-    const t = Math.floor(Math.random() * 5);
+    const t = Math.floor(rng() * 5);
 
     if (t === 0) {
-      const digitIndex = Math.floor(Math.random() * numStr.length);
+      const digitIndex = Math.floor(rng() * numStr.length);
       const digit = numStr[digitIndex];
       const placeValue = parseInt(digit) * Math.pow(10, numStr.length - digitIndex - 1);
       return {
@@ -1040,7 +1041,7 @@ export class MathQuestionGenerator {
         working: `Working:\nThe digit ${digit} is in the ${this.getPlaceName(numStr.length - digitIndex - 1)} position.\nPlace value = ${digit} × ${Math.pow(10, numStr.length - digitIndex - 1)} = ${placeValue}`,
       };
     } else if (t === 1) {
-      const placeIndex = Math.floor(Math.random() * numStr.length);
+      const placeIndex = Math.floor(rng() * numStr.length);
       const placeName = this.getPlaceName(numStr.length - placeIndex - 1);
       const digit = numStr[placeIndex];
       return {
@@ -1058,7 +1059,7 @@ export class MathQuestionGenerator {
         working: `Working:\n${workingLines.join('\n')}\nExpanded form = ${answer}`,
       };
     } else if (t === 3) {
-      const digitIndex = Math.floor(Math.random() * numStr.length);
+      const digitIndex = Math.floor(rng() * numStr.length);
       const digit = numStr[digitIndex];
       return {
         question: `What is the face value of ${digit} in the number ${num}?`,
@@ -1068,7 +1069,7 @@ export class MathQuestionGenerator {
     } else {
       // Inverse/repeated-scaling reasoning: work backwards through two ×10 steps.
       const name = this.randomIndianName();
-      const finalValue = (Math.floor(Math.random() * 90) + 10) * 100;
+      const finalValue = (Math.floor(rng() * 90) + 10) * 100;
       const original = finalValue / 100;
       return {
         question: `${name} multiplies a number by 10, then multiplies the result by 10 again.\n${name} ends up with ${finalValue}. What number did ${name} start with?`,
@@ -1079,10 +1080,10 @@ export class MathQuestionGenerator {
   }
 
   private easyOddEven(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const num = Math.floor(Math.random() * 200) + 1;
+      const num = Math.floor(rng() * 200) + 1;
       const isOdd = num % 2 === 1;
       const answer = isOdd ? "Odd" : "Even";
       return {
@@ -1091,18 +1092,18 @@ export class MathQuestionGenerator {
         working: `Working:\n${num} ÷ 2 = ${Math.floor(num / 2)}${isOdd ? " remainder 1" : " exactly"}\nTherefore, ${num} is ${answer}.`,
       };
     } else if (t === 1) {
-      const oddNum = Math.floor(Math.random() * 50) * 2 + 1;
-      let even1 = Math.floor(Math.random() * 50) * 2 + 2;
-      let even2 = Math.floor(Math.random() * 50) * 2 + 2;
-      while (even2 === even1) even2 = Math.floor(Math.random() * 50) * 2 + 2;
-      const nums = [oddNum, even1, even2].sort(() => Math.random() - 0.5);
+      const oddNum = Math.floor(rng() * 50) * 2 + 1;
+      let even1 = Math.floor(rng() * 50) * 2 + 2;
+      let even2 = Math.floor(rng() * 50) * 2 + 2;
+      while (even2 === even1) even2 = Math.floor(rng() * 50) * 2 + 2;
+      const nums = [oddNum, even1, even2].sort(() => rng() - 0.5);
       return {
         question: `Which of these is an odd number?\n${nums.join(', ')}`,
         answer: oddNum.toString(),
         working: `Working:\nA number is odd if it cannot be divided equally by 2.\n${nums.map(n => `${n}: ${n % 2 === 0 ? 'Even' : 'Odd'}`).join(', ')}\nThe odd number is ${oddNum}.`,
       };
     } else if (t === 2) {
-      const num = Math.floor(Math.random() * 100) + 1;
+      const num = Math.floor(rng() * 100) + 1;
       const nextEven = num % 2 === 0 ? num + 2 : num + 1;
       return {
         question: `What is the next even number after ${num}?`,
@@ -1110,8 +1111,8 @@ export class MathQuestionGenerator {
         working: `Working:\nEven numbers are multiples of 2.\n${num % 2 === 0 ? `${num} is even, so the next even number is ${num} + 2 = ${nextEven}.` : `${num} is odd, so the next even number is ${num} + 1 = ${nextEven}.`}`,
       };
     } else {
-      const a = Math.floor(Math.random() * 20) + 1;
-      const b = a + Math.floor(Math.random() * 10) + 5;
+      const a = Math.floor(rng() * 20) + 1;
+      const b = a + Math.floor(rng() * 10) + 5;
       const odds = [];
       for (let i = a + 1; i < b; i++) { if (i % 2 !== 0) odds.push(i); }
       return {
@@ -1123,11 +1124,11 @@ export class MathQuestionGenerator {
   }
 
   private easyFraction(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const num1 = Math.floor(Math.random() * 8) + 1;
-      const num2 = Math.floor(Math.random() * 8) + 1;
+      const num1 = Math.floor(rng() * 8) + 1;
+      const num2 = Math.floor(rng() * 8) + 1;
       if (num1 === num2) {
         return { question: `Which fraction is greater: ${num1}/10 or ${num2}/10?`, answer: `They are equal`, working: `Working:\nBoth fractions have denominator 10.\nCompare numerators: ${num1} = ${num2}\nTherefore, ${num1}/10 = ${num2}/10` };
       }
@@ -1135,30 +1136,30 @@ export class MathQuestionGenerator {
       const lesser = Math.min(num1, num2);
       return { question: `Which fraction is greater: ${num1}/10 or ${num2}/10?`, answer: `${greater}/10`, working: `Working:\nBoth fractions have denominator 10.\nCompare numerators: ${greater} > ${lesser}\nTherefore, ${greater}/10 > ${lesser}/10` };
     } else if (t === 1) {
-      const num = Math.floor(Math.random() * 7) + 1;
-      const greaterNum = num + Math.floor(Math.random() * (9 - num)) + 1;
+      const num = Math.floor(rng() * 7) + 1;
+      const greaterNum = num + Math.floor(rng() * (9 - num)) + 1;
       return { question: `Write a fraction greater than ${num}/10.`, answer: `Any valid answer, e.g. ${greaterNum}/10`, working: `Working:\nA fraction with denominator 10 is greater if its numerator is larger.\n${num}/10 < ${greaterNum}/10 because ${num} < ${greaterNum}` };
     } else if (t === 2) {
-      let n1 = Math.floor(Math.random() * 8) + 1;
-      let n2 = Math.floor(Math.random() * 8) + 1;
-      let n3 = Math.floor(Math.random() * 8) + 1;
-      while (n2 === n1) n2 = Math.floor(Math.random() * 8) + 1;
-      while (n3 === n1 || n3 === n2) n3 = Math.floor(Math.random() * 8) + 1;
+      let n1 = Math.floor(rng() * 8) + 1;
+      let n2 = Math.floor(rng() * 8) + 1;
+      let n3 = Math.floor(rng() * 8) + 1;
+      while (n2 === n1) n2 = Math.floor(rng() * 8) + 1;
+      while (n3 === n1 || n3 === n2) n3 = Math.floor(rng() * 8) + 1;
       const sorted = [n1, n2, n3].sort((a, b) => a - b);
       return { question: `Arrange these fractions in ascending order:\n${n1}/10, ${n2}/10, ${n3}/10`, answer: sorted.map(n => `${n}/10`).join(', '), working: `Working:\nAll have denominator 10, so compare numerators.\nSmallest to largest: ${sorted[0]}, ${sorted[1]}, ${sorted[2]}\nAscending order: ${sorted.map(n => `${n}/10`).join(', ')}` };
     } else {
-      const total = (Math.floor(Math.random() * 4) + 2) * (Math.floor(Math.random() * 3) + 2);
-      const part = Math.floor(Math.random() * (total - 1)) + 1;
+      const total = (Math.floor(rng() * 4) + 2) * (Math.floor(rng() * 3) + 2);
+      const part = Math.floor(rng() * (total - 1)) + 1;
       return { question: `What fraction of ${total} is ${part}?`, answer: `${part}/${total}`, working: `Working:\nFraction = part ÷ total\n= ${part}/${total}` };
     }
   }
 
   private mediumFactorsMultiples(): Question {
-    const type = Math.random() > 0.5 ? 'factors' : 'multiples';
+    const type = rng() > 0.5 ? 'factors' : 'multiples';
 
     if (type === 'factors') {
-      const num = (Math.floor(Math.random() * 12) + 2) * (Math.floor(Math.random() * 4) + 2);
-      const factor = Math.floor(Math.random() * (num - 1)) + 1;
+      const num = (Math.floor(rng() * 12) + 2) * (Math.floor(rng() * 4) + 2);
+      const factor = Math.floor(rng() * (num - 1)) + 1;
       const isFactorYes = num % factor === 0;
       return {
         question: `Is ${factor} a factor of ${num}?`,
@@ -1166,8 +1167,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${num} ÷ ${factor} = ${num / factor}${isFactorYes ? " exactly" : " with remainder"}\nTherefore, ${factor} is ${isFactorYes ? "" : "not "} a factor of ${num}.`,
       };
     } else {
-      const num = Math.floor(Math.random() * 12) + 2;
-      const multiple = Math.floor(Math.random() * 6) + 1;
+      const num = Math.floor(rng() * 12) + 2;
+      const multiple = Math.floor(rng() * 6) + 1;
       const multipleOrdinal = this.ordinal(multiple);
       return {
         question: `What is the ${multipleOrdinal} multiple of ${num}?`,
@@ -1180,11 +1181,11 @@ export class MathQuestionGenerator {
   private mediumPrimeComposite(): Question {
     const allPrimes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
     const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20];
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
       const pool = [...allPrimes.slice(0, 11), ...composites];
-      const num = pool[Math.floor(Math.random() * pool.length)];
+      const num = pool[Math.floor(rng() * pool.length)];
       const isPrime = allPrimes.includes(num);
       return {
         question: `Is ${num} a prime or composite number?`,
@@ -1193,7 +1194,7 @@ export class MathQuestionGenerator {
       };
     } else if (t === 1) {
       const ranges: [number, number][] = [[1, 20], [10, 30], [20, 40], [1, 15]];
-      const [a, b] = ranges[Math.floor(Math.random() * ranges.length)];
+      const [a, b] = ranges[Math.floor(rng() * ranges.length)];
       const inRange = allPrimes.filter(p => p > a && p < b);
       return {
         question: `List all prime numbers between ${a} and ${b}.`,
@@ -1202,7 +1203,7 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       const startOptions = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
-      const startNum = startOptions[Math.floor(Math.random() * startOptions.length)];
+      const startNum = startOptions[Math.floor(rng() * startOptions.length)];
       const nextPrime = allPrimes.find(p => p > startNum)!;
       return {
         question: `What is the smallest prime number greater than ${startNum}?`,
@@ -1211,7 +1212,7 @@ export class MathQuestionGenerator {
       };
     } else {
       const upToOptions = [10, 15, 20, 25, 30];
-      const upTo = upToOptions[Math.floor(Math.random() * upToOptions.length)];
+      const upTo = upToOptions[Math.floor(rng() * upToOptions.length)];
       const primesUpTo = allPrimes.filter(p => p <= upTo);
       return {
         question: `How many prime numbers are there between 1 and ${upTo}?`,
@@ -1222,8 +1223,8 @@ export class MathQuestionGenerator {
   }
 
   private mediumSquareCube(): Question {
-    const type = Math.random() > 0.5 ? 'square' : 'cube';
-    const num = Math.floor(Math.random() * 8) + 2;
+    const type = rng() > 0.5 ? 'square' : 'cube';
+    const num = Math.floor(rng() * 8) + 2;
 
     if (type === 'square') {
       const result = num * num;
@@ -1243,12 +1244,12 @@ export class MathQuestionGenerator {
   }
 
   private mediumFractionAddition(): Question {
-    const denom = Math.floor(Math.random() * 6) + 4;
-    const t = Math.floor(Math.random() * 4);
+    const denom = Math.floor(rng() * 6) + 4;
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
-      const num2 = Math.floor(Math.random() * (denom - num1)) + 1;
+      const num1 = Math.floor(rng() * (denom - 1)) + 1;
+      const num2 = Math.floor(rng() * (denom - num1)) + 1;
       const sum = num1 + num2;
       return {
         question: `Add the fractions:\n${num1}/${denom} + ${num2}/${denom} = ?`,
@@ -1256,8 +1257,8 @@ export class MathQuestionGenerator {
         working: `Working:\nBoth fractions have the same denominator.\n${num1}/${denom} + ${num2}/${denom} = (${num1} + ${num2})/${denom} = ${sum}/${denom}`,
       };
     } else if (t === 1) {
-      const bigger = Math.floor(Math.random() * (denom - 2)) + 2;
-      const smaller = Math.floor(Math.random() * (bigger - 1)) + 1;
+      const bigger = Math.floor(rng() * (denom - 2)) + 2;
+      const smaller = Math.floor(rng() * (bigger - 1)) + 1;
       const diff = bigger - smaller;
       return {
         question: `Subtract the fractions:\n${bigger}/${denom} - ${smaller}/${denom} = ?`,
@@ -1265,8 +1266,8 @@ export class MathQuestionGenerator {
         working: `Working:\nBoth fractions have the same denominator.\n${bigger}/${denom} - ${smaller}/${denom} = (${bigger} - ${smaller})/${denom} = ${diff}/${denom}`,
       };
     } else if (t === 2) {
-      const num1 = Math.floor(Math.random() * Math.floor(denom / 2)) + 1;
-      const num2 = Math.floor(Math.random() * (denom - num1 - 1)) + 1;
+      const num1 = Math.floor(rng() * Math.floor(denom / 2)) + 1;
+      const num2 = Math.floor(rng() * (denom - num1 - 1)) + 1;
       const sum = num1 + num2;
       return {
         question: `A pizza is cut into ${denom} slices. Ravi ate ${num1} slices and Meena ate ${num2} slices.\nWhat fraction of the pizza was eaten?`,
@@ -1274,7 +1275,7 @@ export class MathQuestionGenerator {
         working: `Working:\nRavi ate ${num1}/${denom}, Meena ate ${num2}/${denom}\nTotal eaten = (${num1} + ${num2})/${denom} = ${sum}/${denom}`,
       };
     } else {
-      const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
+      const num1 = Math.floor(rng() * (denom - 1)) + 1;
       const complement = denom - num1;
       return {
         question: `What fraction must be added to ${num1}/${denom} to make 1 whole?`,
@@ -1285,11 +1286,11 @@ export class MathQuestionGenerator {
   }
 
   private mediumPerimeter(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const length = Math.floor(Math.random() * 8) + 3;
-      const width = Math.floor(Math.random() * 6) + 2;
+      const length = Math.floor(rng() * 8) + 3;
+      const width = Math.floor(rng() * 6) + 2;
       const perimeter = 2 * (length + width);
       return {
         question: `Find the perimeter of a rectangle with length ${length} cm and width ${width} cm.`,
@@ -1297,15 +1298,15 @@ export class MathQuestionGenerator {
         working: `Working:\nPerimeter of rectangle = 2 × (length + width)\n= 2 × (${length} + ${width})\n= 2 × ${length + width}\n= ${perimeter} cm`,
       };
     } else if (t === 1) {
-      const side = Math.floor(Math.random() * 12) + 3;
+      const side = Math.floor(rng() * 12) + 3;
       return {
         question: `A square has a side of ${side} cm. Find its perimeter.`,
         answer: `${4 * side} cm`,
         working: `Working:\nPerimeter of square = 4 × side\n= 4 × ${side}\n= ${4 * side} cm`,
       };
     } else if (t === 2) {
-      const width = Math.floor(Math.random() * 6) + 2;
-      const length = Math.floor(Math.random() * 8) + 3;
+      const width = Math.floor(rng() * 6) + 2;
+      const length = Math.floor(rng() * 8) + 3;
       const perimeter = 2 * (length + width);
       return {
         question: `The perimeter of a rectangle is ${perimeter} cm and its length is ${length} cm.\nFind its width.`,
@@ -1313,8 +1314,8 @@ export class MathQuestionGenerator {
         working: `Working:\nPerimeter = 2 × (length + width)\n${perimeter} = 2 × (${length} + width)\n${perimeter / 2} = ${length} + width\nwidth = ${perimeter / 2} - ${length} = ${width} cm`,
       };
     } else {
-      const length = Math.floor(Math.random() * 20) + 10;
-      const width = Math.floor(Math.random() * 10) + 5;
+      const length = Math.floor(rng() * 20) + 10;
+      const width = Math.floor(rng() * 10) + 5;
       const perimeter = 2 * (length + width);
       return {
         question: `A park is ${length} m long and ${width} m wide.\nHow much fencing is needed to go all the way around it?`,
@@ -1325,38 +1326,38 @@ export class MathQuestionGenerator {
   }
 
   private mediumMoney(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const shopItems = ['pen', 'book', 'chocolate', 'mango', 'apple', 'biscuit'];
 
     if (t === 0) {
-      const item1 = shopItems[Math.floor(Math.random() * shopItems.length)];
-      const item2 = shopItems.filter(i => i !== item1)[Math.floor(Math.random() * (shopItems.length - 1))];
-      const a = Math.floor(Math.random() * 20) + 5;
-      const b = Math.floor(Math.random() * 30) + 10;
+      const item1 = shopItems[Math.floor(rng() * shopItems.length)];
+      const item2 = shopItems.filter(i => i !== item1)[Math.floor(rng() * (shopItems.length - 1))];
+      const a = Math.floor(rng() * 20) + 5;
+      const b = Math.floor(rng() * 30) + 10;
       return { question: `A ${item1} costs ₹${a} and a ${item2} costs ₹${b}. How much do both cost?`, answer: `₹${a + b}`, working: `Working:\n₹${a} + ₹${b} = ₹${a + b}` };
     } else if (t === 1) {
-      const a = Math.floor(Math.random() * 50) + 30;
-      const b = Math.floor(Math.random() * (a - 10)) + 10;
+      const a = Math.floor(rng() * 50) + 30;
+      const b = Math.floor(rng() * (a - 10)) + 10;
       return { question: `You have ₹${a} and spend ₹${b}. How much is left?`, answer: `₹${a - b}`, working: `Working:\n₹${a} - ₹${b} = ₹${a - b}` };
     } else if (t === 2) {
-      const item = shopItems[Math.floor(Math.random() * shopItems.length)];
-      const qty = Math.floor(Math.random() * 5) + 2;
-      const price = Math.floor(Math.random() * 15) + 5;
+      const item = shopItems[Math.floor(rng() * shopItems.length)];
+      const qty = Math.floor(rng() * 5) + 2;
+      const price = Math.floor(rng() * 15) + 5;
       return { question: `Find the total cost of ${qty} ${item}s at ₹${price} each.`, answer: `₹${qty * price}`, working: `Working:\n${qty} × ₹${price} = ₹${qty * price}` };
     } else {
-      const friends = Math.floor(Math.random() * 4) + 2;
-      const totalAmount = friends * (Math.floor(Math.random() * 10) + 5);
+      const friends = Math.floor(rng() * 4) + 2;
+      const totalAmount = friends * (Math.floor(rng() * 10) + 5);
       return { question: `Share ₹${totalAmount} equally among ${friends} friends. How much does each get?`, answer: `₹${totalAmount / friends}`, working: `Working:\n₹${totalAmount} ÷ ${friends} = ₹${totalAmount / friends}` };
     }
   }
 
   private mediumTime(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const h1 = Math.floor(Math.random() * 6) + 9;
-      const m1 = Math.floor(Math.random() * 6) * 10;
-      const durationMins = Math.floor(Math.random() * 90) + 30;
+      const h1 = Math.floor(rng() * 6) + 9;
+      const m1 = Math.floor(rng() * 6) * 10;
+      const durationMins = Math.floor(rng() * 90) + 30;
       const totalMins = h1 * 60 + m1 + durationMins;
       const h2 = Math.floor(totalMins / 60);
       const m2 = totalMins % 60;
@@ -1365,18 +1366,18 @@ export class MathQuestionGenerator {
       const durationStr = dh > 0 ? `${dh} hour${dh > 1 ? 's' : ''}${dm > 0 ? ` ${dm} minutes` : ''}` : `${durationMins} minutes`;
       return { question: `A movie starts at ${h1}:${m1.toString().padStart(2, '0')} and ends at ${h2}:${m2.toString().padStart(2, '0')}. How long is it?`, answer: durationStr, working: `Working:\nEnd time: ${h2}:${m2.toString().padStart(2, '0')}\nStart time: ${h1}:${m1.toString().padStart(2, '0')}\nDuration = ${durationMins} minutes = ${durationStr}` };
     } else if (t === 1) {
-      const h = Math.floor(Math.random() * 10) + 7;
-      const m = Math.floor(Math.random() * 6) * 10;
-      const n = Math.floor(Math.random() * 5) + 1;
+      const h = Math.floor(rng() * 10) + 7;
+      const m = Math.floor(rng() * 6) * 10;
+      const n = Math.floor(rng() * 5) + 1;
       const newH = h + n;
       return { question: `What time is ${n} hour${n > 1 ? 's' : ''} after ${h}:${m.toString().padStart(2, '0')}?`, answer: `${newH}:${m.toString().padStart(2, '0')}`, working: `Working:\nStart: ${h}:${m.toString().padStart(2, '0')}\nAdd ${n} hour${n > 1 ? 's' : ''}\nAnswer: ${newH}:${m.toString().padStart(2, '0')}` };
     } else if (t === 2) {
-      const n = Math.floor(Math.random() * 5) + 1;
+      const n = Math.floor(rng() * 5) + 1;
       return { question: `How many minutes are in ${n} hour${n > 1 ? 's' : ''}?`, answer: `${n * 60} minutes`, working: `Working:\n1 hour = 60 minutes\n${n} × 60 = ${n * 60} minutes` };
     } else {
-      const hour = Math.floor(Math.random() * 12) + 1;
-      const minute = Math.floor(Math.random() * 6) * 10;
-      const addMinutes = Math.floor(Math.random() * 40) + 10;
+      const hour = Math.floor(rng() * 12) + 1;
+      const minute = Math.floor(rng() * 6) * 10;
+      const addMinutes = Math.floor(rng() * 40) + 10;
       const endMinute = minute + addMinutes;
       const endHour = hour + Math.floor(endMinute / 60);
       const finalMinute = endMinute % 60;
@@ -1385,13 +1386,13 @@ export class MathQuestionGenerator {
   }
 
   private hardFractionUnlike(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const denom1 = Math.floor(Math.random() * 4) + 2;
-      const denom2 = Math.floor(Math.random() * 4) + 2;
-      const num1 = Math.floor(Math.random() * (denom1 - 1)) + 1;
-      const num2 = Math.floor(Math.random() * (denom2 - 1)) + 1;
+      const denom1 = Math.floor(rng() * 4) + 2;
+      const denom2 = Math.floor(rng() * 4) + 2;
+      const num1 = Math.floor(rng() * (denom1 - 1)) + 1;
+      const num2 = Math.floor(rng() * (denom2 - 1)) + 1;
       const lcm = this.lcm(denom1, denom2);
       const newNum1 = num1 * (lcm / denom1);
       const newNum2 = num2 * (lcm / denom2);
@@ -1403,10 +1404,10 @@ export class MathQuestionGenerator {
         working: `Working:\nLCM of ${denom1} and ${denom2} = ${lcm}\n${num1}/${denom1} = ${newNum1}/${lcm}\n${num2}/${denom2} = ${newNum2}/${lcm}\n${newNum1}/${lcm} + ${newNum2}/${lcm} = ${sumNum}/${lcm}`,
       };
     } else if (t === 1) {
-      const denomA = Math.floor(Math.random() * 4) + 2;
-      const denomB = Math.floor(Math.random() * 4) + 2;
-      const numA = Math.floor(Math.random() * (denomA - 1)) + 1;
-      const numB = Math.floor(Math.random() * (denomB - 1)) + 1;
+      const denomA = Math.floor(rng() * 4) + 2;
+      const denomB = Math.floor(rng() * 4) + 2;
+      const numA = Math.floor(rng() * (denomA - 1)) + 1;
+      const numB = Math.floor(rng() * (denomB - 1)) + 1;
       const lcm = this.lcm(denomA, denomB);
       const lcmA = numA * (lcm / denomA);
       const lcmB = numB * (lcm / denomB);
@@ -1422,8 +1423,8 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       // Multiply a unit fraction by a whole number.
-      const denom = Math.floor(Math.random() * 8) + 3;
-      const whole = Math.floor(Math.random() * 6) + 2;
+      const denom = Math.floor(rng() * 8) + 3;
+      const whole = Math.floor(rng() * 6) + 2;
       const g = this.gcd(whole, denom);
       const simplifiedNum = whole / g;
       const simplifiedDenom = denom / g;
@@ -1436,8 +1437,8 @@ export class MathQuestionGenerator {
       };
     } else {
       // Divide a unit fraction by a whole number.
-      const denom = Math.floor(Math.random() * 6) + 2;
-      const whole = Math.floor(Math.random() * 6) + 2;
+      const denom = Math.floor(rng() * 6) + 2;
+      const whole = Math.floor(rng() * 6) + 2;
       const newDenom = denom * whole;
 
       return {
@@ -1450,11 +1451,11 @@ export class MathQuestionGenerator {
 
   private hardGeometryAngles(): Question {
     const types = ['angle_sum', 'classify_triangle', 'straight_line', 'vertically_opposite'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    const type = types[Math.floor(rng() * types.length)];
 
     if (type === 'angle_sum') {
-      const angle1 = Math.floor(Math.random() * 70) + 20;
-      const angle2 = Math.floor(Math.random() * 70) + 20;
+      const angle1 = Math.floor(rng() * 70) + 20;
+      const angle2 = Math.floor(rng() * 70) + 20;
       const angle3 = 180 - angle1 - angle2;
       return {
         question: `In a triangle, two angles are ${angle1}° and ${angle2}°. What is the third angle?\n\n[[TALLY_SVG]]${this.generateShapeSVG('Triangle')}`,
@@ -1463,8 +1464,8 @@ export class MathQuestionGenerator {
       };
     } else if (type === 'classify_triangle') {
       // Two given angles bounded so the derived third angle is always positive (20-140°).
-      const angle1 = Math.floor(Math.random() * 61) + 20;
-      const angle2 = Math.floor(Math.random() * 61) + 20;
+      const angle1 = Math.floor(rng() * 61) + 20;
+      const angle2 = Math.floor(rng() * 61) + 20;
       const angle3 = 180 - angle1 - angle2;
       const maxAngle = Math.max(angle1, angle2, angle3);
       const classification = maxAngle === 90 ? 'Right' : maxAngle > 90 ? 'Obtuse' : 'Acute';
@@ -1474,10 +1475,10 @@ export class MathQuestionGenerator {
         working: `Working:\nThird angle = 180° - ${angle1}° - ${angle2}° = ${angle3}°\nThe three angles are ${angle1}°, ${angle2}° and ${angle3}°.\nThe largest angle is ${maxAngle}°, so the triangle is ${classification}.`,
       };
     } else if (type === 'straight_line') {
-      const useThree = Math.random() < 0.5;
+      const useThree = rng() < 0.5;
       if (useThree) {
-        const a = Math.floor(Math.random() * 60) + 20;
-        const b = Math.floor(Math.random() * 60) + 20;
+        const a = Math.floor(rng() * 60) + 20;
+        const b = Math.floor(rng() * 60) + 20;
         const c = 180 - a - b;
         return {
           question: `Three angles lie on a straight line: ${a}°, ${b}°, and an unknown angle.\nFind the unknown angle.`,
@@ -1485,7 +1486,7 @@ export class MathQuestionGenerator {
           working: `Working:\nAngles on a straight line add up to 180°\n${a}° + ${b}° + ? = 180°\n? = 180° - ${a}° - ${b}° = ${c}°`,
         };
       } else {
-        const a = Math.floor(Math.random() * 150) + 15;
+        const a = Math.floor(rng() * 150) + 15;
         const b = 180 - a;
         return {
           question: `Two angles lie on a straight line.\n\n[[TALLY_SVG]]${this.generateAngleSVG(a)}\n\nOne angle is ${a}°. Find the other angle.`,
@@ -1494,7 +1495,7 @@ export class MathQuestionGenerator {
         };
       }
     } else {
-      const a = Math.floor(Math.random() * 150) + 15;
+      const a = Math.floor(rng() * 150) + 15;
       const b = 180 - a;
       return {
         question: `Two straight lines cross at a point, forming four angles.\nOne of the angles is ${a}°.\nFind the other three angles (list all three).`,
@@ -1505,12 +1506,12 @@ export class MathQuestionGenerator {
   }
 
   private hardPatterns(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
 
     if (t === 0) {
       // Multiplicative rule: each term is multiplied by a fixed ratio (not a constant-difference sequence).
-      const start = Math.floor(Math.random() * 4) + 2;
-      const ratio = Math.floor(Math.random() * 2) + 2;
+      const start = Math.floor(rng() * 4) + 2;
+      const ratio = Math.floor(rng() * 2) + 2;
       const terms = [start, start * ratio, start * ratio * ratio, start * ratio * ratio * ratio];
       const answer = terms[3] * ratio;
       const steps = terms.map((v, i) => (i === 0 ? `${v}` : `${terms[i - 1]} × ${ratio} = ${v}`)).join('\n');
@@ -1521,9 +1522,9 @@ export class MathQuestionGenerator {
       };
     } else if (t === 1) {
       // Two-step alternating rule: add x, then add y, then add x, then add y...
-      const start = Math.floor(Math.random() * 10) + 1;
-      const x = Math.floor(Math.random() * 6) + 2;
-      const y = Math.floor(Math.random() * 6) + 8;
+      const start = Math.floor(rng() * 10) + 1;
+      const x = Math.floor(rng() * 6) + 2;
+      const y = Math.floor(rng() * 6) + 8;
       const steps = [x, y, x, y];
       const terms = [start];
       for (const step of steps) terms.push(terms[terms.length - 1] + step);
@@ -1536,9 +1537,9 @@ export class MathQuestionGenerator {
       };
     } else {
       // Increasing-difference rule: the gap between consecutive terms grows by a fixed amount each step.
-      const start = Math.floor(Math.random() * 5) + 1;
-      const firstDiff = Math.floor(Math.random() * 3) + 1;
-      const increase = Math.floor(Math.random() * 2) + 1;
+      const start = Math.floor(rng() * 5) + 1;
+      const firstDiff = Math.floor(rng() * 3) + 1;
+      const increase = Math.floor(rng() * 2) + 1;
       const diffs = [firstDiff, firstDiff + increase, firstDiff + 2 * increase, firstDiff + 3 * increase];
       const terms = [start];
       for (const d of diffs) terms.push(terms[terms.length - 1] + d);
@@ -1558,9 +1559,9 @@ export class MathQuestionGenerator {
   }
 
   private hardAlgebra(): Question {
-    const x = Math.floor(Math.random() * 10) + 1;
-    const a = Math.floor(Math.random() * 5) + 1;
-    const b = Math.floor(Math.random() * 20) + 5;
+    const x = Math.floor(rng() * 10) + 1;
+    const a = Math.floor(rng() * 5) + 1;
+    const b = Math.floor(rng() * 20) + 5;
     const sum = a * x + b;
     const term = this.formatAlgebraTerm(a);
     const divisionStep = a === 1 ? '' : `\nx = ${sum - b} ÷ ${a}\nx = ${x}`;
@@ -1573,8 +1574,8 @@ export class MathQuestionGenerator {
   }
 
   private hardArea(): Question {
-    const length = Math.floor(Math.random() * 12) + 5;
-    const width = Math.floor(Math.random() * 8) + 3;
+    const length = Math.floor(rng() * 12) + 5;
+    const width = Math.floor(rng() * 8) + 3;
     const area = length * width;
 
     return {
@@ -1597,7 +1598,7 @@ export class MathQuestionGenerator {
       { w1: 5, d1: 8, w2: 10, noun: 'garden' },
       { w1: 9, d1: 4, w2: 3, noun: 'wall' },
     ];
-    const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const s = scenarios[Math.floor(rng() * scenarios.length)];
     const totalWork = s.w1 * s.d1;
     const d2 = totalWork / s.w2;
     return {
@@ -1608,7 +1609,7 @@ export class MathQuestionGenerator {
   }
 
   private hardShopkeeperChallenge(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
       const items = [
         { item: 'toys', qty: 8, cp: 25, sp: 30 },
@@ -1618,7 +1619,7 @@ export class MathQuestionGenerator {
         { item: 'toys', qty: 8, cp: 30, sp: 20 },
         { item: 'mugs', qty: 6, cp: 50, sp: 40 },
       ];
-      const sc = items[Math.floor(Math.random() * items.length)];
+      const sc = items[Math.floor(rng() * items.length)];
       const { item, qty, cp, sp } = sc;
       const totalCost = qty * cp;
       const totalRevenue = (qty - 1) * sp;
@@ -1638,7 +1639,7 @@ export class MathQuestionGenerator {
         { qty: 6, price: 50, disc: 10 },
         { qty: 4, price: 75, disc: 20 },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const total = s.qty * s.price;
       const discount = (total * s.disc) / 100;
       const finalAmount = total - discount;
@@ -1654,7 +1655,7 @@ export class MathQuestionGenerator {
         { wage: 300, days: 4, bonus: 200, expense: 250 },
         { wage: 250, days: 3, bonus: 100, expense: 300 },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const totalEarned = s.wage * s.days + s.bonus;
       const remaining = totalEarned - s.expense;
       return {
@@ -1666,11 +1667,11 @@ export class MathQuestionGenerator {
   }
 
   private hardMisleadingContext(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
-      const length = Math.floor(Math.random() * 10) + 8;
-      const width = Math.floor(Math.random() * 6) + 4;
-      const depth = Math.floor(Math.random() * 3) + 2;
+      const length = Math.floor(rng() * 10) + 8;
+      const width = Math.floor(rng() * 6) + 4;
+      const depth = Math.floor(rng() * 3) + 2;
       const perimeter = 2 * (length + width);
       return {
         question: `A rectangular garden is ${length} m long, ${width} m wide, and has a ${depth} m tall boundary wall.\nWhat is the perimeter of the garden?`,
@@ -1679,10 +1680,10 @@ export class MathQuestionGenerator {
       };
     } else if (t === 1) {
       const trios = [['Arjun', 'Bhavi', 'Chetna'], ['Rahul', 'Seema', 'Tarun'], ['Pooja', 'Qasim', 'Riya']];
-      const trio = trios[Math.floor(Math.random() * trios.length)];
-      const scoreA = Math.floor(Math.random() * 20) + 60;
-      const scoreB = Math.floor(Math.random() * 20) + 60;
-      const scoreC = Math.floor(Math.random() * 20) + 60;
+      const trio = trios[Math.floor(rng() * trios.length)];
+      const scoreA = Math.floor(rng() * 20) + 60;
+      const scoreB = Math.floor(rng() * 20) + 60;
+      const scoreC = Math.floor(rng() * 20) + 60;
       const diff = Math.abs(scoreA - scoreB);
       const higher = scoreA >= scoreB ? trio[0] : trio[1];
       const lower = scoreA >= scoreB ? trio[1] : trio[0];
@@ -1698,7 +1699,7 @@ export class MathQuestionGenerator {
         { speed: 50, time: 4, detail: 'green truck', extra: 'The truck is 5 years old.' },
         { speed: 45, time: 4, detail: 'school van', extra: 'The van carries 3 teachers and 15 students.' },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const distance = s.speed * s.time;
       return {
         question: `A ${s.detail} travels at ${s.speed} km/h for ${s.time} hours.\n${s.extra}\nHow far does the ${s.detail} travel?`,
@@ -1711,7 +1712,7 @@ export class MathQuestionGenerator {
   // IGCSE variants of hardShopkeeperChallenge / hardMisleadingContext — dollars/international
   // names instead of rupees/Indian names, otherwise identical question shapes.
   private igcseShopkeeperChallenge(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
       const items = [
         { item: 'toys', qty: 8, cp: 25, sp: 30 },
@@ -1721,7 +1722,7 @@ export class MathQuestionGenerator {
         { item: 'toys', qty: 8, cp: 30, sp: 20 },
         { item: 'mugs', qty: 6, cp: 50, sp: 40 },
       ];
-      const sc = items[Math.floor(Math.random() * items.length)];
+      const sc = items[Math.floor(rng() * items.length)];
       const { item, qty, cp, sp } = sc;
       const totalCost = qty * cp;
       const totalRevenue = (qty - 1) * sp;
@@ -1741,7 +1742,7 @@ export class MathQuestionGenerator {
         { qty: 6, price: 50, disc: 10 },
         { qty: 4, price: 75, disc: 20 },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const name = this.randomInternationalName();
       const total = s.qty * s.price;
       const discount = (total * s.disc) / 100;
@@ -1758,7 +1759,7 @@ export class MathQuestionGenerator {
         { wage: 300, days: 4, bonus: 200, expense: 250 },
         { wage: 250, days: 3, bonus: 100, expense: 300 },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const name = this.randomInternationalName();
       const totalEarned = s.wage * s.days + s.bonus;
       const remaining = totalEarned - s.expense;
@@ -1771,11 +1772,11 @@ export class MathQuestionGenerator {
   }
 
   private igcseMisleadingContext(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
-      const length = Math.floor(Math.random() * 10) + 8;
-      const width = Math.floor(Math.random() * 6) + 4;
-      const depth = Math.floor(Math.random() * 3) + 2;
+      const length = Math.floor(rng() * 10) + 8;
+      const width = Math.floor(rng() * 6) + 4;
+      const depth = Math.floor(rng() * 3) + 2;
       const perimeter = 2 * (length + width);
       return {
         question: `A rectangular garden is ${length} m long, ${width} m wide, and has a ${depth} m tall boundary wall.\nWhat is the perimeter of the garden?`,
@@ -1784,10 +1785,10 @@ export class MathQuestionGenerator {
       };
     } else if (t === 1) {
       const trios = [['Emma', 'Liam', 'Sofia'], ['Noah', 'Olivia', 'Ethan'], ['Ava', 'Oliver', 'Mia']];
-      const trio = trios[Math.floor(Math.random() * trios.length)];
-      const scoreA = Math.floor(Math.random() * 20) + 60;
-      const scoreB = Math.floor(Math.random() * 20) + 60;
-      const scoreC = Math.floor(Math.random() * 20) + 60;
+      const trio = trios[Math.floor(rng() * trios.length)];
+      const scoreA = Math.floor(rng() * 20) + 60;
+      const scoreB = Math.floor(rng() * 20) + 60;
+      const scoreC = Math.floor(rng() * 20) + 60;
       const diff = Math.abs(scoreA - scoreB);
       const higher = scoreA >= scoreB ? trio[0] : trio[1];
       const lower = scoreA >= scoreB ? trio[1] : trio[0];
@@ -1803,7 +1804,7 @@ export class MathQuestionGenerator {
         { speed: 50, time: 4, detail: 'green truck', extra: 'The truck is 5 years old.' },
         { speed: 45, time: 4, detail: 'school van', extra: 'The van carries 3 teachers and 15 students.' },
       ];
-      const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const s = scenarios[Math.floor(rng() * scenarios.length)];
       const distance = s.speed * s.time;
       return {
         question: `A ${s.detail} travels at ${s.speed} km/h for ${s.time} hours.\n${s.extra}\nHow far does the ${s.detail} travel?`,
@@ -1815,21 +1816,21 @@ export class MathQuestionGenerator {
 
   private randomIndianName(): string {
     const names = ['Aarav', 'Diya', 'Kabir', 'Anaya', 'Vihaan', 'Ishaan', 'Saanvi', 'Reyansh', 'Myra', 'Arjun'];
-    return names[Math.floor(Math.random() * names.length)];
+    return names[Math.floor(rng() * names.length)];
   }
 
   private randomInternationalName(): string {
     const names = ['Emma', 'Liam', 'Sofia', 'Noah', 'Ava', 'Oliver', 'Mia', 'Lucas', 'Olivia', 'Ethan'];
-    return names[Math.floor(Math.random() * names.length)];
+    return names[Math.floor(rng() * names.length)];
   }
 
   private hardInverseProblems(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const name = this.randomIndianName();
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 20) + 4;
-      const b = Math.floor(Math.random() * 15) + 3;
+      const a = Math.floor(rng() * 20) + 4;
+      const b = Math.floor(rng() * 15) + 3;
       const product = a * b;
       return {
         question: `The product of two numbers is ${product}. One number is ${a}.\nFind the other number.`,
@@ -1837,8 +1838,8 @@ export class MathQuestionGenerator {
         working: `Working:\nOther number = Product ÷ known number\n= ${product} ÷ ${a} = ${b}`,
       };
     } else if (t === 1) {
-      const divisor = Math.floor(Math.random() * 9) + 4;
-      const quotient = Math.floor(Math.random() * 25) + 6;
+      const divisor = Math.floor(rng() * 9) + 4;
+      const quotient = Math.floor(rng() * 25) + 6;
       const number = divisor * quotient;
       return {
         question: `A number divided by ${divisor} gives ${quotient}.\nWhat is the number?`,
@@ -1847,9 +1848,9 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       const purchases = ['a cricket bat', 'new shoes', 'a birthday gift', 'a school bag', 'sweets for Diwali'];
-      const purchase = purchases[Math.floor(Math.random() * purchases.length)];
-      const left = Math.floor(Math.random() * 200) + 50;
-      const spent = Math.floor(Math.random() * 300) + 100;
+      const purchase = purchases[Math.floor(rng() * purchases.length)];
+      const left = Math.floor(rng() * 200) + 50;
+      const spent = Math.floor(rng() * 300) + 100;
       const start = spent + left;
       return {
         question: `After spending ₹${spent} on ${purchase}, ${name} has ₹${left} left.\nHow much money did ${name} start with?`,
@@ -1857,8 +1858,8 @@ export class MathQuestionGenerator {
         working: `Working:\nMoney at start = amount spent + amount left\n= ₹${spent} + ₹${left} = ₹${start}`,
       };
     } else {
-      const n = Math.floor(Math.random() * 50) + 10;
-      const sum = Math.floor(Math.random() * 200) + 100;
+      const n = Math.floor(rng() * 50) + 10;
+      const sum = Math.floor(rng() * 200) + 100;
       const number = sum - n;
       return {
         question: `${n} is added to a number to get ${sum}.\nFind the number.`,
@@ -1869,11 +1870,11 @@ export class MathQuestionGenerator {
   }
 
   private hardEstimateFirst(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 700) + 150;
-      const b = Math.floor(Math.random() * 700) + 150;
+      const a = Math.floor(rng() * 700) + 150;
+      const b = Math.floor(rng() * 700) + 150;
       const exact = a + b;
       const ra = Math.round(a / 100) * 100;
       const rb = Math.round(b / 100) * 100;
@@ -1884,8 +1885,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} + ${rb} = ${estimate}\nExact = ${a} + ${b} = ${exact}`,
       };
     } else if (t === 1) {
-      let a = Math.floor(Math.random() * 700) + 300;
-      let b = Math.floor(Math.random() * 400) + 100;
+      let a = Math.floor(rng() * 700) + 300;
+      let b = Math.floor(rng() * 400) + 100;
       if (b > a) { [a, b] = [b, a]; }
       const exact = a - b;
       const ra = Math.round(a / 100) * 100;
@@ -1898,9 +1899,9 @@ export class MathQuestionGenerator {
       };
     } else {
       const items = ['mangoes', 'notebooks', 'bangles', 'story books', 'pencil boxes'];
-      const item = items[Math.floor(Math.random() * items.length)];
-      const qty = Math.floor(Math.random() * 6) + 4;
-      const price = Math.floor(Math.random() * 40) + 12;
+      const item = items[Math.floor(rng() * items.length)];
+      const qty = Math.floor(rng() * 6) + 4;
+      const price = Math.floor(rng() * 40) + 12;
       const exact = qty * price;
       const rp = Math.round(price / 10) * 10;
       const estimate = qty * rp;
@@ -1913,11 +1914,11 @@ export class MathQuestionGenerator {
   }
 
   private hardFindAllSolutions(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 10) + 3;
-      const b = Math.floor(Math.random() * 10) + 3;
+      const a = Math.floor(rng() * 10) + 3;
+      const b = Math.floor(rng() * 10) + 3;
       const product = a * b;
       return {
         question: `Write two numbers that multiply together to give ${product}.`,
@@ -1926,7 +1927,7 @@ export class MathQuestionGenerator {
       };
     } else if (t === 1) {
       const candidates = [12, 16, 18, 20, 24, 28, 30, 36, 40, 42, 48];
-      const n = candidates[Math.floor(Math.random() * candidates.length)];
+      const n = candidates[Math.floor(rng() * candidates.length)];
       const pairs: string[] = [];
       for (let i = 1; i * i <= n; i++) {
         if (n % i === 0) pairs.push(`${i}×${n / i}`);
@@ -1937,7 +1938,7 @@ export class MathQuestionGenerator {
         working: `Working:\nAll factor pairs of ${n}: ${pairs.join(', ')}\nThere are ${pairs.length} factor pairs in total — that's how you know you found them all.`,
       };
     } else {
-      const s = Math.floor(Math.random() * 10) + 4;
+      const s = Math.floor(rng() * 10) + 4;
       const found: number[] = [];
       for (let num = 10; num <= 99; num++) {
         const d1 = Math.floor(num / 10);
@@ -1953,15 +1954,15 @@ export class MathQuestionGenerator {
   }
 
   private hardSpotTheError(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
     const name = this.randomIndianName();
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 11) + 4;
-      const b = Math.floor(Math.random() * 9) + 3;
+      const a = Math.floor(rng() * 11) + 4;
+      const b = Math.floor(rng() * 9) + 3;
       const correct = a * b;
       const mistakes = [correct + a, correct - a, correct + b, correct - b];
-      let wrong = mistakes[Math.floor(Math.random() * mistakes.length)];
+      let wrong = mistakes[Math.floor(rng() * mistakes.length)];
       if (wrong === correct || wrong <= 0) wrong = correct + a;
       return {
         question: `${name} calculated ${a} × ${b} = ${wrong}.\nIs this correct? If not, what is the right answer?`,
@@ -1969,11 +1970,11 @@ export class MathQuestionGenerator {
         working: `Working:\n${a} × ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
       };
     } else {
-      const a = Math.floor(Math.random() * 300) + 100;
-      const b = Math.floor(Math.random() * 250) + 50;
+      const a = Math.floor(rng() * 300) + 100;
+      const b = Math.floor(rng() * 250) + 50;
       const correct = a + b;
-      const delta = Math.floor(Math.random() * 15) + 1;
-      const wrong = Math.random() < 0.5 ? correct + delta : correct - delta;
+      const delta = Math.floor(rng() * 15) + 1;
+      const wrong = rng() < 0.5 ? correct + delta : correct - delta;
       return {
         question: `${name} added ${a} + ${b} and got ${wrong}.\nIs this correct? If not, what is the right answer?`,
         answer: `No, the correct answer is ${correct}`,
@@ -2002,7 +2003,7 @@ export class MathQuestionGenerator {
   // or one too few power of ten (wrong number of zeros / decimal point one place
   // out) — never a random unrelated number.
   private plausibleWrongResult(correct: number): number {
-    const raw = Math.random() < 0.5 ? correct * 10 : correct / 10;
+    const raw = rng() < 0.5 ? correct * 10 : correct / 10;
     return Math.round(raw * 1000) / 1000;
   }
 
@@ -2018,15 +2019,15 @@ export class MathQuestionGenerator {
   }
 
   private hardSpotTheErrorDiagram(): Question {
-    const centre = Math.floor(Math.random() * 898) + 2; // 2-899: 1, 2, or 3 digits
+    const centre = Math.floor(rng() * 898) + 2; // 2-899: 1, 2, or 3 digits
 
-    const branchCount = Math.random() < 0.5 ? 4 : 5;
+    const branchCount = rng() < 0.5 ? 4 : 5;
     const chosenOps = shuffleArray(this.FLOWER_OPS).slice(0, branchCount);
 
-    const numErrors = Math.random() < 0.35 ? 2 : 1;
+    const numErrors = rng() < 0.35 ? 2 : 1;
     const errorIndices = new Set<number>();
     while (errorIndices.size < Math.min(numErrors, branchCount - 2)) {
-      errorIndices.add(Math.floor(Math.random() * branchCount));
+      errorIndices.add(Math.floor(rng() * branchCount));
     }
 
     const branches = chosenOps.map((o, i) => {
@@ -2058,18 +2059,18 @@ export class MathQuestionGenerator {
   }
 
   private hardLogicalReasoning(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
 
     if (t === 0) {
       const settings = ['a school wall', 'a village well', 'a new road', 'a community hall', 'a garden fence'];
-      const setting = settings[Math.floor(Math.random() * settings.length)];
+      const setting = settings[Math.floor(rng() * settings.length)];
       const settingNoun = setting.replace(/^a\s+/, '');
-      const w1 = Math.floor(Math.random() * 6) + 3;
-      const d1 = Math.floor(Math.random() * 8) + 4;
+      const w1 = Math.floor(rng() * 6) + 3;
+      const d1 = Math.floor(rng() * 8) + 4;
       const totalWork = w1 * d1;
       const divisors: number[] = [];
       for (let i = 2; i <= 12; i++) { if (totalWork % i === 0 && i !== w1) divisors.push(i); }
-      const w2 = divisors.length > 0 ? divisors[Math.floor(Math.random() * divisors.length)] : w1 * 2;
+      const w2 = divisors.length > 0 ? divisors[Math.floor(rng() * divisors.length)] : w1 * 2;
       const d2 = totalWork / w2;
       return {
         question: `${w1} workers can build ${setting} in ${d1} days.\nHow many days will ${w2} workers take to build the same ${settingNoun}?`,
@@ -2080,11 +2081,11 @@ export class MathQuestionGenerator {
       const itemPairs: [string, string][] = [
         ['mangoes', 'mango'], ['bangles', 'bangle'], ['notebooks', 'notebook'], ['oranges', 'orange'], ['pencils', 'pencil'],
       ];
-      const [item, itemSingular] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
-      const items1 = Math.floor(Math.random() * 6) + 3;
-      const unitCost = Math.floor(Math.random() * 8) + 2;
+      const [item, itemSingular] = itemPairs[Math.floor(rng() * itemPairs.length)];
+      const items1 = Math.floor(rng() * 6) + 3;
+      const unitCost = Math.floor(rng() * 8) + 2;
       const cost1 = items1 * unitCost;
-      const items2 = Math.floor(Math.random() * 10) + 5;
+      const items2 = Math.floor(rng() * 10) + 5;
       const cost2 = items2 * unitCost;
       return {
         question: `If ${items1} ${item} cost ₹${cost1}, how much do ${items2} ${item} cost?`,
@@ -2095,17 +2096,17 @@ export class MathQuestionGenerator {
   }
 
   private hardMisleadingInfo(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
     const name = this.randomIndianName();
 
     if (t === 0) {
       const itemPairs: [string, string][] = [
         ['marbles', 'stickers'], ['mangoes', 'oranges'], ['pencils', 'erasers'], ['stamps', 'coins'], ['bangles', 'ribbons'],
       ];
-      const [item1, item2] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
-      const a = Math.floor(Math.random() * 30) + 20;
-      const b = Math.floor(Math.random() * 25) + 10;
-      const c = Math.floor(Math.random() * (a - 5)) + 1;
+      const [item1, item2] = itemPairs[Math.floor(rng() * itemPairs.length)];
+      const a = Math.floor(rng() * 30) + 20;
+      const b = Math.floor(rng() * 25) + 10;
+      const c = Math.floor(rng() * (a - 5)) + 1;
       const left = a - c;
       return {
         question: `${name} has ${a} ${item1} and ${b} ${item2}.\n${name} gives away ${c} ${item1} to a friend.\nHow many ${item1} does ${name} have left?`,
@@ -2114,10 +2115,10 @@ export class MathQuestionGenerator {
       };
     } else {
       const items = ['toffees', 'story books', 'crayons', 'chocolates'];
-      const item = items[Math.floor(Math.random() * items.length)];
-      const price = Math.floor(Math.random() * 8) + 3;
-      const qty = Math.floor(Math.random() * 8) + 4;
-      const age = Math.floor(Math.random() * 6) + 8;
+      const item = items[Math.floor(rng() * items.length)];
+      const price = Math.floor(rng() * 8) + 3;
+      const qty = Math.floor(rng() * 8) + 4;
+      const age = Math.floor(rng() * 6) + 8;
       const total = price * qty;
       return {
         question: `${name}, who is ${age} years old, buys ${qty} ${item} at ₹${price} each.\nHow much does ${name} spend in total?`,
@@ -2132,12 +2133,12 @@ export class MathQuestionGenerator {
   // contexts (dollars, international names) instead of Indian rupees/names.
 
   private igcseInverseProblems(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     const name = this.randomInternationalName();
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 20) + 4;
-      const b = Math.floor(Math.random() * 15) + 3;
+      const a = Math.floor(rng() * 20) + 4;
+      const b = Math.floor(rng() * 15) + 3;
       const product = a * b;
       return {
         question: `The product of two numbers is ${product}. One number is ${a}.\nFind the other number.`,
@@ -2145,8 +2146,8 @@ export class MathQuestionGenerator {
         working: `Working:\nOther number = Product ÷ known number\n= ${product} ÷ ${a} = ${b}`,
       };
     } else if (t === 1) {
-      const divisor = Math.floor(Math.random() * 9) + 4;
-      const quotient = Math.floor(Math.random() * 25) + 6;
+      const divisor = Math.floor(rng() * 9) + 4;
+      const quotient = Math.floor(rng() * 25) + 6;
       const number = divisor * quotient;
       return {
         question: `A number divided by ${divisor} gives ${quotient}.\nWhat is the number?`,
@@ -2155,9 +2156,9 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       const purchases = ['a new bicycle', 'football boots', 'a birthday present', 'a school bag', 'holiday souvenirs'];
-      const purchase = purchases[Math.floor(Math.random() * purchases.length)];
-      const left = Math.floor(Math.random() * 200) + 50;
-      const spent = Math.floor(Math.random() * 300) + 100;
+      const purchase = purchases[Math.floor(rng() * purchases.length)];
+      const left = Math.floor(rng() * 200) + 50;
+      const spent = Math.floor(rng() * 300) + 100;
       const start = spent + left;
       return {
         question: `After spending $${spent} on ${purchase}, ${name} has $${left} left.\nHow much money did ${name} start with?`,
@@ -2165,8 +2166,8 @@ export class MathQuestionGenerator {
         working: `Working:\nMoney at start = amount spent + amount left\n= $${spent} + $${left} = $${start}`,
       };
     } else {
-      const n = Math.floor(Math.random() * 50) + 10;
-      const sum = Math.floor(Math.random() * 200) + 100;
+      const n = Math.floor(rng() * 50) + 10;
+      const sum = Math.floor(rng() * 200) + 100;
       const number = sum - n;
       return {
         question: `${n} is added to a number to get ${sum}.\nFind the number.`,
@@ -2177,11 +2178,11 @@ export class MathQuestionGenerator {
   }
 
   private igcseEstimateFirst(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 700) + 150;
-      const b = Math.floor(Math.random() * 700) + 150;
+      const a = Math.floor(rng() * 700) + 150;
+      const b = Math.floor(rng() * 700) + 150;
       const exact = a + b;
       const ra = Math.round(a / 100) * 100;
       const rb = Math.round(b / 100) * 100;
@@ -2192,8 +2193,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${a} rounds to ${ra}\n${b} rounds to ${rb}\nEstimate = ${ra} + ${rb} = ${estimate}\nExact = ${a} + ${b} = ${exact}`,
       };
     } else if (t === 1) {
-      let a = Math.floor(Math.random() * 700) + 300;
-      let b = Math.floor(Math.random() * 400) + 100;
+      let a = Math.floor(rng() * 700) + 300;
+      let b = Math.floor(rng() * 400) + 100;
       if (b > a) { [a, b] = [b, a]; }
       const exact = a - b;
       const ra = Math.round(a / 100) * 100;
@@ -2206,9 +2207,9 @@ export class MathQuestionGenerator {
       };
     } else {
       const items = ['postcards', 'notebooks', 'badges', 'storybooks', 'pencil cases'];
-      const item = items[Math.floor(Math.random() * items.length)];
-      const qty = Math.floor(Math.random() * 6) + 4;
-      const price = Math.floor(Math.random() * 40) + 12;
+      const item = items[Math.floor(rng() * items.length)];
+      const qty = Math.floor(rng() * 6) + 4;
+      const price = Math.floor(rng() * 40) + 12;
       const exact = qty * price;
       const rp = Math.round(price / 10) * 10;
       const estimate = qty * rp;
@@ -2221,15 +2222,15 @@ export class MathQuestionGenerator {
   }
 
   private igcseSpotTheError(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
     const name = this.randomInternationalName();
 
     if (t === 0) {
-      const a = Math.floor(Math.random() * 11) + 4;
-      const b = Math.floor(Math.random() * 9) + 3;
+      const a = Math.floor(rng() * 11) + 4;
+      const b = Math.floor(rng() * 9) + 3;
       const correct = a * b;
       const mistakes = [correct + a, correct - a, correct + b, correct - b];
-      let wrong = mistakes[Math.floor(Math.random() * mistakes.length)];
+      let wrong = mistakes[Math.floor(rng() * mistakes.length)];
       if (wrong === correct || wrong <= 0) wrong = correct + a;
       return {
         question: `${name} calculated ${a} × ${b} = ${wrong}.\nIs this correct? If not, what is the right answer?`,
@@ -2237,11 +2238,11 @@ export class MathQuestionGenerator {
         working: `Working:\n${a} × ${b} = ${correct}\n${name}'s answer of ${wrong} is incorrect.\nThe correct answer is ${correct}.`,
       };
     } else {
-      const a = Math.floor(Math.random() * 300) + 100;
-      const b = Math.floor(Math.random() * 250) + 50;
+      const a = Math.floor(rng() * 300) + 100;
+      const b = Math.floor(rng() * 250) + 50;
       const correct = a + b;
-      const delta = Math.floor(Math.random() * 15) + 1;
-      const wrong = Math.random() < 0.5 ? correct + delta : correct - delta;
+      const delta = Math.floor(rng() * 15) + 1;
+      const wrong = rng() < 0.5 ? correct + delta : correct - delta;
       return {
         question: `${name} added ${a} + ${b} and got ${wrong}.\nIs this correct? If not, what is the right answer?`,
         answer: `No, the correct answer is ${correct}`,
@@ -2251,18 +2252,18 @@ export class MathQuestionGenerator {
   }
 
   private igcseLogicalReasoning(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
 
     if (t === 0) {
       const settings = ['a garden wall', 'a playground fence', 'a new footpath', 'a community hall', 'a bike shed'];
-      const setting = settings[Math.floor(Math.random() * settings.length)];
+      const setting = settings[Math.floor(rng() * settings.length)];
       const settingNoun = setting.replace(/^a\s+/, '');
-      const w1 = Math.floor(Math.random() * 6) + 3;
-      const d1 = Math.floor(Math.random() * 8) + 4;
+      const w1 = Math.floor(rng() * 6) + 3;
+      const d1 = Math.floor(rng() * 8) + 4;
       const totalWork = w1 * d1;
       const divisors: number[] = [];
       for (let i = 2; i <= 12; i++) { if (totalWork % i === 0 && i !== w1) divisors.push(i); }
-      const w2 = divisors.length > 0 ? divisors[Math.floor(Math.random() * divisors.length)] : w1 * 2;
+      const w2 = divisors.length > 0 ? divisors[Math.floor(rng() * divisors.length)] : w1 * 2;
       const d2 = totalWork / w2;
       return {
         question: `${w1} workers can build ${setting} in ${d1} days.\nHow many days will ${w2} workers take to build the same ${settingNoun}?`,
@@ -2273,11 +2274,11 @@ export class MathQuestionGenerator {
       const itemPairs: [string, string][] = [
         ['oranges', 'orange'], ['badges', 'badge'], ['notebooks', 'notebook'], ['postcards', 'postcard'], ['pencils', 'pencil'],
       ];
-      const [item, itemSingular] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
-      const items1 = Math.floor(Math.random() * 6) + 3;
-      const unitCost = Math.floor(Math.random() * 8) + 2;
+      const [item, itemSingular] = itemPairs[Math.floor(rng() * itemPairs.length)];
+      const items1 = Math.floor(rng() * 6) + 3;
+      const unitCost = Math.floor(rng() * 8) + 2;
       const cost1 = items1 * unitCost;
-      const items2 = Math.floor(Math.random() * 10) + 5;
+      const items2 = Math.floor(rng() * 10) + 5;
       const cost2 = items2 * unitCost;
       return {
         question: `If ${items1} ${item} cost $${cost1}, how much do ${items2} ${item} cost?`,
@@ -2288,17 +2289,17 @@ export class MathQuestionGenerator {
   }
 
   private igcseMisleadingInfo(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
     const name = this.randomInternationalName();
 
     if (t === 0) {
       const itemPairs: [string, string][] = [
         ['marbles', 'stickers'], ['badges', 'postcards'], ['pencils', 'erasers'], ['stamps', 'coins'], ['ribbons', 'buttons'],
       ];
-      const [item1, item2] = itemPairs[Math.floor(Math.random() * itemPairs.length)];
-      const a = Math.floor(Math.random() * 30) + 20;
-      const b = Math.floor(Math.random() * 25) + 10;
-      const c = Math.floor(Math.random() * (a - 5)) + 1;
+      const [item1, item2] = itemPairs[Math.floor(rng() * itemPairs.length)];
+      const a = Math.floor(rng() * 30) + 20;
+      const b = Math.floor(rng() * 25) + 10;
+      const c = Math.floor(rng() * (a - 5)) + 1;
       const left = a - c;
       return {
         question: `${name} has ${a} ${item1} and ${b} ${item2}.\n${name} gives away ${c} ${item1} to a friend.\nHow many ${item1} does ${name} have left?`,
@@ -2307,10 +2308,10 @@ export class MathQuestionGenerator {
       };
     } else {
       const items = ['sweets', 'storybooks', 'crayons', 'chocolate bars'];
-      const item = items[Math.floor(Math.random() * items.length)];
-      const price = Math.floor(Math.random() * 8) + 3;
-      const qty = Math.floor(Math.random() * 8) + 4;
-      const age = Math.floor(Math.random() * 6) + 8;
+      const item = items[Math.floor(rng() * items.length)];
+      const price = Math.floor(rng() * 8) + 3;
+      const qty = Math.floor(rng() * 8) + 4;
+      const age = Math.floor(rng() * 6) + 8;
       const total = price * qty;
       return {
         question: `${name}, who is ${age} years old, buys ${qty} ${item} at $${price} each.\nHow much does ${name} spend in total?`,
@@ -2325,13 +2326,13 @@ export class MathQuestionGenerator {
   // canBeMCQ() and the Mock Exam / worksheet generators key off selfAssess to
   // exclude these from anything that needs a fixed, gradable answer.
   private hardExplainReasoning(): Question {
-    const t = Math.floor(Math.random() * 8);
+    const t = Math.floor(rng() * 8);
     const currency = this.curriculum === 'IGCSE' ? '$' : '₹';
     const name = this.curriculum === 'IGCSE' ? this.randomInternationalName() : this.randomIndianName();
 
     if (t === 0) {
-      const l = Math.floor(Math.random() * 10) + 4;
-      const w = Math.floor(Math.random() * 8) + 3;
+      const l = Math.floor(rng() * 10) + 4;
+      const w = Math.floor(rng() * 8) + 3;
       return {
         question: `Explain how you would find the area of a rectangle that is ${l} cm long and ${w} cm wide.`,
         answer: 'SELF_ASSESS',
@@ -2340,9 +2341,9 @@ export class MathQuestionGenerator {
         modelAnswer: `To find the area, I multiply the length by the width: ${l} cm × ${w} cm = ${l * w} cm². I use multiplication, not addition, because area measures the space covered by a flat shape — it's like counting ${l} rows of ${w} little squares each.`,
       };
     } else if (t === 1) {
-      const qty = Math.floor(Math.random() * 8) + 4;
-      const cp = Math.floor(Math.random() * 30) + 20;
-      const sp = cp + Math.floor(Math.random() * 15) + 5;
+      const qty = Math.floor(rng() * 8) + 4;
+      const cp = Math.floor(rng() * 30) + 20;
+      const sp = cp + Math.floor(rng() * 15) + 5;
       return {
         question: `${name} buys ${qty} toys at ${currency}${cp} each and sells all of them at ${currency}${sp} each.\nExplain how you would find out whether ${name} made a profit or a loss, and by how much.`,
         answer: 'SELF_ASSESS',
@@ -2351,8 +2352,8 @@ export class MathQuestionGenerator {
         modelAnswer: `First, I'd find the total cost by multiplying the quantity by the cost price: ${qty} × ${currency}${cp}. Then I'd find the total money made by multiplying the quantity by the selling price: ${qty} × ${currency}${sp}. Since the selling price is higher than the cost price, there's a profit — I subtract the total cost from the total revenue to find how much.`,
       };
     } else if (t === 2) {
-      const d1 = Math.floor(Math.random() * 4) + 2;
-      const d2 = Math.floor(Math.random() * 4) + 2;
+      const d1 = Math.floor(rng() * 4) + 2;
+      const d2 = Math.floor(rng() * 4) + 2;
       return {
         question: `Explain how you would find the LCM of ${d1} and ${d2}, and then find it.`,
         answer: 'SELF_ASSESS',
@@ -2363,8 +2364,8 @@ export class MathQuestionGenerator {
     } else if (t === 3) {
       const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31];
       const composites = [4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 21, 22];
-      const isPrimeQ = Math.random() < 0.5;
-      const num = isPrimeQ ? primes[Math.floor(Math.random() * primes.length)] : composites[Math.floor(Math.random() * composites.length)];
+      const isPrimeQ = rng() < 0.5;
+      const num = isPrimeQ ? primes[Math.floor(rng() * primes.length)] : composites[Math.floor(rng() * composites.length)];
       return {
         question: `Explain why ${num} is a ${isPrimeQ ? 'prime' : 'composite'} number.`,
         answer: 'SELF_ASSESS',
@@ -2384,8 +2385,8 @@ export class MathQuestionGenerator {
             })(),
       };
     } else if (t === 4) {
-      const b = [2, 3, 4, 5, 6, 9, 10][Math.floor(Math.random() * 7)];
-      const multiplier = Math.floor(Math.random() * 15) + 5;
+      const b = [2, 3, 4, 5, 6, 9, 10][Math.floor(rng() * 7)];
+      const multiplier = Math.floor(rng() * 15) + 5;
       const a = b * multiplier;
       return {
         question: `Explain how you would check if ${a} is divisible by ${b}.`,
@@ -2401,7 +2402,7 @@ export class MathQuestionGenerator {
         { claim: `multiplying two numbers always makes the answer bigger`, why: `Multiplying by 1 keeps a number the same, like 5 × 1 = 5, and multiplying by 0 makes it 0, like 5 × 0 = 0. So multiplying does not always make the answer bigger — it depends on the numbers used.` },
         { claim: `a number ending in 0, like 30, is a multiple of 10 but not a multiple of 5`, why: `Since 10 = 2 × 5, every multiple of 10 is automatically also a multiple of 5. So a number ending in 0, like 30, is both a multiple of 10 and a multiple of 5.` },
       ];
-      const pick = claims[Math.floor(Math.random() * claims.length)];
+      const pick = claims[Math.floor(rng() * claims.length)];
       return {
         question: `A friend says "${pick.claim}". Explain why they are wrong.`,
         answer: 'SELF_ASSESS',
@@ -2410,9 +2411,9 @@ export class MathQuestionGenerator {
         modelAnswer: pick.why,
       };
     } else if (t === 6) {
-      const num = Math.floor(Math.random() * 9000) + 1000;
+      const num = Math.floor(rng() * 9000) + 1000;
       const numStr = num.toString();
-      const idx = Math.floor(Math.random() * numStr.length);
+      const idx = Math.floor(rng() * numStr.length);
       const digit = numStr[idx];
       const placeName = this.getPlaceName(numStr.length - idx - 1);
       const placeValue = parseInt(digit) * Math.pow(10, numStr.length - idx - 1);
@@ -2424,8 +2425,8 @@ export class MathQuestionGenerator {
         modelAnswer: `The face value of a digit is just the digit itself, so the face value of ${digit} is ${digit}. The place value depends on where the digit sits in the number — since ${digit} is in the ${placeName} place, its place value is ${placeValue}. Face value never changes, but place value changes depending on the digit's position.`,
       };
     } else {
-      const a = Math.floor(Math.random() * 400) + 100;
-      const b = Math.floor(Math.random() * 400) + 100;
+      const a = Math.floor(rng() * 400) + 100;
+      const b = Math.floor(rng() * 400) + 100;
       const roundedA = Math.round(a / 10) * 10;
       const roundedB = Math.round(b / 10) * 10;
       return {
@@ -2751,8 +2752,8 @@ export class MathQuestionGenerator {
 
   private easyTallyChart(): Question {
     const items = ['Apples', 'Oranges', 'Bananas', 'Grapes'];
-    const item1 = items[Math.floor(Math.random() * items.length)];
-    const count1 = Math.floor(Math.random() * 15) + 5;
+    const item1 = items[Math.floor(rng() * items.length)];
+    const count1 = Math.floor(rng() * 15) + 5;
     const svg = this.generateTallySVG(count1);
 
     return {
@@ -2764,7 +2765,7 @@ export class MathQuestionGenerator {
 
   private easyProbability(): Question {
     const outcomes = ['certain', 'impossible', 'possible'];
-    const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+    const outcome = outcomes[Math.floor(rng() * outcomes.length)];
 
     let question = '';
     let answer = '';
@@ -2800,31 +2801,31 @@ export class MathQuestionGenerator {
       { name: 'Pentagon', sides: 5 },
       { name: 'Hexagon', sides: 6 },
     ];
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(rng() * shapes.length)];
       return {
         question: `How many sides does a ${shape.name} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape.name)}`,
         answer: shape.sides.toString(),
         working: `Working:\nA ${shape.name} has ${shape.sides} sides.`,
       };
     } else if (t === 1) {
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(rng() * shapes.length)];
       return {
         question: `How many angles does a ${shape.name} have?\n\n[[TALLY_SVG]]${this.generateShapeSVG(shape.name)}`,
         answer: shape.angles.toString(),
         working: `Working:\nA ${shape.name} has ${shape.angles} angles.`,
       };
     } else if (t === 2) {
-      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      const shape = reverseShapes[Math.floor(rng() * reverseShapes.length)];
       return {
         question: `A shape has ${shape.sides} sides. What is it called?`,
         answer: shape.name,
         working: `Working:\nA polygon with ${shape.sides} sides is called a ${shape.name}.`,
       };
     } else {
-      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      const shape = reverseShapes[Math.floor(rng() * reverseShapes.length)];
       return {
         question: `Which shape has ${shape.sides} sides and ${shape.sides} angles?`,
         answer: shape.name,
@@ -2837,14 +2838,14 @@ export class MathQuestionGenerator {
     const categories = ['Math', 'Science', 'English', 'Art'];
     const students: Record<string, number> = {};
     categories.forEach(cat => {
-      students[cat] = Math.floor(Math.random() * 15) + 5;
+      students[cat] = Math.floor(rng() * 15) + 5;
     });
     const data = categories.map(cat => ({ label: cat, count: students[cat] }));
     const svg = this.generateBarChartSVG(data);
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const category = categories[Math.floor(Math.random() * categories.length)];
+      const category = categories[Math.floor(rng() * categories.length)];
       return {
         question: `Based on the bar graph:\n\n[[TALLY_SVG]]${svg}\n\nHow many students prefer ${category}?`,
         answer: students[category].toString(),
@@ -2859,9 +2860,9 @@ export class MathQuestionGenerator {
         working: `Working:\n${categories.map(c => `${c}: ${students[c]}`).join(', ')}\nHighest count = ${maxCount} (${mostPopular})`,
       };
     } else if (t === 2) {
-      let cat1 = categories[Math.floor(Math.random() * categories.length)];
-      let cat2 = categories[Math.floor(Math.random() * categories.length)];
-      while (cat2 === cat1) cat2 = categories[Math.floor(Math.random() * categories.length)];
+      let cat1 = categories[Math.floor(rng() * categories.length)];
+      let cat2 = categories[Math.floor(rng() * categories.length)];
+      while (cat2 === cat1) cat2 = categories[Math.floor(rng() * categories.length)];
       const moreCat = students[cat1] >= students[cat2] ? cat1 : cat2;
       const lessCat = students[cat1] >= students[cat2] ? cat2 : cat1;
       const diff = students[moreCat] - students[lessCat];
@@ -2893,31 +2894,31 @@ export class MathQuestionGenerator {
       { name: 'Cone', faces: 2 },
       { name: 'Cylinder', faces: 3 },
     ];
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
 
     if (t === 0) {
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(rng() * shapes.length)];
       return {
         question: `How many faces does a ${shape.name} have?`,
         answer: shape.faces.toString(),
         working: `Working:\nA ${shape.name} has ${shape.faces} face${shape.faces !== 1 ? 's' : ''}.`,
       };
     } else if (t === 1) {
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(rng() * shapes.length)];
       return {
         question: `How many edges does a ${shape.name} have?`,
         answer: shape.edges.toString(),
         working: `Working:\nA ${shape.name} has ${shape.edges} edge${shape.edges !== 1 ? 's' : ''}.`,
       };
     } else if (t === 2) {
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const shape = shapes[Math.floor(rng() * shapes.length)];
       return {
         question: `How many vertices does a ${shape.name} have?`,
         answer: shape.vertices.toString(),
         working: `Working:\nA ${shape.name} has ${shape.vertices} ${shape.vertices !== 1 ? 'vertices' : 'vertex'}.`,
       };
     } else {
-      const shape = reverseShapes[Math.floor(Math.random() * reverseShapes.length)];
+      const shape = reverseShapes[Math.floor(rng() * reverseShapes.length)];
       return {
         question: `A 3D shape has ${shape.faces} face${shape.faces !== 1 ? 's' : ''}. What is this shape called?`,
         answer: shape.name,
@@ -2936,7 +2937,7 @@ export class MathQuestionGenerator {
       { n: 5, example: 'a regular pentagon' },
       { n: 6, example: 'a regular hexagon' },
     ];
-    const choice = options[Math.floor(Math.random() * options.length)];
+    const choice = options[Math.floor(rng() * options.length)];
 
     return {
       question: `A shape has exactly ${choice.n} lines of symmetry, and it looks the same after being rotated part-way around its centre.\nName a shape it could be.`,
@@ -2946,19 +2947,19 @@ export class MathQuestionGenerator {
   }
 
   private hardProbability(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     const colors = ['Red', 'Blue', 'Green', 'Yellow'];
 
     if (t === 0) {
       const marbles: Record<string, number> = {};
-      const totalMarbles = Math.floor(Math.random() * 15) + 15;
+      const totalMarbles = Math.floor(rng() * 15) + 15;
       let remaining = totalMarbles;
 
       colors.slice(0, 3).forEach((color, idx) => {
         if (idx === colors.length - 2) {
           marbles[color] = remaining;
         } else {
-          const count = Math.floor(Math.random() * Math.floor(remaining / 2)) + 2;
+          const count = Math.floor(rng() * Math.floor(remaining / 2)) + 2;
           marbles[color] = count;
           remaining -= count;
         }
@@ -2968,7 +2969,7 @@ export class MathQuestionGenerator {
         .map(([color, count]) => `${count} ${color}`)
         .join(', ');
       const colorKeys = Object.keys(marbles);
-      const targetColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+      const targetColor = colorKeys[Math.floor(rng() * colorKeys.length)];
       const targetCount = marbles[targetColor];
       const probability = `${targetCount}/${totalMarbles}`;
 
@@ -2980,12 +2981,12 @@ export class MathQuestionGenerator {
     } else if (t === 1) {
       // Build-a-scenario: given the total and a target probability, work out how many of one colour are needed.
       const denomOptions = [4, 5, 10];
-      const denom = denomOptions[Math.floor(Math.random() * denomOptions.length)];
-      const numerator = Math.floor(Math.random() * (denom - 1)) + 1;
-      const scale = Math.floor(Math.random() * 4) + 2;
+      const denom = denomOptions[Math.floor(rng() * denomOptions.length)];
+      const numerator = Math.floor(rng() * (denom - 1)) + 1;
+      const scale = Math.floor(rng() * 4) + 2;
       const total = denom * scale;
       const count = numerator * scale;
-      const targetColor = colors[Math.floor(Math.random() * colors.length)];
+      const targetColor = colors[Math.floor(rng() * colors.length)];
       return {
         question: `A bag has ${total} marbles in total.\nYou want the probability of picking a ${targetColor} marble to be exactly ${numerator}/${denom}.\nHow many ${targetColor} marbles should be in the bag?`,
         answer: count.toString(),
@@ -2993,11 +2994,11 @@ export class MathQuestionGenerator {
       };
     } else {
       // Comparison: which of two bags gives a better chance of drawing the target colour.
-      const targetColor = colors[Math.floor(Math.random() * colors.length)];
-      const bagATotal = Math.floor(Math.random() * 10) + 10;
-      const bagACount = Math.floor(Math.random() * (bagATotal - 2)) + 1;
-      const bagBTotal = Math.floor(Math.random() * 10) + 10;
-      const bagBCount = Math.floor(Math.random() * (bagBTotal - 2)) + 1;
+      const targetColor = colors[Math.floor(rng() * colors.length)];
+      const bagATotal = Math.floor(rng() * 10) + 10;
+      const bagACount = Math.floor(rng() * (bagATotal - 2)) + 1;
+      const bagBTotal = Math.floor(rng() * 10) + 10;
+      const bagBCount = Math.floor(rng() * (bagBTotal - 2)) + 1;
       const probA = bagACount / bagATotal;
       const probB = bagBCount / bagBTotal;
       const answer = Math.abs(probA - probB) < 1e-9 ? 'Equally likely' : (probA > probB ? 'Bag A' : 'Bag B');
@@ -3010,14 +3011,14 @@ export class MathQuestionGenerator {
   }
 
   private numberLineQuestions(): Question {
-    const t = Math.floor(Math.random() * 2);
+    const t = Math.floor(rng() * 2);
 
     if (t === 0) {
-      const step = [2, 5, 10][Math.floor(Math.random() * 3)];
+      const step = [2, 5, 10][Math.floor(rng() * 3)];
       const min = 0;
       const max = step * 10;
       const marks = Array.from({ length: 11 }, (_, i) => i * step);
-      const highlightIndex = Math.floor(Math.random() * 9) + 1;
+      const highlightIndex = Math.floor(rng() * 9) + 1;
       const highlightValue = marks[highlightIndex];
       const svg = this.generateNumberLineSVG(min, max, marks, highlightValue);
       return {
@@ -3026,9 +3027,9 @@ export class MathQuestionGenerator {
         working: `Working:\nThe number line counts up in ${step}s from ${min} to ${max}.\nThe marker sits at ${highlightValue}.`,
       };
     } else {
-      const half = Math.floor(Math.random() * 20) + 1;
+      const half = Math.floor(rng() * 20) + 1;
       const a = half * 2;
-      const gap = (Math.floor(Math.random() * 5) + 1) * 2;
+      const gap = (Math.floor(rng() * 5) + 1) * 2;
       const b = a + gap;
       const mid = (a + b) / 2;
       const svg = this.generateNumberLineSVG(a, b, [a, b]);
@@ -3041,8 +3042,8 @@ export class MathQuestionGenerator {
   }
 
   private percentageGridQuestions(): Question {
-    const t = Math.floor(Math.random() * 2);
-    const percent = (Math.floor(Math.random() * 18) + 1) * 5;
+    const t = Math.floor(rng() * 2);
+    const percent = (Math.floor(rng() * 18) + 1) * 5;
     const svg = this.generatePercentageGridSVG(percent);
 
     if (t === 0) {
@@ -3075,7 +3076,7 @@ export class MathQuestionGenerator {
       { text: 'A new day having 24 hours', position: 1, label: 'Certain' },
       { text: 'Rolling an even number on a standard six-sided die', position: 0.5, label: 'Even chance' },
     ];
-    const event = events[Math.floor(Math.random() * events.length)];
+    const event = events[Math.floor(rng() * events.length)];
     const svg = this.generateLikelihoodScaleSVG(event.position);
     return {
       question: `${event.text}.\nLook at the scale. Is this event impossible, unlikely, an even chance, likely, or certain?\n\n[[TALLY_SVG]]${svg}`,
@@ -3085,8 +3086,8 @@ export class MathQuestionGenerator {
   }
 
   private fractionWallQuestions(): Question {
-    const denom = Math.floor(Math.random() * 7) + 4;
-    const shaded = Math.floor(Math.random() * (denom - 1)) + 1;
+    const denom = Math.floor(rng() * 7) + 4;
+    const shaded = Math.floor(rng() * (denom - 1)) + 1;
     const svg = this.generateFractionWallSVG(denom, shaded);
     return {
       question: `What fraction of the bar is shaded?\n\n[[TALLY_SVG]]${svg}`,
@@ -3116,16 +3117,16 @@ export class MathQuestionGenerator {
   // ── ICSE generators ────────────────────────────────────────────────────────
 
   private icseNumbers(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     if (t === 0) {
-      const num = Math.floor(Math.random() * 89999) + 10000;
+      const num = Math.floor(rng() * 89999) + 10000;
       return {
         question: `Write the number name for ${num}.`,
         answer: this.numberToWords(num),
         working: `Working:\n${num} = ${this.numberToWords(num)}`,
       };
     } else if (t === 1) {
-      const num = Math.floor(Math.random() * 89999) + 10000;
+      const num = Math.floor(rng() * 89999) + 10000;
       const rounded = Math.round(num / 1000) * 1000;
       const hundredsDigit = Math.floor((num % 1000) / 100);
       return {
@@ -3134,9 +3135,9 @@ export class MathQuestionGenerator {
         working: `Working:\nHundreds digit is ${hundredsDigit}.\n${hundredsDigit >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${num} rounded to nearest thousand = ${rounded}`,
       };
     } else if (t === 2) {
-      const a = Math.floor(Math.random() * 89000) + 10000;
-      let b = Math.floor(Math.random() * 89000) + 10000;
-      while (b === a) b = Math.floor(Math.random() * 89000) + 10000;
+      const a = Math.floor(rng() * 89000) + 10000;
+      let b = Math.floor(rng() * 89000) + 10000;
+      while (b === a) b = Math.floor(rng() * 89000) + 10000;
       const sym = a > b ? '>' : a < b ? '<' : '=';
       return {
         question: `Compare: ${a} ___ ${b}. Write >, < or =`,
@@ -3144,9 +3145,9 @@ export class MathQuestionGenerator {
         working: `Working:\nCompare digits from left to right.\n${a} ${sym} ${b}`,
       };
     } else {
-      const num = Math.floor(Math.random() * 89999) + 10000;
+      const num = Math.floor(rng() * 89999) + 10000;
       const placeNames = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands'];
-      const pos = Math.floor(Math.random() * 5);
+      const pos = Math.floor(rng() * 5);
       const d = Math.floor(num / Math.pow(10, pos)) % 10;
       return {
         question: `What is the place value of ${d} in ${num}?`,
@@ -3157,10 +3158,10 @@ export class MathQuestionGenerator {
   }
 
   private icseFactorsMultiples(): Question {
-    const t = Math.floor(Math.random() * 5);
+    const t = Math.floor(rng() * 5);
     if (t === 0) {
       const candidates = [12, 15, 16, 18, 20, 24, 28, 30, 36, 40, 42, 48, 50];
-      const num = candidates[Math.floor(Math.random() * candidates.length)];
+      const num = candidates[Math.floor(rng() * candidates.length)];
       const factors: number[] = [];
       for (let i = 1; i <= num; i++) { if (num % i === 0) factors.push(i); }
       return {
@@ -3169,7 +3170,7 @@ export class MathQuestionGenerator {
         working: `Working:\nDivide ${num} by each whole number from 1 to ${num}.\nFactors of ${num}: ${factors.join(', ')}`,
       };
     } else if (t === 1) {
-      const num = Math.floor(Math.random() * 11) + 2;
+      const num = Math.floor(rng() * 11) + 2;
       const multiples = [1, 2, 3, 4, 5].map(i => i * num);
       return {
         question: `Find the first 5 multiples of ${num}.`,
@@ -3178,7 +3179,7 @@ export class MathQuestionGenerator {
       };
     } else if (t === 2) {
       const pairs = [[12, 18], [15, 25], [16, 24], [18, 27], [20, 30], [24, 36], [14, 21], [8, 12], [10, 15], [6, 9]];
-      const [a, b] = pairs[Math.floor(Math.random() * pairs.length)];
+      const [a, b] = pairs[Math.floor(rng() * pairs.length)];
       const h = this.gcd(a, b);
       const factorsA = Array.from({length: a}, (_, i) => i + 1).filter(i => a % i === 0);
       const factorsB = Array.from({length: b}, (_, i) => i + 1).filter(i => b % i === 0);
@@ -3189,8 +3190,8 @@ export class MathQuestionGenerator {
         working: `Working:\nFactors of ${a}: ${factorsA.join(', ')}\nFactors of ${b}: ${factorsB.join(', ')}\nCommon factors: ${common.join(', ')}\nHCF = ${h}`,
       };
     } else if (t === 3) {
-      const a = Math.floor(Math.random() * 5) + 2;
-      const b = Math.floor(Math.random() * 5) + 2;
+      const a = Math.floor(rng() * 5) + 2;
+      const b = Math.floor(rng() * 5) + 2;
       const l = this.lcm(a, b);
       return {
         question: `Find the LCM of ${a} and ${b}.`,
@@ -3198,15 +3199,15 @@ export class MathQuestionGenerator {
         working: `Working:\nMultiples of ${a}: ${[1,2,3,4,5,6].map(i => i*a).join(', ')}...\nMultiples of ${b}: ${[1,2,3,4,5,6].map(i => i*b).join(', ')}...\nLCM = ${l}`,
       };
     } else {
-      const b = Math.floor(Math.random() * 40) + 12;
-      const isYes = Math.random() < 0.5;
+      const b = Math.floor(rng() * 40) + 12;
+      const isYes = rng() < 0.5;
       let a: number;
       if (isYes) {
         const factors: number[] = [];
         for (let i = 2; i <= b; i++) { if (b % i === 0) factors.push(i); }
-        a = factors[Math.floor(Math.random() * factors.length)] || 1;
+        a = factors[Math.floor(rng() * factors.length)] || 1;
       } else {
-        do { a = Math.floor(Math.random() * 10) + 2; } while (b % a === 0);
+        do { a = Math.floor(rng() * 10) + 2; } while (b % a === 0);
       }
       return {
         question: `Is ${a} a factor of ${b}? Write Yes or No.`,
@@ -3217,11 +3218,11 @@ export class MathQuestionGenerator {
   }
 
   private icseMixedNumbers(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     if (t === 0) {
-      const whole = Math.floor(Math.random() * 5) + 1;
-      const den = Math.floor(Math.random() * 6) + 5;
-      const num = Math.floor(Math.random() * 4) + 1;
+      const whole = Math.floor(rng() * 5) + 1;
+      const den = Math.floor(rng() * 6) + 5;
+      const num = Math.floor(rng() * 4) + 1;
       const improper = whole * den + num;
       return {
         question: `Convert ${whole} ${num}/${den} to an improper fraction.`,
@@ -3229,8 +3230,8 @@ export class MathQuestionGenerator {
         working: `Working:\n(${whole} × ${den}) + ${num} = ${improper}\nImproper fraction = ${improper}/${den}`,
       };
     } else if (t === 1) {
-      const den = Math.floor(Math.random() * 6) + 3;
-      const improper = Math.floor(Math.random() * (den * 3)) + den + 1;
+      const den = Math.floor(rng() * 6) + 3;
+      const improper = Math.floor(rng() * (den * 3)) + den + 1;
       const whole = Math.floor(improper / den);
       const remainder = improper % den;
       const answer = remainder === 0 ? String(whole) : `${whole} ${remainder}/${den}`;
@@ -3240,11 +3241,11 @@ export class MathQuestionGenerator {
         working: `Working:\n${improper} ÷ ${den} = ${whole} remainder ${remainder}\nMixed number = ${answer}`,
       };
     } else if (t === 2) {
-      const d = Math.floor(Math.random() * 6) + 5;
-      const w1 = Math.floor(Math.random() * 4) + 1;
-      const n1 = Math.floor(Math.random() * (d - 1)) + 1;
-      const w2 = Math.floor(Math.random() * 3) + 1;
-      const n2 = Math.floor(Math.random() * (d - 1)) + 1;
+      const d = Math.floor(rng() * 6) + 5;
+      const w1 = Math.floor(rng() * 4) + 1;
+      const n1 = Math.floor(rng() * (d - 1)) + 1;
+      const w2 = Math.floor(rng() * 3) + 1;
+      const n2 = Math.floor(rng() * (d - 1)) + 1;
       const totalNum = n1 + n2;
       const carry = Math.floor(totalNum / d);
       const remNum = totalNum % d;
@@ -3256,11 +3257,11 @@ export class MathQuestionGenerator {
         working: `Working:\nWhole: ${w1} + ${w2} = ${w1 + w2}\nFraction: ${n1}/${d} + ${n2}/${d} = ${totalNum}/${d}${carry > 0 ? ` = ${carry} ${remNum}/${d}` : ''}\nTotal = ${answer}`,
       };
     } else {
-      const d = Math.floor(Math.random() * 6) + 5;
-      const w1 = Math.floor(Math.random() * 3) + 1;
-      const n1 = Math.floor(Math.random() * (d - 1)) + 1;
-      const w2 = w1 + Math.floor(Math.random() * 3) + 1;
-      const n2 = Math.floor(Math.random() * (d - 1)) + 1;
+      const d = Math.floor(rng() * 6) + 5;
+      const w1 = Math.floor(rng() * 3) + 1;
+      const n1 = Math.floor(rng() * (d - 1)) + 1;
+      const w2 = w1 + Math.floor(rng() * 3) + 1;
+      const n2 = Math.floor(rng() * (d - 1)) + 1;
       let resNum = n2 - n1;
       let resWhole = w2 - w1;
       if (resNum < 0) { resNum += d; resWhole -= 1; }
@@ -3274,16 +3275,16 @@ export class MathQuestionGenerator {
   }
 
   private icseDecimals(): Question {
-    const t = Math.floor(Math.random() * 5);
+    const t = Math.floor(rng() * 5);
     if (t === 0) {
-      const num = Math.floor(Math.random() * 9) + 1;
+      const num = Math.floor(rng() * 9) + 1;
       return {
         question: `Write ${num}/10 as a decimal.`,
         answer: `0.${num}`,
         working: `Working:\n${num}/10 = 0.${num}`,
       };
     } else if (t === 1) {
-      const num = Math.floor(Math.random() * 99) + 1;
+      const num = Math.floor(rng() * 99) + 1;
       const dec = (num / 100).toFixed(2);
       return {
         question: `Write ${num}/100 as a decimal.`,
@@ -3291,8 +3292,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${num}/100 = ${dec}`,
       };
     } else if (t === 2) {
-      const d1 = (Math.floor(Math.random() * 9) + 1) / 10;
-      const d2 = (Math.floor(Math.random() * 9) + 1) / 10;
+      const d1 = (Math.floor(rng() * 9) + 1) / 10;
+      const d2 = (Math.floor(rng() * 9) + 1) / 10;
       const sum = Math.round((d1 + d2) * 10) / 10;
       return {
         question: `Add: ${d1.toFixed(1)} + ${d2.toFixed(1)} = ?`,
@@ -3300,8 +3301,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${d1.toFixed(1)} + ${d2.toFixed(1)} = ${sum.toFixed(1)}`,
       };
     } else if (t === 3) {
-      const whole = Math.floor(Math.random() * 9) + 1;
-      const frac = Math.floor(Math.random() * 9) + 1;
+      const whole = Math.floor(rng() * 9) + 1;
+      const frac = Math.floor(rng() * 9) + 1;
       const decimal = whole + frac / 10;
       const rounded = Math.round(decimal);
       return {
@@ -3310,7 +3311,7 @@ export class MathQuestionGenerator {
         working: `Working:\nDecimal part is .${frac}.\n${frac >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${decimal.toFixed(1)} ≈ ${rounded}`,
       };
     } else {
-      const nums = Array.from({length: 3}, () => (Math.floor(Math.random() * 9) + 1) / 10);
+      const nums = Array.from({length: 3}, () => (Math.floor(rng() * 9) + 1) / 10);
       const sorted = [...nums].sort((a, b) => a - b);
       return {
         question: `Arrange in ascending order: ${nums.map(n => n.toFixed(1)).join(', ')}`,
@@ -3321,12 +3322,12 @@ export class MathQuestionGenerator {
   }
 
   private icseWordProblems(): Question {
-    const t = Math.floor(Math.random() * 4);
+    const t = Math.floor(rng() * 4);
     if (t === 0) {
-      const qty = Math.floor(Math.random() * 8) + 3;
-      const price = (Math.floor(Math.random() * 18) + 2) * 5;
-      const isProfit = Math.random() < 0.5;
-      const change = (Math.floor(Math.random() * 5) + 1) * 5;
+      const qty = Math.floor(rng() * 8) + 3;
+      const price = (Math.floor(rng() * 18) + 2) * 5;
+      const isProfit = rng() < 0.5;
+      const change = (Math.floor(rng() * 5) + 1) * 5;
       const sell = isProfit ? price + change : price - change;
       const diff = Math.abs(sell - price) * qty;
       const label = isProfit ? 'Profit' : 'Loss';
@@ -3336,17 +3337,17 @@ export class MathQuestionGenerator {
         working: `Working:\nCost price = ${qty} × Rs.${price} = Rs.${price * qty}\nSelling price = ${qty} × Rs.${sell} = Rs.${sell * qty}\n${label} = Rs.${diff}`,
       };
     } else if (t === 1) {
-      const speed = (Math.floor(Math.random() * 8) + 3) * 10;
-      const hours = Math.floor(Math.random() * 4) + 2;
+      const speed = (Math.floor(rng() * 8) + 3) * 10;
+      const hours = Math.floor(rng() * 4) + 2;
       return {
         question: `A train travels at ${speed} km per hour. How far does it travel in ${hours} hours?`,
         answer: `${speed * hours} km`,
         working: `Working:\nDistance = Speed × Time\n= ${speed} × ${hours} = ${speed * hours} km`,
       };
     } else if (t === 2) {
-      const l = Math.floor(Math.random() * 16) + 5;
-      const w = Math.floor(Math.random() * 10) + 3;
-      const rate = Math.floor(Math.random() * 9) + 2;
+      const l = Math.floor(rng() * 16) + 5;
+      const w = Math.floor(rng() * 10) + 3;
+      const rate = Math.floor(rng() * 9) + 2;
       const perimeter = 2 * (l + w);
       return {
         question: `A rectangular garden is ${l}m long and ${w}m wide. Find the cost of fencing it at Rs.${rate} per metre.`,
@@ -3354,9 +3355,9 @@ export class MathQuestionGenerator {
         working: `Working:\nPerimeter = 2 × (${l} + ${w}) = 2 × ${l + w} = ${perimeter} m\nCost = ${perimeter} × Rs.${rate} = Rs.${perimeter * rate}`,
       };
     } else {
-      const size = Math.floor(Math.random() * 8) + 3;
-      const groups = Math.floor(Math.random() * 9) + 3;
-      const leftover = Math.floor(Math.random() * (size - 1));
+      const size = Math.floor(rng() * 8) + 3;
+      const groups = Math.floor(rng() * 9) + 3;
+      const leftover = Math.floor(rng() * (size - 1));
       const total = groups * size + leftover;
       return {
         question: `${total} students are divided into groups of ${size}. How many complete groups are there and how many students are left over?`,
@@ -3369,10 +3370,10 @@ export class MathQuestionGenerator {
   // ── IGCSE generators ───────────────────────────────────────────────────────
 
   private igcseNumberSense(): Question {
-    const t = Math.floor(Math.random() * 5);
+    const t = Math.floor(rng() * 5);
     if (t === 0) {
-      const a = Math.floor(Math.random() * 900) + 100;
-      const b = Math.floor(Math.random() * 900) + 100;
+      const a = Math.floor(rng() * 900) + 100;
+      const b = Math.floor(rng() * 900) + 100;
       const ra = Math.round(a / 100) * 100;
       const rb = Math.round(b / 100) * 100;
       return {
@@ -3381,22 +3382,22 @@ export class MathQuestionGenerator {
         working: `Working:\n${a} rounded to nearest 100 = ${ra}\n${b} rounded to nearest 100 = ${rb}\nEstimate = ${ra} + ${rb} = ${ra + rb}`,
       };
     } else if (t === 1) {
-      const a = Math.floor(Math.random() * 98) + 2;
+      const a = Math.floor(rng() * 98) + 2;
       return {
         question: `Use mental maths: ${a} × 10 = ?`,
         answer: String(a * 10),
         working: `Working:\nMultiplying by 10 adds a zero.\n${a} × 10 = ${a * 10}`,
       };
     } else if (t === 2) {
-      const sum = (Math.floor(Math.random() * 9) + 1) * 100;
-      const a = sum - (Math.floor(Math.random() * (sum / 2 - 10)) + 10);
+      const sum = (Math.floor(rng() * 9) + 1) * 100;
+      const a = sum - (Math.floor(rng() * (sum / 2 - 10)) + 10);
       return {
         question: `Fill in the missing number: ${a} + ___ = ${sum}`,
         answer: String(sum - a),
         working: `Working:\n___ = ${sum} - ${a} = ${sum - a}`,
       };
     } else if (t === 3) {
-      const num = Math.floor(Math.random() * 990) + 10;
+      const num = Math.floor(rng() * 990) + 10;
       const rounded = Math.round(num / 10) * 10;
       return {
         question: `What is ${num} rounded to the nearest 10?`,
@@ -3404,7 +3405,7 @@ export class MathQuestionGenerator {
         working: `Working:\nOnes digit is ${num % 10}.\n${num % 10 >= 5 ? 'It is 5 or more, so round up.' : 'It is less than 5, so round down.'}\n${num} rounded to nearest 10 = ${rounded}`,
       };
     } else {
-      const num = Math.floor(Math.random() * 9900) + 100;
+      const num = Math.floor(rng() * 9900) + 100;
       const rounded = Math.round(num / 100) * 100;
       return {
         question: `What is ${num} rounded to the nearest 100?`,
@@ -3415,16 +3416,16 @@ export class MathQuestionGenerator {
   }
 
   private igcseDecimals(): Question {
-    const t = Math.floor(Math.random() * 6);
+    const t = Math.floor(rng() * 6);
     if (t === 0) {
-      const num = Math.floor(Math.random() * 9) + 1;
+      const num = Math.floor(rng() * 9) + 1;
       return {
         question: `Write ${num}/10 as a decimal.`,
         answer: `0.${num}`,
         working: `Working:\n${num}/10 = 0.${num}`,
       };
     } else if (t === 1) {
-      const num = Math.floor(Math.random() * 99) + 1;
+      const num = Math.floor(rng() * 99) + 1;
       const dec = (num / 100).toFixed(2);
       return {
         question: `Write ${num}/100 as a decimal.`,
@@ -3432,8 +3433,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${num}/100 = ${dec}`,
       };
     } else if (t === 2) {
-      const n1 = Math.floor(Math.random() * 90) + 5;
-      const n2 = Math.floor(Math.random() * (99 - n1)) + 1;
+      const n1 = Math.floor(rng() * 90) + 5;
+      const n2 = Math.floor(rng() * (99 - n1)) + 1;
       const d1 = n1 / 100;
       const d2 = n2 / 100;
       const sum = Math.round((d1 + d2) * 100) / 100;
@@ -3443,8 +3444,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${d1.toFixed(2)} + ${d2.toFixed(2)} = ${sum.toFixed(2)}`,
       };
     } else if (t === 3) {
-      const n1 = Math.floor(Math.random() * 8) + 2;
-      const n2 = Math.floor(Math.random() * (n1 - 1)) + 1;
+      const n1 = Math.floor(rng() * 8) + 2;
+      const n2 = Math.floor(rng() * (n1 - 1)) + 1;
       const d1 = n1 / 10;
       const d2 = n2 / 10;
       const diff = Math.round((d1 - d2) * 10) / 10;
@@ -3454,8 +3455,8 @@ export class MathQuestionGenerator {
         working: `Working:\n${d1.toFixed(1)} - ${d2.toFixed(1)} = ${diff.toFixed(1)}`,
       };
     } else if (t === 4) {
-      const total = Math.random() < 0.5 ? 10 : 100;
-      const part = Math.floor(Math.random() * (total - 1)) + 1;
+      const total = rng() < 0.5 ? 10 : 100;
+      const part = Math.floor(rng() * (total - 1)) + 1;
       const pct = (part / total) * 100;
       return {
         question: `What percentage is ${part} out of ${total}?`,
@@ -3463,7 +3464,7 @@ export class MathQuestionGenerator {
         working: `Working:\n(${part} ÷ ${total}) × 100 = ${pct}%`,
       };
     } else {
-      const nums = Array.from({length: 3}, () => (Math.floor(Math.random() * 90) + 5) / 100);
+      const nums = Array.from({length: 3}, () => (Math.floor(rng() * 90) + 5) / 100);
       const sorted = [...nums].sort((a, b) => a - b);
       return {
         question: `Order from smallest to largest: ${nums.map(n => n.toFixed(2)).join(', ')}`,
@@ -3474,11 +3475,11 @@ export class MathQuestionGenerator {
   }
 
   private igcseNumberLine(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
-      const half = Math.floor(Math.random() * 20) + 1;
+      const half = Math.floor(rng() * 20) + 1;
       const a = half * 2;
-      const gap = (Math.floor(Math.random() * 5) + 1) * 2;
+      const gap = (Math.floor(rng() * 5) + 1) * 2;
       const b = a + gap;
       const mid = (a + b) / 2;
       return {
@@ -3487,9 +3488,9 @@ export class MathQuestionGenerator {
         working: `Working:\nHalfway = (${a} + ${b}) ÷ 2 = ${a + b} ÷ 2 = ${mid}`,
       };
     } else if (t === 1) {
-      const parts = [2, 4, 5, 10][Math.floor(Math.random() * 4)];
-      const start = Math.floor(Math.random() * 10) * parts;
-      const k = Math.floor(Math.random() * 5) + 1;
+      const parts = [2, 4, 5, 10][Math.floor(rng() * 4)];
+      const start = Math.floor(rng() * 10) * parts;
+      const k = Math.floor(rng() * 5) + 1;
       const end = start + parts * k;
       const partWorth = k;
       return {
@@ -3498,8 +3499,8 @@ export class MathQuestionGenerator {
         working: `Working:\nTotal range = ${end} - ${start} = ${end - start}\nEach part = ${end - start} ÷ ${parts} = ${partWorth}`,
       };
     } else {
-      const step = Math.floor(Math.random() * 9) + 2;
-      const start = Math.floor(Math.random() * 20);
+      const step = Math.floor(rng() * 9) + 2;
+      const start = Math.floor(rng() * 20);
       const fifth = start + step * 4;
       return {
         question: `Count on by ${step}s from ${start}. What is the 5th number?`,
@@ -3516,8 +3517,8 @@ export class MathQuestionGenerator {
       { name: 'triangular prism', faces: 5, edges: 9, vertices: 6 },
       { name: 'square pyramid', faces: 5, edges: 8, vertices: 5 },
     ];
-    const t = Math.floor(Math.random() * 5);
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    const t = Math.floor(rng() * 5);
+    const shape = shapes[Math.floor(rng() * shapes.length)];
     if (t === 0) {
       return {
         question: `How many faces does a ${shape.name} have?`,
@@ -3544,7 +3545,7 @@ export class MathQuestionGenerator {
       };
     } else {
       const unique = shapes.filter(s => s.name !== 'cube' && s.name !== 'cuboid');
-      const target = unique[Math.floor(Math.random() * unique.length)];
+      const target = unique[Math.floor(rng() * unique.length)];
       return {
         question: `Which 3D shape has ${target.faces} faces, ${target.edges} edges and ${target.vertices} vertices?\nChoose: cube, cuboid, triangular prism, square pyramid`,
         answer: target.name,
@@ -3586,23 +3587,23 @@ export class MathQuestionGenerator {
         working: 'Working:\nTurning (spinning) around a fixed point = Rotation.',
       },
     ];
-    const tmpl = templates[Math.floor(Math.random() * templates.length)];
+    const tmpl = templates[Math.floor(rng() * templates.length)];
     return { question: tmpl.question, answer: tmpl.answer, working: tmpl.working };
   }
 
   private igcseDataReasoning(): Question {
-    const t = Math.floor(Math.random() * 5);
+    const t = Math.floor(rng() * 5);
     if (t === 0) {
-      const mode = Math.floor(Math.random() * 8) + 2;
-      const others = Array.from({length: 4}, () => { let n: number; do { n = Math.floor(Math.random() * 9) + 1; } while (n === mode); return n; });
-      const data = [...others, mode, mode].sort(() => Math.random() - 0.5);
+      const mode = Math.floor(rng() * 8) + 2;
+      const others = Array.from({length: 4}, () => { let n: number; do { n = Math.floor(rng() * 9) + 1; } while (n === mode); return n; });
+      const data = [...others, mode, mode].sort(() => rng() - 0.5);
       return {
         question: `Find the mode of: ${data.join(', ')}`,
         answer: String(mode),
         working: `Working:\nThe mode is the most frequent value.\n${mode} appears ${data.filter(n => n === mode).length} times.\nMode = ${mode}`,
       };
     } else if (t === 1) {
-      const nums = Array.from({length: 5}, () => Math.floor(Math.random() * 20) + 1);
+      const nums = Array.from({length: 5}, () => Math.floor(rng() * 20) + 1);
       const range = Math.max(...nums) - Math.min(...nums);
       return {
         question: `Find the range of: ${nums.join(', ')}`,
@@ -3610,7 +3611,7 @@ export class MathQuestionGenerator {
         working: `Working:\nRange = largest - smallest\n= ${Math.max(...nums)} - ${Math.min(...nums)} = ${range}`,
       };
     } else if (t === 2) {
-      const nums = Array.from({length: 4}, () => Math.floor(Math.random() * 9) + 1);
+      const nums = Array.from({length: 4}, () => Math.floor(rng() * 9) + 1);
       const sum = nums.reduce((a, b) => a + b, 0);
       const extra = (4 - (sum % 4)) % 4;
       nums[3] += extra;
@@ -3622,20 +3623,20 @@ export class MathQuestionGenerator {
         working: `Working:\nMean = sum ÷ count\n= (${nums.join(' + ')}) ÷ 4\n= ${total} ÷ 4 = ${mean}`,
       };
     } else if (t === 3) {
-      const n = Math.floor(Math.random() * 9) + 2;
-      const symbols = Math.floor(Math.random() * 6) + 2;
+      const n = Math.floor(rng() * 9) + 2;
+      const symbols = Math.floor(rng() * 6) + 2;
       const categories = ['Apples', 'Oranges', 'Mangoes', 'Bananas', 'Grapes'];
-      const cat = categories[Math.floor(Math.random() * categories.length)];
+      const cat = categories[Math.floor(rng() * categories.length)];
       return {
         question: `A pictogram shows each symbol = ${n} items.\n${cat} has ${symbols} symbols. How many ${cat.toLowerCase()} is that?`,
         answer: String(n * symbols),
         working: `Working:\n${symbols} symbols × ${n} items each = ${n * symbols} ${cat.toLowerCase()}`,
       };
     } else {
-      const total = Math.floor(Math.random() * 16) + 10;
-      const num = Math.floor(Math.random() * (total - 1)) + 1;
+      const total = Math.floor(rng() * 16) + 10;
+      const num = Math.floor(rng() * (total - 1)) + 1;
       const options = ['football', 'cricket', 'swimming', 'tennis', 'hockey'];
-      const option = options[Math.floor(Math.random() * options.length)];
+      const option = options[Math.floor(rng() * options.length)];
       const g = this.gcd(num, total);
       const simplNum = num / g;
       const simplDen = total / g;
@@ -3649,10 +3650,10 @@ export class MathQuestionGenerator {
   }
 
   private igcseReasoning(): Question {
-    const t = Math.floor(Math.random() * 3);
+    const t = Math.floor(rng() * 3);
     if (t === 0) {
-      const n = Math.floor(Math.random() * 8) + 2;
-      const k = Math.floor(Math.random() * 9) + 2;
+      const n = Math.floor(rng() * 8) + 2;
+      const k = Math.floor(rng() * 9) + 2;
       const answer = n * k;
       const a = n * (k - 1);
       const b = n * (k + 1);
@@ -3662,8 +3663,8 @@ export class MathQuestionGenerator {
         working: `Working:\nMultiples of ${n}: ..., ${a}, ${answer}, ${b}, ...\nThe only multiple of ${n} between ${a} and ${b} is ${answer}.`,
       };
     } else if (t === 1) {
-      const evenN = [4, 6, 8, 10][Math.floor(Math.random() * 4)];
-      const k = Math.floor(Math.random() * 6) + 3;
+      const evenN = [4, 6, 8, 10][Math.floor(rng() * 4)];
+      const k = Math.floor(rng() * 6) + 3;
       const answer = evenN * k;
       const half = evenN / 2 + 1;
       const a = answer - half;
@@ -3674,9 +3675,9 @@ export class MathQuestionGenerator {
         working: `Working:\nEven multiples of ${evenN} near this range: ${answer}\n${answer} is between ${a} and ${b} and is a multiple of ${evenN}.\nAnswer = ${answer}`,
       };
     } else {
-      const h = Math.floor(Math.random() * 9) + 1;
-      const tens = Math.floor(Math.random() * 10);
-      const u = Math.floor(Math.random() * 10);
+      const h = Math.floor(rng() * 9) + 1;
+      const tens = Math.floor(rng() * 10);
+      const u = Math.floor(rng() * 10);
       const number = h * 100 + tens * 10 + u;
       return {
         question: `A number has ${h} hundreds, ${tens} tens and ${u} ones. What is the number?`,

@@ -14,6 +14,7 @@ import {
   primeFactors,
   round,
 } from './shared/mathUtils';
+import { rng } from '../rng';
 
 const CLASS8_TOPICS: TopicDef[] = [];
 
@@ -28,17 +29,17 @@ function generateRationalNumbers(
   if (difficulty === 'Easy') {
     // Addition of two fractions with different denominators
     const denominators = [3, 4, 5, 6, 8, 9];
-    let d1 = denominators[Math.floor(Math.random() * denominators.length)];
-    let d2 = denominators[Math.floor(Math.random() * denominators.length)];
+    let d1 = denominators[Math.floor(rng() * denominators.length)];
+    let d2 = denominators[Math.floor(rng() * denominators.length)];
     while (d1 === d2) {
-      d2 = denominators[Math.floor(Math.random() * denominators.length)];
+      d2 = denominators[Math.floor(rng() * denominators.length)];
     }
 
     let n1 = randInt(1, d1 - 1);
     let n2 = randInt(1, d2 - 1);
 
     // 50% chance to make n1 negative
-    if (Math.random() < 0.5) {
+    if (rng() < 0.5) {
       n1 = -n1;
     }
 
@@ -65,7 +66,7 @@ function generateRationalNumbers(
     // Multiplication equation: x × (a/b) = result
     const b = randInt(3, 9);
     const a = randInt(1, b - 1);
-    const x_num = Math.random() < 0.5 ? randInt(1, 5) : -randInt(1, 5);
+    const x_num = rng() < 0.5 ? randInt(1, 5) : -randInt(1, 5);
     const x_den = b;
 
     // Result = (a/b) × (x_num/x_den)
@@ -242,10 +243,10 @@ function generateSquaresSquareRoots(
   if (difficulty === 'Medium') {
     // Smallest multiplier to make n a perfect square
     const primes = [2, 3, 5, 7, 11];
-    const p = primes[Math.floor(Math.random() * primes.length)];
-    let q = primes[Math.floor(Math.random() * primes.length)];
+    const p = primes[Math.floor(rng() * primes.length)];
+    let q = primes[Math.floor(rng() * primes.length)];
     while (q === p) {
-      q = primes[Math.floor(Math.random() * primes.length)];
+      q = primes[Math.floor(rng() * primes.length)];
     }
 
     // n = p³ × q² → multiplier = p
@@ -336,10 +337,10 @@ function generateCubesCubeRoots(
   if (difficulty === 'Medium') {
     // Smallest divisor to make n a perfect cube
     const primes = [2, 3, 5, 7];
-    const p = primes[Math.floor(Math.random() * primes.length)];
-    let q = primes[Math.floor(Math.random() * primes.length)];
+    const p = primes[Math.floor(rng() * primes.length)];
+    let q = primes[Math.floor(rng() * primes.length)];
     while (q === p) {
-      q = primes[Math.floor(Math.random() * primes.length)];
+      q = primes[Math.floor(rng() * primes.length)];
     }
 
     // n = p⁴ × q³ → divisor = p (leaves p³)
@@ -467,7 +468,7 @@ function generateExponentsPowers(
     { a: 5, b: 7 },
     { a: 4, b: 9 },
   ];
-  const { a, b } = rationals[Math.floor(Math.random() * rationals.length)];
+  const { a, b } = rationals[Math.floor(rng() * rationals.length)];
 
   const m = randInt(2, 4);
   let k = randInt(2, 8);
@@ -510,7 +511,7 @@ function generateComparingQuantities(
   if (difficulty === 'Easy') {
     // Percentage of a number
     const percentages = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75];
-    const percent = percentages[Math.floor(Math.random() * percentages.length)];
+    const percent = percentages[Math.floor(rng() * percentages.length)];
     const number = randInt(5, 25) * 20; // Multiple of 20 in [100, 500]
     const answer = Math.floor((percent * number) / 100);
 
@@ -532,7 +533,7 @@ function generateComparingQuantities(
   if (difficulty === 'Medium') {
     // CP and SP given, find profit percent
     const cp = randInt(4, 12) * 100; // Multiple of 100 in [400, 1200]
-    const profit_percent = [5, 10, 12, 15, 20, 25][Math.floor(Math.random() * 6)];
+    const profit_percent = [5, 10, 12, 15, 20, 25][Math.floor(rng() * 6)];
     const sp = Math.floor(cp * (1 + profit_percent / 100));
 
     return {
@@ -552,8 +553,8 @@ function generateComparingQuantities(
 
   // Hard: Compound Interest, half-yearly
   const principals = [4000, 6000, 8000, 10000];
-  const P = principals[Math.floor(Math.random() * principals.length)];
-  const annualRate = [8, 10, 12][Math.floor(Math.random() * 3)];
+  const P = principals[Math.floor(rng() * principals.length)];
+  const annualRate = [8, 10, 12][Math.floor(rng() * 3)];
   const halfRate = annualRate / 2;
 
   // CI = P × ((1 + r/200)² - 1)
@@ -639,7 +640,7 @@ function generateAlgebraicExpressions(
 
   // Hard: Use identity
   const ns = [97, 98, 99, 101, 102, 103];
-  const n = ns[Math.floor(Math.random() * ns.length)];
+  const n = ns[Math.floor(rng() * ns.length)];
   const answer = n * n;
 
   return {
@@ -683,7 +684,7 @@ function generateDataHandling(
       { name: 'equal to 6', favorable: 1 }, // 6
     ];
 
-    const event = events[Math.floor(Math.random() * events.length)];
+    const event = events[Math.floor(rng() * events.length)];
     const total = 6;
     const [num, den] = reduceFraction(event.favorable, total);
 
@@ -705,9 +706,9 @@ function generateDataHandling(
 
   if (difficulty === 'Medium') {
     // Pie chart reading
-    const total = Math.random() < 0.5 ? 360 : 720;
+    const total = rng() < 0.5 ? 360 : 720;
     const angles = [30, 45, 60, 90, 120];
-    const angle = angles[Math.floor(Math.random() * angles.length)];
+    const angle = angles[Math.floor(rng() * angles.length)];
     const students = Math.round((total * angle) / 360);
 
     return {
@@ -907,7 +908,7 @@ function generateQuadrilaterals(
     [8, 15, 17],
     [7, 24, 25],
   ];
-  const triple = pythagorean[Math.floor(Math.random() * pythagorean.length)];
+  const triple = pythagorean[Math.floor(rng() * pythagorean.length)];
   const d1 = 2 * triple[0];
   const d2 = 2 * triple[1];
   const side = triple[2];
@@ -946,7 +947,7 @@ function generateIntroToGraphs(
     // Coordinate question
     const x = randInt(1, 9);
     const y = randInt(1, 9);
-    const askX = Math.random() < 0.5;
+    const askX = rng() < 0.5;
 
     if (askX) {
       return {
