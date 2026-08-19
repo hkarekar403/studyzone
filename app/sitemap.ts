@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { TOPIC_CONFIGS } from '@/lib/topicConfigs'
+import { CLASSES } from '@/lib/topicConfigs'
 
 const BASE = 'https://studyzone.co.in'
 
@@ -16,23 +16,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Discovery surfaces — these are the pages search engines and LLM crawlers
     // can actually read content from, so they outrank the static info pages.
     {
-      url: `${BASE}/topics`,
-      lastModified,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
       url: `${BASE}/teachers`,
       lastModified,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
-    ...TOPIC_CONFIGS.map((t) => ({
-      url: `${BASE}/topics/${t.slug}`,
+    ...CLASSES.map((c) => ({
+      url: `${BASE}/${c.slug}/topics`,
       lastModified,
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
     })),
+    ...CLASSES.flatMap((c) =>
+      c.topics.map((t) => ({
+        url: `${BASE}/${c.slug}/topics/${t.slug}`,
+        lastModified,
+        changeFrequency: 'monthly' as const,
+        priority: 0.8,
+      }))
+    ),
     {
       url: `${BASE}/about`,
       lastModified,

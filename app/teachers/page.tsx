@@ -1,6 +1,6 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { TOPIC_CONFIGS } from "@/lib/topicConfigs"
+import { CLASSES } from "@/lib/topicConfigs"
 
 export const metadata: Metadata = {
   title: "StudyZone for Teachers | Free Class 4 Maths Worksheets & Practice",
@@ -113,6 +113,8 @@ const lessonPlans = [
   },
 ]
 
+const class4 = CLASSES[0]
+
 export default function Teachers() {
   return (
     <div className="min-h-screen">
@@ -127,7 +129,7 @@ export default function Teachers() {
             <span className="text-2xl">🚀</span>
             <span className="font-heading text-xl font-bold text-blue-700">StudyZone</span>
           </Link>
-          <Link href="/topics" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">
+          <Link href={`/${class4.slug}/topics`} className="text-sm text-gray-600 hover:text-blue-700 transition-colors">
             All Topics
           </Link>
         </div>
@@ -167,10 +169,10 @@ export default function Teachers() {
                 Generate a worksheet →
               </Link>
               <Link
-                href="/topics"
+                href={`/${class4.slug}/topics`}
                 className="inline-block bg-white/20 border border-white/30 text-white font-heading font-bold rounded-xl px-6 py-3 hover:bg-white/30 transition-colors"
               >
-                Browse {TOPIC_CONFIGS.length} topics
+                Browse {class4.topics.length} topics
               </Link>
             </div>
           </header>
@@ -297,12 +299,12 @@ export default function Teachers() {
             <div className="flex flex-wrap gap-2">
               {["fractions", "division", "multiplication", "word-problems", "geometry", "measurement", "explain-and-reason"].map(
                 (slug) => {
-                  const t = TOPIC_CONFIGS.find((x) => x.slug === slug)
+                  const t = class4.topics.find((x) => x.slug === slug)
                   if (!t) return null
                   return (
                     <Link
                       key={slug}
-                      href={`/topics/${slug}`}
+                      href={`/${class4.slug}/topics/${slug}`}
                       className="bg-white rounded-full px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
                     >
                       {t.title}
@@ -311,7 +313,7 @@ export default function Teachers() {
                 }
               )}
               <Link
-                href="/topics"
+                href={`/${class4.slug}/topics`}
                 className="bg-blue-600 text-white rounded-full px-4 py-2 text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
                 All topics →
@@ -353,7 +355,7 @@ export default function Teachers() {
                 Home
               </Link>
               {" · "}
-              <Link href="/topics" className="hover:text-blue-700 transition-colors">
+              <Link href={`/${class4.slug}/topics`} className="hover:text-blue-700 transition-colors">
                 Topics
               </Link>
               {" · "}

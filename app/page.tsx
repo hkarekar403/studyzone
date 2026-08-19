@@ -6,7 +6,7 @@ import type jsPDF from "jspdf"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
 import FocusTrap from "focus-trap-react"
 import { buildMCQOptions } from "@/lib/questionGenerator"
-import { TOPIC_CONFIGS } from "@/lib/topicConfigs"
+import { CLASSES } from "@/lib/topicConfigs"
 
 const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeSVG), { ssr: false })
 
@@ -1636,10 +1636,10 @@ export default function MathQuiz() {
             difficulty, so students can start with the basics and work up to exam-level word problems.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {TOPIC_CONFIGS.map((t) => (
+            {CLASSES[0].topics.map((t) => (
               <a
                 key={t.slug}
-                href={`/topics/${t.slug}`}
+                href={`/${CLASSES[0].slug}/topics/${t.slug}`}
                 className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow block"
               >
                 <p className="font-bold text-blue-700 text-sm mb-1">{t.title}</p>
@@ -1648,7 +1648,7 @@ export default function MathQuiz() {
             ))}
           </div>
           <p className="text-center text-sm text-gray-500 mt-6">
-            <a href="/topics" className="text-blue-700 font-semibold hover:underline">
+            <a href={`/${CLASSES[0].slug}/topics`} className="text-blue-700 font-semibold hover:underline">
               Browse all topic guides
             </a>
             {" · "}
@@ -2551,7 +2551,7 @@ export default function MathQuiz() {
             </a>.
           </p>
           <p className="text-xs text-gray-500">
-            <a href="/topics" className="hover:text-gray-600 underline underline-offset-2 transition-colors">All Topics</a>
+            <a href={`/${CLASSES[0].slug}/topics`} className="hover:text-gray-600 underline underline-offset-2 transition-colors">All Topics</a>
             {" "}|{" "}
             <a href="/teachers" className="hover:text-gray-600 underline underline-offset-2 transition-colors">For Teachers</a>
             {" "}|{" "}

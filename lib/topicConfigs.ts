@@ -525,3 +525,46 @@ export const TOPIC_SLUGS = TOPIC_CONFIGS.map((t) => t.slug)
 export function getTopicBySlug(slug: string): TopicConfig | undefined {
   return TOPIC_CONFIGS.find((t) => t.slug === slug)
 }
+
+// ---------------------------------------------------------------------------
+// Class level registry
+//
+// URLs carry the class because a slug like "fractions" will exist once per
+// class once 5-8 land, and because "class 6 fractions" is the shape of the
+// query people actually type. Adding a class means adding an entry here; the
+// routes, sitemap and llms.txt all derive from it.
+// ---------------------------------------------------------------------------
+
+export interface ClassDef {
+  level: number
+  /** URL segment, e.g. "class-4". */
+  slug: string
+  label: string
+  ageRange: string
+  curriculums: Curriculum[]
+  topics: TopicConfig[]
+}
+
+export const CLASSES: ClassDef[] = [
+  {
+    level: 4,
+    slug: "class-4",
+    label: "Class 4",
+    ageRange: "9-10",
+    curriculums: ["CBSE", "ICSE", "IGCSE"],
+    topics: TOPIC_CONFIGS,
+  },
+]
+
+export function getClassBySlug(slug: string): ClassDef | undefined {
+  return CLASSES.find((c) => c.slug === slug)
+}
+
+export function getTopicIn(classSlug: string, topicSlug: string): TopicConfig | undefined {
+  return getClassBySlug(classSlug)?.topics.find((t) => t.slug === topicSlug)
+}
+
+/** Every (class, topic) pair — the source for static params and the sitemap. */
+export function allTopicPaths(): { classSlug: string; topicSlug: string }[] {
+  return CLASSES.flatMap((c) => c.topics.map((t) => ({ classSlug: c.slug, topicSlug: t.slug })))
+}

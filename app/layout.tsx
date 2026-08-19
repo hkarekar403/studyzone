@@ -91,7 +91,7 @@ const jsonLd = {
     "priceCurrency": "INR"
   },
   "featureList": [
-    "19 maths topics",
+    "22 maths topics",
     "CBSE, ICSE and IGCSE curricula",
     "3 difficulty levels",
     "Instant feedback",
@@ -107,12 +107,35 @@ const jsonLd = {
     "name": "StudyZone",
     "url": "https://studyzone.co.in"
   },
-  "sameAs": ["https://studyzone.co.in"],
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://studyzone.co.in",
     "query-input": "required name=search_term_string"
   },
+}
+
+// Profiles that verifiably belong to StudyZone. `sameAs` is how search engines
+// and language models disambiguate an entity from others with the same name —
+// pointing it at our own homepage (as this previously did) tells them nothing.
+// Add each URL only once it is live and publicly reachable.
+const PROFILE_URLS: string[] = [
+  // e.g. 'https://github.com/<owner>/<repo>' once the repository is public
+]
+
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "@id": "https://studyzone.co.in/#organization",
+  "name": "StudyZone",
+  "alternateName": "StudyZone Maths",
+  "url": "https://studyzone.co.in",
+  "description": "A free mathematics practice platform for primary school students, built and maintained independently by a parent. Supports CBSE, ICSE and IGCSE Cambridge Primary.",
+  "email": "hkarekar01cloud@gmail.com",
+  "foundingDate": "2026",
+  "areaServed": { "@type": "Country", "name": "India" },
+  "knowsLanguage": "en-IN",
+  "isAccessibleForFree": true,
+  ...(PROFILE_URLS.length > 0 ? { sameAs: PROFILE_URLS } : {}),
 }
 
 export default function RootLayout({
@@ -129,6 +152,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
       </head>
       <body className={`${baloo2.variable} ${nunito.variable}`}>

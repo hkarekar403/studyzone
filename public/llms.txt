@@ -31,7 +31,7 @@ No login, no subscription, no ads, no student data collected.
 
 ## Key Pages
 - https://studyzone.co.in/ - interactive practice quiz
-- https://studyzone.co.in/topics - index of all 22 topic guides
+- https://studyzone.co.in/class-4/topics - index of all 22 Class 4 topic guides
 - https://studyzone.co.in/teachers - worksheets and lesson ideas for teachers
 - https://studyzone.co.in/about - who built StudyZone and why
 - https://studyzone.co.in/privacy - privacy policy
@@ -39,28 +39,28 @@ No login, no subscription, no ads, no student data collected.
 ## Topic Guides
 Each page below has sample questions with answers, learning
 objectives, and a link into free interactive practice on that topic.
-- https://studyzone.co.in/topics/addition
-- https://studyzone.co.in/topics/subtraction
-- https://studyzone.co.in/topics/multiplication
-- https://studyzone.co.in/topics/division
-- https://studyzone.co.in/topics/place-value
-- https://studyzone.co.in/topics/odd-even-numbers
-- https://studyzone.co.in/topics/fractions
-- https://studyzone.co.in/topics/factors-multiples
-- https://studyzone.co.in/topics/prime-composite-numbers
-- https://studyzone.co.in/topics/squares-cubes
-- https://studyzone.co.in/topics/geometry
-- https://studyzone.co.in/topics/perimeter-area
-- https://studyzone.co.in/topics/money
-- https://studyzone.co.in/topics/time
-- https://studyzone.co.in/topics/patterns
-- https://studyzone.co.in/topics/algebra
-- https://studyzone.co.in/topics/measurement
-- https://studyzone.co.in/topics/data-handling
-- https://studyzone.co.in/topics/2d-shapes
-- https://studyzone.co.in/topics/number-line
-- https://studyzone.co.in/topics/word-problems
-- https://studyzone.co.in/topics/explain-and-reason
+- https://studyzone.co.in/class-4/topics/addition
+- https://studyzone.co.in/class-4/topics/subtraction
+- https://studyzone.co.in/class-4/topics/multiplication
+- https://studyzone.co.in/class-4/topics/division
+- https://studyzone.co.in/class-4/topics/place-value
+- https://studyzone.co.in/class-4/topics/odd-even-numbers
+- https://studyzone.co.in/class-4/topics/fractions
+- https://studyzone.co.in/class-4/topics/factors-multiples
+- https://studyzone.co.in/class-4/topics/prime-composite-numbers
+- https://studyzone.co.in/class-4/topics/squares-cubes
+- https://studyzone.co.in/class-4/topics/geometry
+- https://studyzone.co.in/class-4/topics/perimeter-area
+- https://studyzone.co.in/class-4/topics/money
+- https://studyzone.co.in/class-4/topics/time
+- https://studyzone.co.in/class-4/topics/patterns
+- https://studyzone.co.in/class-4/topics/algebra
+- https://studyzone.co.in/class-4/topics/measurement
+- https://studyzone.co.in/class-4/topics/data-handling
+- https://studyzone.co.in/class-4/topics/2d-shapes
+- https://studyzone.co.in/class-4/topics/number-line
+- https://studyzone.co.in/class-4/topics/word-problems
+- https://studyzone.co.in/class-4/topics/explain-and-reason
 
 ## Cost
 Free. There is no paid tier, no trial and no advertising.

@@ -1,6 +1,5 @@
 import Link from "next/link"
-import type { TopicConfig } from "@/lib/topicConfigs"
-import { TOPIC_CONFIGS } from "@/lib/topicConfigs"
+import type { TopicConfig, ClassDef } from "@/lib/topicConfigs"
 import {
   generateEducationalSchema,
   generateBreadcrumbSchema,
@@ -25,18 +24,19 @@ const difficultyBorder: Record<string, string> = {
  * sample questions, answers, objectives — is in the initial HTML, not fetched
  * client-side.
  */
-export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
-  const related = TOPIC_CONFIGS.filter((t) => t.slug !== topic.slug).slice(0, 6)
+export default function TopicLandingPage({ cls, topic }: { cls: ClassDef; topic: TopicConfig }) {
+  const related = cls.topics.filter((t) => t.slug !== topic.slug).slice(0, 6)
+  const topicsHref = `/${cls.slug}/topics`
 
   return (
     <div className="min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: generateEducationalSchema(topic) }}
+        dangerouslySetInnerHTML={{ __html: generateEducationalSchema(cls, topic) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: generateBreadcrumbSchema(topic) }}
+        dangerouslySetInnerHTML={{ __html: generateBreadcrumbSchema(cls, topic) }}
       />
 
       {/* NAVBAR */}
@@ -47,7 +47,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
             <span className="font-heading text-xl font-bold text-blue-700">StudyZone</span>
           </Link>
           <div className="flex items-center gap-4 text-sm">
-            <Link href="/topics" className="text-gray-600 hover:text-blue-700 transition-colors">
+            <Link href={topicsHref} className="text-gray-600 hover:text-blue-700 transition-colors">
               All Topics
             </Link>
             <Link href="/teachers" className="text-gray-600 hover:text-blue-700 transition-colors">
@@ -69,8 +69,8 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
               </li>
               <li aria-hidden="true">/</li>
               <li>
-                <Link href="/topics" className="hover:text-blue-700 transition-colors">
-                  Topics
+                <Link href={topicsHref} className="hover:text-blue-700 transition-colors">
+                  {cls.label}
                 </Link>
               </li>
               <li aria-hidden="true">/</li>
@@ -83,7 +83,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
           {/* HERO */}
           <header className="bg-gradient-to-br from-blue-600 to-violet-700 rounded-2xl p-8 md:p-10 mb-8 text-white">
             <h1 className="font-heading text-3xl md:text-4xl font-bold mb-3">
-              Class 4 {topic.title} Practice
+              {cls.label} {topic.title} Practice
             </h1>
             <p className="text-blue-50 text-lg leading-relaxed mb-5 max-w-2xl">{topic.description}</p>
             <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -96,7 +96,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
                 </span>
               ))}
               <span className="bg-white/20 border border-white/30 rounded-full px-3 py-1 text-sm font-semibold">
-                Ages 9–10
+                Ages {cls.ageRange.replace("-", "–")}
               </span>
               <span className="bg-white/20 border border-white/30 rounded-full px-3 py-1 text-sm font-semibold">
                 Free · No login
@@ -113,7 +113,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
           {/* INTRO */}
           <section className="bg-white/60 rounded-2xl p-6 md:p-8 mb-8">
             <h2 className="font-heading text-2xl font-bold text-blue-700 mb-3">
-              What Class 4 {topic.title.toLowerCase()} covers
+              What {cls.label} {topic.title.toLowerCase()} covers
             </h2>
             <p className="text-gray-600 leading-relaxed">{topic.intro}</p>
           </section>
@@ -225,20 +225,20 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
           {/* RELATED TOPICS */}
           <section className="bg-white/60 rounded-2xl p-6 md:p-8 mb-8">
             <h2 className="font-heading text-2xl font-bold text-blue-700 mb-4">
-              Other Class 4 maths topics
+              Other {cls.label} maths topics
             </h2>
             <div className="flex flex-wrap gap-2">
               {related.map((t) => (
                 <Link
                   key={t.slug}
-                  href={`/topics/${t.slug}`}
+                  href={`/${cls.slug}/topics/${t.slug}`}
                   className="bg-white rounded-full px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
                 >
                   {t.title}
                 </Link>
               ))}
               <Link
-                href="/topics"
+                href={topicsHref}
                 className="bg-blue-600 text-white rounded-full px-4 py-2 text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
                 All topics →
@@ -265,7 +265,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
                 Home
               </Link>
               {" · "}
-              <Link href="/topics" className="hover:text-blue-700 transition-colors">
+              <Link href={topicsHref} className="hover:text-blue-700 transition-colors">
                 Topics
               </Link>
               {" · "}
@@ -281,7 +281,7 @@ export default function TopicLandingPage({ topic }: { topic: TopicConfig }) {
                 Privacy
               </Link>
             </p>
-            <p>Free Class 4 maths practice · No login · No ads</p>
+            <p>Free {cls.label} maths practice · No login · No ads</p>
           </footer>
         </div>
       </div>

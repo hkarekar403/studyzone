@@ -6,7 +6,7 @@
 // carrying `hasPart` Question/Answer pairs (Google's "Practice problems"
 // result), which is what is emitted here.
 
-import type { TopicConfig } from "./topicConfigs"
+import type { TopicConfig, ClassDef } from "./topicConfigs"
 
 const SITE_URL = "https://studyzone.co.in"
 
@@ -15,29 +15,29 @@ const SITE_URL = "https://studyzone.co.in"
  * visible sample questions, aligned to the curricula that actually offer the
  * topic. Returns a JSON string ready for a ld+json script tag.
  */
-export function generateEducationalSchema(topic: TopicConfig): string {
-  const url = `${SITE_URL}/topics/${topic.slug}`
+export function generateEducationalSchema(cls: ClassDef, topic: TopicConfig): string {
+  const url = `${SITE_URL}/${cls.slug}/topics/${topic.slug}`
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "Quiz",
-    name: `Class 4 ${topic.title} Practice`,
+    name: `${cls.label} ${topic.title} Practice`,
     description: topic.description,
     url,
-    educationalLevel: topic.educationalLevel,
+    educationalLevel: `Grade ${cls.level}`,
     learningResourceType: "Practice problem set",
     isAccessibleForFree: true,
     inLanguage: "en-IN",
-    typicalAgeRange: "9-10",
+    typicalAgeRange: cls.ageRange,
     about: {
       "@type": "Thing",
-      name: `Class 4 ${topic.title}`,
+      name: `${cls.label} ${topic.title}`,
       description: topic.description,
     },
     educationalAlignment: topic.curriculums.map((c) => ({
       "@type": "AlignmentObject",
       alignmentType: "educationalSubject",
-      educationalFramework: `${c} Class 4 Mathematics`,
+      educationalFramework: `${c} ${cls.label} Mathematics`,
       targetName: topic.title,
     })),
     teaches: topic.learningObjectives,
@@ -57,7 +57,7 @@ export function generateEducationalSchema(topic: TopicConfig): string {
       learningResourceType: "Practice problem",
       name: q.text,
       text: q.text,
-      educationalLevel: topic.educationalLevel,
+      educationalLevel: `Grade ${cls.level}`,
       acceptedAnswer: {
         "@type": "Answer",
         text: q.answer,
@@ -69,37 +69,42 @@ export function generateEducationalSchema(topic: TopicConfig): string {
 }
 
 /** BreadcrumbList for Home > Topics > <Topic>. */
-export function generateBreadcrumbSchema(topic: TopicConfig): string {
+export function generateBreadcrumbSchema(cls: ClassDef, topic: TopicConfig): string {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Topics", item: `${SITE_URL}/topics` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: `${cls.label} Topics`,
+        item: `${SITE_URL}/${cls.slug}/topics`,
+      },
       {
         "@type": "ListItem",
         position: 3,
         name: topic.title,
-        item: `${SITE_URL}/topics/${topic.slug}`,
+        item: `${SITE_URL}/${cls.slug}/topics/${topic.slug}`,
       },
     ],
   })
 }
 
 /** ItemList schema for the /topics index page. */
-export function generateTopicListSchema(topics: TopicConfig[]): string {
+export function generateTopicListSchema(cls: ClassDef): string {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Class 4 Maths Topics",
+    name: `${cls.label} Maths Topics`,
     description:
-      "Every Class 4 maths topic available to practise free on StudyZone, across CBSE, ICSE and IGCSE.",
-    numberOfItems: topics.length,
-    itemListElement: topics.map((t, i) => ({
+      `Every ${cls.label} maths topic available to practise free on StudyZone, across ${cls.curriculums.join(", ")}.`,
+    numberOfItems: cls.topics.length,
+    itemListElement: cls.topics.map((t, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      name: `Class 4 ${t.title} Practice`,
-      url: `${SITE_URL}/topics/${t.slug}`,
+      name: `${cls.label} ${t.title} Practice`,
+      url: `${SITE_URL}/${cls.slug}/topics/${t.slug}`,
     })),
   })
 }
