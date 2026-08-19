@@ -16,6 +16,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Discovery surfaces — these are the pages search engines and LLM crawlers
     // can actually read content from, so they outrank the static info pages.
     {
+      url: `${BASE}/practice`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${BASE}/teachers`,
       lastModified,
       changeFrequency: 'monthly',

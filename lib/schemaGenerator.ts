@@ -118,5 +118,5 @@ export function quizDeepLink(topic: TopicConfig, curriculum = "CBSE"): string {
     utm_medium: "organic",
     utm_campaign: topic.slug,
   })
-  return `/?${params.toString()}#quiz-section`
+  return `/practice?${params.toString()}`
 }

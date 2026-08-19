@@ -1,7 +1,27 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { CLASSES } from "@/lib/topicConfigs"
 
-export default function SiteFooter({ visitorCount }: { visitorCount: number }) {
+export default function SiteFooter() {
   const cls = CLASSES[0]
+  const [visitorCount, setVisitorCount] = useState(0)
+
+  // Counts a visitor once per browser session, on whichever page they land on.
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const firstVisit = !sessionStorage.getItem("visited_this_session")
+        if (firstVisit) sessionStorage.setItem("visited_this_session", "1")
+        const res = await fetch("/api/visitor-count", { method: firstVisit ? "POST" : "GET" })
+        const data = await res.json()
+        setVisitorCount(data.count ?? 0)
+      } catch {
+        // KV unavailable — the count simply stays hidden
+      }
+    }
+    run()
+  }, [])
   return (
     <footer className="pb-6 px-1 flex flex-col gap-2">
       <div className="flex items-center justify-between flex-wrap gap-2">

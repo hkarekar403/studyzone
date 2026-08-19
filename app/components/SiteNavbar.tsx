@@ -45,7 +45,9 @@ export default function SiteNavbar({
           {links.map((l) => (
             <a
               key={l.href}
-              href={l.href}
+              // On the practice route these sections live on "/", so the bare
+              // anchor has to become an absolute link or it silently does nothing.
+              href={l.ref || !l.href.startsWith("#") ? l.href : `/${l.href}`}
               onClick={l.ref ? (e) => { e.preventDefault(); l.ref?.current?.scrollIntoView({ behavior: 'smooth' }) } : undefined}
               className="hidden sm:block text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors px-3 py-1.5"
             >
