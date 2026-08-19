@@ -51,7 +51,10 @@ body {
 }
 
 .font-heading {
-  font-family: var(--font-baloo2), cursive, sans-serif;
+  /* `cursive` as a fallback resolves to Comic Sans MS on Windows, so a blocked
+     Google Fonts request (plausible on school networks) silently changed the
+     entire look of the site. Fall back through real rounded sans faces. */
+  font-family: var(--font-baloo2), "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
 }
 
 @keyframes celebrate {
@@ -76,54 +79,59 @@ body {
 
 /* ── Dark mode overrides ───────────────────────────────────── */
 
+/* These selectors are `[data-theme="dark"] .utility`, specificity (0,2,0),
+   against Tailwind's (0,1,0) — and this file is emitted after
+   @tailwind utilities. They win on both counts, so !important is not
+   needed and was only masking that. */
+
 /* Text */
 [data-theme="dark"] .text-gray-800,
-[data-theme="dark"] .text-gray-700 { color: var(--text-secondary) !important; }
+[data-theme="dark"] .text-gray-700 { color: var(--text-secondary); }
 
 [data-theme="dark"] .text-gray-600,
 [data-theme="dark"] .text-gray-500,
-[data-theme="dark"] .text-gray-400 { color: var(--text-muted) !important; }
+[data-theme="dark"] .text-gray-400 { color: var(--text-muted); }
 
 /* Solid white / grey backgrounds */
-[data-theme="dark"] .bg-white          { background-color: var(--bg-card) !important; }
-[data-theme="dark"] .bg-gray-50        { background-color: #263040 !important; }
-[data-theme="dark"] .bg-gray-100       { background-color: #2d3748 !important; }
+[data-theme="dark"] .bg-white          { background-color: var(--bg-card); }
+[data-theme="dark"] .bg-gray-50        { background-color: #263040; }
+[data-theme="dark"] .bg-gray-100       { background-color: #2d3748; }
 
 /* Opacity-variant white backgrounds (navbar, panels) */
-[data-theme="dark"] .bg-white\/60      { background-color: var(--bg-card-secondary) !important; }
-[data-theme="dark"] .bg-white\/90      { background-color: var(--navbar-bg) !important; }
+[data-theme="dark"] .bg-white\/60      { background-color: var(--bg-card-secondary); }
+[data-theme="dark"] .bg-white\/90      { background-color: var(--navbar-bg); }
 
 /* Hover states */
-[data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #2d3748 !important; }
+[data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #2d3748; }
 
 /* Borders */
 [data-theme="dark"] .border-gray-100,
 [data-theme="dark"] .border-gray-200,
-[data-theme="dark"] .border-gray-300  { border-color: var(--border-color) !important; }
+[data-theme="dark"] .border-gray-300  { border-color: var(--border-color); }
 
 /* Tinted light backgrounds (difficulty cards, feedback) */
-[data-theme="dark"] .bg-blue-50        { background-color: rgba(37,99,235,0.15)  !important; }
-[data-theme="dark"] .bg-purple-50      { background-color: rgba(124,58,237,0.15) !important; }
-[data-theme="dark"] .bg-amber-50       { background-color: rgba(245,158,11,0.15) !important; }
-[data-theme="dark"] .bg-red-50         { background-color: rgba(220,38,38,0.15)  !important; }
-[data-theme="dark"] .bg-green-50       { background-color: rgba(22,163,74,0.15)  !important; }
+[data-theme="dark"] .bg-blue-50        { background-color: rgba(37,99,235,0.15); }
+[data-theme="dark"] .bg-purple-50      { background-color: rgba(124,58,237,0.15); }
+[data-theme="dark"] .bg-amber-50       { background-color: rgba(245,158,11,0.15); }
+[data-theme="dark"] .bg-red-50         { background-color: rgba(220,38,38,0.15); }
+[data-theme="dark"] .bg-green-50       { background-color: rgba(22,163,74,0.15); }
 
 /* Gradient stops for "ready to start" empty-state card */
-[data-theme="dark"] .from-blue-50   { --tw-gradient-from: rgba(37,99,235,0.1)  var(--tw-gradient-from-position) !important; }
-[data-theme="dark"] .to-purple-50   { --tw-gradient-to:   rgba(124,58,237,0.1) var(--tw-gradient-to-position)   !important; }
+[data-theme="dark"] .from-blue-50   { --tw-gradient-from: rgba(37,99,235,0.1)  var(--tw-gradient-from-position); }
+[data-theme="dark"] .to-purple-50   { --tw-gradient-to:   rgba(124,58,237,0.1) var(--tw-gradient-to-position); }
 
 /* Inputs */
 [data-theme="dark"] input:not([type="range"]):not([type="checkbox"]) {
-  background-color: var(--input-bg) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border-color) !important;
+  background-color: var(--input-bg);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
 }
-[data-theme="dark"] input::placeholder { color: var(--text-muted) !important; }
-[data-theme="dark"] .disabled\:bg-gray-100:disabled { background-color: #263040 !important; }
+[data-theme="dark"] input::placeholder { color: var(--text-muted); }
+[data-theme="dark"] .disabled\:bg-gray-100:disabled { background-color: #263040; }
 
 /* Selects */
 [data-theme="dark"] select {
-  background-color: var(--input-bg) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border-color) !important;
+  background-color: var(--input-bg);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
 }

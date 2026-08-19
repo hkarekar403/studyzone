@@ -1698,12 +1698,12 @@ export default function MathQuiz() {
               <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Score</p>
               <div className="flex items-center justify-center gap-1.5">
                 <span className="text-lg">⭐</span>
-                <span className="text-lg font-bold text-amber-700">
+                <span className="text-lg font-bold text-amber-700 tabular-nums">
                   {correctAnswers} / {questionsGenerated} correct
                 </span>
               </div>
               {streak >= 3 && (
-                <p className={`mt-1 font-bold text-amber-600 ${streak >= 5 ? "text-base" : "text-sm"}`}>
+                <p className={`mt-1 font-bold text-amber-600 tabular-nums ${streak >= 5 ? "text-base" : "text-sm"}`}>
                   🔥 {streak} streak!
                 </p>
               )}
@@ -1836,11 +1836,11 @@ export default function MathQuiz() {
                   </div>
                   <div className="min-h-[160px] flex items-center">
                     {isGenerating ? (
-                      <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-2xl md:text-3xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
                         ✨ Generating question...
                       </p>
                     ) : currentQuestion.includes('[[TALLY_SVG]]') ? (
-                      <div className="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed w-full">
+                      <div className="text-2xl md:text-3xl font-semibold text-gray-800 leading-relaxed w-full">
                         {(() => {
                           const [textBefore, svgAndAfter] = currentQuestion.split('[[TALLY_SVG]]');
                           const svgCloseIdx = svgAndAfter.indexOf('</svg>');
@@ -1859,7 +1859,7 @@ export default function MathQuiz() {
                         })()}
                       </div>
                     ) : (
-                      <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-2xl md:text-3xl font-semibold text-gray-800 whitespace-pre-wrap leading-relaxed">
                         {currentQuestion}
                       </p>
                     )}
