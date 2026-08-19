@@ -37,5 +37,11 @@ next-env.d.ts
 
 # pdfs
 *.pdf
+
+# reference material - source textbook renders must never be committed
+# (a bare reference/*.png does NOT match reference/rendered_*/page_001.png)
 reference/pages/
-reference/*.png
+reference/**/*.png
+reference/**/*.jpg
+reference/**/*.jpeg
+reference/rendered_*/
