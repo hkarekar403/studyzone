@@ -6,6 +6,9 @@ import type jsPDF from "jspdf"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun } from "lucide-react"
 import FocusTrap from "focus-trap-react"
 import FeedbackForm from "./components/FeedbackForm"
+import HowItWorks from "./components/HowItWorks"
+import TopicsCovered from "./components/TopicsCovered"
+import FaqSection from "./components/FaqSection"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 import { CLASSES } from "@/lib/topicConfigs"
 
@@ -16,28 +19,6 @@ const getJsPDF = async () => (await import("jspdf")).default
 type ConfettiOptions = { particleCount: number; spread: number; origin: { y: number }; colors: string[] }
 const fireConfetti = (options: ConfettiOptions) => {
   import("canvas-confetti").then(({ default: confetti }) => confetti(options))
-}
-
-const faqItems = [
-  { q: "Is this completely free?", a: "Yes, completely free. No login, no subscription, no hidden fees. Just open and start practising." },
-  { q: "Which syllabus does this follow?", a: "Supports three curricula — CBSE, ICSE and IGCSE Cambridge Primary Stage 4. Switch between them using the Curriculum selector. Each curriculum has its own topic set and question style." },
-  { q: "Does my child need to create an account?", a: "No account or login required. Just open the website, pick a topic and start answering questions instantly." },
-  { q: "Can teachers use this in the classroom?", a: "Absolutely. Use the Worksheet Generator to create printable question papers with mixed difficulty levels. Each worksheet includes a suggested completion time." },
-  { q: "How many questions are available?", a: "The app generates questions randomly from a large pool across 22 topics and 3 difficulty levels. Questions never repeat within a session so students always get fresh practice." },
-  { q: "What age group is this for?", a: "This app is designed for Class 4 students, typically aged 9-10 years. The Easy difficulty is suitable for beginners while Hard questions challenge advanced learners." },
-  { q: "Can I track my child's progress?", a: "Yes. The Session History panel shows every question attempted with the child's answer and whether it was correct. You can also export a full PDF report at the end of each session." },
-  { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
-]
-
-
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": faqItems.map((faq) => ({
-    "@type": "Question",
-    "name": faq.q,
-    "acceptedAnswer": { "@type": "Answer", "text": faq.a },
-  })),
 }
 
 type SelfGrade = 'correct' | 'partial' | 'review'
@@ -115,7 +96,6 @@ export default function MathQuiz() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const [showSummary, setShowSummary] = useState(false)
   const [sessionEndTime, setSessionEndTime] = useState<Date | null>(null)
   const [copiedScore, setCopiedScore] = useState(false)
@@ -1566,89 +1546,11 @@ export default function MathQuiz() {
           </div>
         </div>
 
-        {/* HOW IT WORKS */}
-        <div ref={howItWorksRef} id="how-it-works" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
-          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-6">How it works</h2>
-          <div className="flex flex-col sm:flex-row gap-6">
-            {[
-              { step: '1', emoji: '🎯', title: 'Pick a Topic', desc: 'Choose from 22 maths topics or go Random. Select Easy, Medium or Hard.' },
-              { step: '2', emoji: '✏️', title: 'Answer Questions', desc: 'Type your answer and press Enter. Get instant feedback with audio and confetti!' },
-              { step: '3', emoji: '📄', title: 'Track Progress', desc: 'View your session history, export a PDF report, or download a printable worksheet.' },
-            ].map((s) => (
-              <div key={s.step} className="relative flex-1 bg-white rounded-xl p-5 shadow-sm text-center">
-                <span className="absolute top-3 left-3 bg-amber-400 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                  {s.step}
-                </span>
-                <p className="text-4xl mb-2">{s.emoji}</p>
-                <p className="font-bold text-blue-700 mb-1">{s.title}</p>
-                <p className="text-sm text-gray-600 leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <HowItWorks sectionRef={howItWorksRef} />
 
-        {/* TOPICS COVERED */}
-        <div ref={topicsRef} id="topics-covered" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
-          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Topics Covered</h2>
-          <p className="text-center text-sm text-gray-500 mb-6 max-w-2xl mx-auto">
-            StudyZone covers the full Class 4 maths syllabus with unlimited practice questions across
-            CBSE, ICSE and IGCSE curricula. Every topic below is available in Easy, Medium and Hard
-            difficulty, so students can start with the basics and work up to exam-level word problems.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {CLASSES[0].topics.map((t) => (
-              <a
-                key={t.slug}
-                href={`/${CLASSES[0].slug}/topics/${t.slug}`}
-                className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow block"
-              >
-                <p className="font-bold text-blue-700 text-sm mb-1">{t.title}</p>
-                <p className="text-xs text-gray-600 leading-relaxed">{t.description}</p>
-              </a>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-500 mt-6">
-            <a href={`/${CLASSES[0].slug}/topics`} className="text-blue-700 font-semibold hover:underline">
-              Browse all topic guides
-            </a>
-            {" · "}
-            <a href="/teachers" className="text-blue-700 font-semibold hover:underline">
-              Resources for teachers
-            </a>
-          </p>
-        </div>
+        <TopicsCovered sectionRef={topicsRef} />
 
-        {/* FAQ */}
-        <div ref={faqRef} id="faq" className="max-w-6xl mx-auto mb-8 bg-white/60 rounded-2xl p-6">
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-          />
-          <h2 className="font-heading text-2xl font-bold text-blue-700 text-center mb-2">Frequently Asked Questions</h2>
-          <p className="text-center text-sm text-gray-500 mb-6">Everything parents and teachers need to know</p>
-          <div>
-            {faqItems.map((faq, idx, arr) => (
-              <div key={idx} className={idx < arr.length - 1 ? "border-b border-gray-200" : ""}>
-                <button
-                  className="w-full flex items-center justify-between py-4 text-left gap-4"
-                  onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                  aria-expanded={openFaqIndex === idx}
-                  aria-controls={`faq-answer-${idx}`}
-                >
-                  <span className="font-bold text-blue-700 text-sm sm:text-base">{faq.q}</span>
-                  {openFaqIndex === idx
-                    ? <ChevronUp className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
-                </button>
-                <div className={`grid transition-all duration-300 ${openFaqIndex === idx ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                  <div id={`faq-answer-${idx}`} className="overflow-hidden">
-                    <p className="text-sm text-gray-600 pb-4 leading-relaxed">{faq.a}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <FaqSection sectionRef={faqRef} />
 
         <FeedbackForm curriculum={curriculum} sectionRef={feedbackRef} />
 
