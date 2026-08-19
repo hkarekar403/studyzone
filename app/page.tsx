@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, KeyboardEvent as ReactKeyboardEvent } from "react"
-import dynamic from "next/dynamic"
 import type jsPDF from "jspdf"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, FileText, LogOut } from "lucide-react"
 import FocusTrap from "focus-trap-react"
@@ -13,10 +12,10 @@ import SiteNavbar from "./components/SiteNavbar"
 import Hero from "./components/Hero"
 import SiteFooter from "./components/SiteFooter"
 import BreakReminder from "./components/BreakReminder"
+import QRShareModal from "./components/QRShareModal"
+import WorksheetModal, { type WorksheetConfig } from "./components/WorksheetModal"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 import { CLASSES } from "@/lib/topicConfigs"
-
-const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeSVG), { ssr: false })
 
 const getJsPDF = async () => (await import("jspdf")).default
 
@@ -99,7 +98,6 @@ export default function MathQuiz() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
   const [sessionEndTime, setSessionEndTime] = useState<Date | null>(null)
   const [copiedScore, setCopiedScore] = useState(false)
@@ -111,10 +109,6 @@ export default function MathQuiz() {
   // Feedback form
   const [timerDisabled, setTimerDisabled] = useState(false)
   const [sessionStartWarning, setSessionStartWarning] = useState(false)
-  const [wseDifficulty, setWseDifficulty] = useState("Random")
-  const [wseTopic, setWseTopic] = useState("Random")
-  const [wseCount, setWseCount] = useState(10)
-  const [worksheetCurriculum, setWorksheetCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>(curriculum)
 
   // Mock exam modal
   const [showMockExamModal, setShowMockExamModal] = useState(false)
@@ -242,7 +236,6 @@ export default function MathQuiz() {
     }
 
     if (params.get('worksheet') === 'open') {
-      setWorksheetCurriculum(resolvedCurriculum)
       setShowWorksheetModal(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -994,23 +987,23 @@ export default function MathQuiz() {
     doc.save(`answer_key_${wsDifficulty}_${safeDateStr}.pdf`)
   }
 
-  const generateWorksheet = async (withAnswerKey = false) => {
+  const generateWorksheet = async (withAnswerKey: boolean, cfg: WorksheetConfig) => {
     setWorksheetLoading(true)
     try {
       type WQuestion = { number: number; question: string; answer: string; working: string }
       let questions: WQuestion[]
-      const topicParam = wseTopic === 'Random' ? undefined : wseTopic
+      const topicParam = cfg.topic === 'Random' ? undefined : cfg.topic
 
-      if (wseDifficulty === 'Random') {
-        const easyCount = Math.round(wseCount * 0.3)
-        const mediumCount = Math.round(wseCount * 0.5)
-        const hardCount = wseCount - easyCount - mediumCount
+      if (cfg.difficulty === 'Random') {
+        const easyCount = Math.round(cfg.count * 0.3)
+        const mediumCount = Math.round(cfg.count * 0.5)
+        const hardCount = cfg.count - easyCount - mediumCount
 
         const post = (difficulty: string, count: number) =>
           fetch('/api/generate-worksheet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ difficulty, topic: topicParam, count, curriculum: worksheetCurriculum }),
+            body: JSON.stringify({ difficulty, topic: topicParam, count, curriculum: cfg.curriculum }),
           }).then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
 
         const [easyData, mediumData, hardData] = await Promise.all([
@@ -1029,16 +1022,16 @@ export default function MathQuiz() {
         const response = await fetch('/api/generate-worksheet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ difficulty: wseDifficulty, topic: topicParam, count: wseCount, curriculum: worksheetCurriculum }),
+          body: JSON.stringify({ difficulty: cfg.difficulty, topic: topicParam, count: cfg.count, curriculum: cfg.curriculum }),
         })
         if (!response.ok) throw new Error('Failed')
         const data = await response.json()
         questions = data.questions
       }
 
-      const displayDifficulty = wseDifficulty === 'Random' ? 'Mixed' : wseDifficulty
-      await buildWorksheetPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
-      if (withAnswerKey) await buildAnswerKeyPDF(questions, displayDifficulty, wseTopic, worksheetCurriculum)
+      const displayDifficulty = cfg.difficulty === 'Random' ? 'Mixed' : cfg.difficulty
+      await buildWorksheetPDF(questions, displayDifficulty, cfg.topic, cfg.curriculum)
+      if (withAnswerKey) await buildAnswerKeyPDF(questions, displayDifficulty, cfg.topic, cfg.curriculum)
       setShowWorksheetModal(false)
     } catch {
       // leave modal open so user can retry
@@ -1417,7 +1410,6 @@ export default function MathQuiz() {
           onStartPractising={() => quizRef.current?.scrollIntoView({ behavior: 'smooth' })}
           onGetWorksheet={() => {
             quizRef.current?.scrollIntoView({ behavior: 'smooth' })
-            setWorksheetCurriculum(curriculum)
             setTimeout(() => setShowWorksheetModal(true), 400)
           }}
           onMockExam={() => {
@@ -2011,7 +2003,7 @@ export default function MathQuiz() {
               </button>
 
               <button
-                onClick={() => { setWorksheetCurriculum(curriculum); setShowWorksheetModal(true) }}
+                onClick={() => setShowWorksheetModal(true)}
                 className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
               >
                 <FileText className="w-5 h-5" />
@@ -2334,146 +2326,14 @@ export default function MathQuiz() {
         )
       })()}
 
-      {/* WORKSHEET MODAL */}
       {showWorksheetModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => !worksheetLoading && setShowWorksheetModal(false)}
-        >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5 w-[380px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowWorksheetModal(false)}
-              disabled={worksheetLoading}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <h2 className="font-heading text-xl font-bold text-gray-800">Generate Printable Worksheet</h2>
-              <p className="text-sm text-gray-500 mt-1">Download a questions PDF, or both questions and answer key</p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Curriculum</label>
-                <div className="flex gap-2">
-                  {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setWorksheetCurriculum(c)}
-                      disabled={worksheetLoading}
-                      className={`rounded-full px-4 py-2 font-bold text-sm transition disabled:opacity-60 ${
-                        worksheetCurriculum === c
-                          ? 'bg-[#2563eb] text-white'
-                          : 'bg-white border border-[#2563eb] text-[#2563eb]'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Difficulty</label>
-                <select
-                  value={wseDifficulty}
-                  onChange={(e) => setWseDifficulty(e.target.value)}
-                  disabled={worksheetLoading}
-                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
-                >
-                  <option value="Random">Random (Mixed)</option>
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Topic</label>
-                <select
-                  value={wseTopic}
-                  onChange={(e) => setWseTopic(e.target.value)}
-                  disabled={worksheetLoading}
-                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
-                >
-                  {availableTopics.filter((t) => t !== 'Explain & Reason').map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Number of Questions</label>
-                <select
-                  value={wseCount}
-                  onChange={(e) => setWseCount(Number(e.target.value))}
-                  disabled={worksheetLoading}
-                  className="w-full p-2.5 text-sm font-semibold rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-200 cursor-pointer disabled:opacity-60"
-                >
-                  <option value={5}>5 questions</option>
-                  <option value={10}>10 questions</option>
-                  <option value={15}>15 questions</option>
-                  <option value={20}>20 questions</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => generateWorksheet(false)}
-                disabled={worksheetLoading}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {worksheetLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4" />
-                    📄 Questions PDF
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => generateWorksheet(true)}
-                disabled={worksheetLoading}
-                className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {worksheetLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    🔑 Questions + Answer Key
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => setShowWorksheetModal(false)}
-                disabled={worksheetLoading}
-                className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <WorksheetModal
+          initialCurriculum={curriculum}
+          availableTopics={availableTopics}
+          loading={worksheetLoading}
+          onGenerate={generateWorksheet}
+          onClose={() => setShowWorksheetModal(false)}
+        />
       )}
 
       {/* MOCK EXAM MODAL */}
@@ -2637,43 +2497,7 @@ export default function MathQuiz() {
         </div>
       )}
 
-      {/* QR CODE MODAL */}
-      {showQRModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowQRModal(false)}
-        >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 w-[320px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowQRModal(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="font-heading text-2xl font-bold text-gray-800">Share this app</h2>
-            <p className="text-sm text-gray-500">Scan to practise maths!</p>
-            <QRCodeSVG
-              value={typeof window !== "undefined" ? window.location.href : ""}
-              size={200}
-              bgColor={isDarkMode ? "#1e293b" : "#ffffff"}
-              fgColor="#2563eb"
-            />
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href)
-                setCopiedLink(true)
-                setTimeout(() => setCopiedLink(false), 2000)
-              }}
-              className="mt-2 w-full py-2.5 rounded-xl border-2 border-blue-500 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors"
-            >
-              {copiedLink ? "Copied! ✓" : "Copy Link"}
-            </button>
-          </div>
-        </div>
-      )}
+      {showQRModal && <QRShareModal isDarkMode={isDarkMode} onClose={() => setShowQRModal(false)} />}
     </div>
   )
 }
