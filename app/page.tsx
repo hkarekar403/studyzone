@@ -6,6 +6,7 @@ import type jsPDF from "jspdf"
 import { Clock, CheckCircle, Eye, Play, Download, ChevronDown, ChevronUp, Share2, X, Volume2, VolumeX, FileText, LogOut, Moon, Sun, Send, Star } from "lucide-react"
 import FocusTrap from "focus-trap-react"
 import { buildMCQOptions } from "@/lib/questionGenerator"
+import { TOPIC_CONFIGS } from "@/lib/topicConfigs"
 
 const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeSVG), { ssr: false })
 
@@ -27,30 +28,6 @@ const faqItems = [
   { q: "Does it work on mobile?", a: "Yes, the app is fully responsive and works on phones, tablets and desktops. No app download needed — just open the website in any browser." },
 ]
 
-const topicSummaries = [
-  { name: "Addition", desc: "Add multi-digit numbers with carrying." },
-  { name: "Subtraction", desc: "Subtract numbers with borrowing across place values." },
-  { name: "Multiplication", desc: "Multiply numbers up to 3 digits, including multi-step word problems." },
-  { name: "Division", desc: "Divide with and without remainders." },
-  { name: "Place Value", desc: "Understand ones, tens, hundreds and thousands, and spot place-value errors." },
-  { name: "Odd & Even Numbers", desc: "Identify and classify odd and even numbers." },
-  { name: "Fractions", desc: "Compare, add and subtract fractions, plus fraction walls and percentage grids." },
-  { name: "Factors & Multiples", desc: "Find factors, multiples, HCF and LCM." },
-  { name: "Prime & Composite Numbers", desc: "Classify numbers as prime or composite." },
-  { name: "Squares & Cubes", desc: "Calculate squares and cubes of numbers." },
-  { name: "Geometry", desc: "Angles, symmetry and 3D shapes." },
-  { name: "Perimeter & Area", desc: "Calculate the perimeter and area of shapes." },
-  { name: "Money", desc: "Solve real-world rupee and paise problems, including shopkeeper-style questions." },
-  { name: "Time", desc: "Read clocks and calculate durations." },
-  { name: "Patterns", desc: "Recognise and extend number and shape patterns." },
-  { name: "Algebra", desc: "Solve simple equations for an unknown value." },
-  { name: "Measurement", desc: "Convert and compare units of length, weight and capacity." },
-  { name: "Data Handling", desc: "Read tally charts, bar graphs and probability questions." },
-  { name: "2D Shapes", desc: "Identify and classify 2D shapes and their properties." },
-  { name: "Number Line", desc: "Locate numbers, midpoints and equal parts on a number line." },
-  { name: "Word Problems", desc: "Apply maths skills to real-life, multi-step problems." },
-  { name: "Explain & Reason", desc: "Explain your thinking and spot errors in worked examples." },
-]
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -172,6 +149,11 @@ export default function MathQuiz() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  // Topic requested via ?topic= on arrival from a /topics/<slug> landing page.
+  // Held in a ref because the [curriculum] effect resets topic to "Random" on
+  // every run, including mount — it consumes this once the matching curriculum's
+  // topic list has actually loaded.
+  const deepLinkRef = useRef<{ topic: string; curriculum: string } | null>(null)
   const quizRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
   const topicsRef = useRef<HTMLDivElement>(null)
@@ -263,6 +245,32 @@ export default function MathQuiz() {
     fetch('/api/clear-session', { method: 'POST' }).catch(() => {})
   }, [])
 
+  // Deep links from the /topics/<slug> and /teachers landing pages.
+  // window.location is read directly rather than via useSearchParams() so this
+  // client page does not need a Suspense boundary around it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const wantedCurriculum = params.get('curriculum')
+    const wantedTopic = params.get('topic')
+    const resolvedCurriculum =
+      wantedCurriculum === 'ICSE' || wantedCurriculum === 'IGCSE' || wantedCurriculum === 'CBSE'
+        ? wantedCurriculum
+        : 'CBSE'
+
+    if (wantedTopic) {
+      deepLinkRef.current = { topic: wantedTopic, curriculum: resolvedCurriculum }
+      if (resolvedCurriculum !== curriculum) setCurriculum(resolvedCurriculum)
+      // Land the visitor on the quiz rather than at the top of the marketing page.
+      setTimeout(() => quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+    }
+
+    if (params.get('worksheet') === 'open') {
+      setWorksheetCurriculum(resolvedCurriculum)
+      setShowWorksheetModal(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     const fetchTopics = async () => {
       try {
@@ -270,6 +278,13 @@ export default function MathQuiz() {
         if (response.ok) {
           const data = await response.json()
           setAvailableTopics(["Random", ...data.topics])
+          // Apply a pending ?topic= deep link only once its own curriculum's
+          // topic list is loaded, and only if that curriculum actually has it.
+          const pending = deepLinkRef.current
+          if (pending && pending.curriculum === curriculum) {
+            deepLinkRef.current = null
+            if (data.topics.includes(pending.topic)) setTopic(pending.topic)
+          }
         }
       } catch {
         setAvailableTopics(["Random"])
@@ -1621,13 +1636,26 @@ export default function MathQuiz() {
             difficulty, so students can start with the basics and work up to exam-level word problems.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {topicSummaries.map((t) => (
-              <div key={t.name} className="bg-white rounded-xl p-4 shadow-sm">
-                <p className="font-bold text-blue-700 text-sm mb-1">{t.name}</p>
-                <p className="text-xs text-gray-600 leading-relaxed">{t.desc}</p>
-              </div>
+            {TOPIC_CONFIGS.map((t) => (
+              <a
+                key={t.slug}
+                href={`/topics/${t.slug}`}
+                className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow block"
+              >
+                <p className="font-bold text-blue-700 text-sm mb-1">{t.title}</p>
+                <p className="text-xs text-gray-600 leading-relaxed">{t.description}</p>
+              </a>
             ))}
           </div>
+          <p className="text-center text-sm text-gray-500 mt-6">
+            <a href="/topics" className="text-blue-700 font-semibold hover:underline">
+              Browse all topic guides
+            </a>
+            {" · "}
+            <a href="/teachers" className="text-blue-700 font-semibold hover:underline">
+              Resources for teachers
+            </a>
+          </p>
         </div>
 
         {/* FAQ */}
@@ -2523,6 +2551,10 @@ export default function MathQuiz() {
             </a>.
           </p>
           <p className="text-xs text-gray-500">
+            <a href="/topics" className="hover:text-gray-600 underline underline-offset-2 transition-colors">All Topics</a>
+            {" "}|{" "}
+            <a href="/teachers" className="hover:text-gray-600 underline underline-offset-2 transition-colors">For Teachers</a>
+            {" "}|{" "}
             <a href="/privacy" className="hover:text-gray-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
             {" "}|{" "}
             <a href="/about" className="hover:text-gray-600 underline underline-offset-2 transition-colors">About</a>

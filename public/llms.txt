@@ -1,17 +1,19 @@
 # StudyZone - Class 4 Maths Practice
-> Free interactive maths practice for Class 4 students
+> Free interactive maths practice for Class 4 students (ages 9-10)
 
 StudyZone is a free web application for Class 4 students
 to practice mathematics. It supports CBSE, ICSE and IGCSE
-curricula with 19 topics across 3 difficulty levels.
+curricula with 22 topics across 3 difficulty levels.
+No login, no subscription, no ads, no student data collected.
 
 ## Features
-- 19 maths topics including fractions, geometry, algebra,
-  data handling and more
+- 22 maths topics including fractions, division, geometry,
+  word problems, data handling and reasoning
 - 3 difficulty levels: Easy, Medium, Hard
-- Instant feedback with audio and visual effects
+- Instant feedback with step-by-step working
+- Printable worksheet generator with a separate teacher answer key
+- Mock exam generator
 - PDF session report export
-- Printable worksheet generator with answer key
 - No login required
 - Works on mobile, tablet and desktop
 - Dark mode support
@@ -26,6 +28,42 @@ curricula with 19 topics across 3 difficulty levels.
 - Class 4 students aged 9-10 years
 - Parents of Class 4 students
 - Primary school teachers
+
+## Key Pages
+- https://studyzone.co.in/ - interactive practice quiz
+- https://studyzone.co.in/topics - index of all 22 topic guides
+- https://studyzone.co.in/teachers - worksheets and lesson ideas for teachers
+- https://studyzone.co.in/about - who built StudyZone and why
+- https://studyzone.co.in/privacy - privacy policy
+
+## Topic Guides
+Each page below has sample questions with answers, learning
+objectives, and a link into free interactive practice on that topic.
+- https://studyzone.co.in/topics/addition
+- https://studyzone.co.in/topics/subtraction
+- https://studyzone.co.in/topics/multiplication
+- https://studyzone.co.in/topics/division
+- https://studyzone.co.in/topics/place-value
+- https://studyzone.co.in/topics/odd-even-numbers
+- https://studyzone.co.in/topics/fractions
+- https://studyzone.co.in/topics/factors-multiples
+- https://studyzone.co.in/topics/prime-composite-numbers
+- https://studyzone.co.in/topics/squares-cubes
+- https://studyzone.co.in/topics/geometry
+- https://studyzone.co.in/topics/perimeter-area
+- https://studyzone.co.in/topics/money
+- https://studyzone.co.in/topics/time
+- https://studyzone.co.in/topics/patterns
+- https://studyzone.co.in/topics/algebra
+- https://studyzone.co.in/topics/measurement
+- https://studyzone.co.in/topics/data-handling
+- https://studyzone.co.in/topics/2d-shapes
+- https://studyzone.co.in/topics/number-line
+- https://studyzone.co.in/topics/word-problems
+- https://studyzone.co.in/topics/explain-and-reason
+
+## Cost
+Free. There is no paid tier, no trial and no advertising.
 
 ## URL
 https://studyzone.co.in
