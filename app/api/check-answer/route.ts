@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, tooManyRequests } from '@/lib/rateLimit';
 
 // --- unit / symbol stripping ---
 function stripUnits(value: string): string {
@@ -203,6 +204,8 @@ function normalizeAnswer(value: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = await checkRateLimit(request, 'answer')
+  if (!rl.ok) return tooManyRequests(rl)
   let body
   try {
     body = await request.json()

@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { checkRateLimit, tooManyRequests } from "@/lib/rateLimit"
 
 const KEY = "visitor_count"
 
@@ -12,7 +13,9 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const rl = await checkRateLimit(request, "visitor")
+  if (!rl.ok) return tooManyRequests(rl)
   try {
     const count = await kv.incr(KEY)
     return NextResponse.json({ count })

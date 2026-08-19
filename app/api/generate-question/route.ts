@@ -1,10 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, tooManyRequests } from '@/lib/rateLimit';
 import { getGenerator } from '@/lib/generatorSingleton';
 
 const VALID_CURRICULA = ['CBSE', 'ICSE', 'IGCSE']
 const VALID_DIFFICULTIES = ['Easy', 'Medium', 'Hard', 'Random']
 
 export async function POST(request: NextRequest) {
+  const rl = await checkRateLimit(request, 'question')
+  if (!rl.ok) return tooManyRequests(rl)
   let body
   try {
     body = await request.json()

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, tooManyRequests } from '@/lib/rateLimit'
 
 const escHtml = (s: string) =>
   String(s)
@@ -9,6 +10,8 @@ const escHtml = (s: string) =>
     .replace(/'/g, '&#039;')
 
 export async function POST(req: NextRequest) {
+  const rl = await checkRateLimit(req, 'feedback')
+  if (!rl.ok) return tooManyRequests(rl)
   let body
   try {
     body = await req.json()

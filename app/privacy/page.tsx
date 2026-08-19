@@ -26,7 +26,7 @@ export default function PrivacyPolicy() {
       <div className="p-4 md:p-8">
         <div className="max-w-3xl mx-auto mt-8 mb-12 bg-white/60 rounded-2xl p-8">
           <h1 className="font-heading text-4xl font-bold text-blue-700 mb-1">Privacy Policy</h1>
-          <p className="text-sm text-gray-500 mb-1">Last updated: June 2026 (Version 1.1)</p>
+          <p className="text-sm text-gray-500 mb-1">Last updated: August 2026 (Version 1.1)</p>
           <p className="text-sm font-semibold text-blue-600 mb-8">We&apos;ve written this in plain English. No legal jargon.</p>
 
           {/* Section 1 */}
@@ -85,6 +85,17 @@ export default function PrivacyPolicy() {
                   If a parent or teacher submits feedback via our feedback form, the message and optional name is emailed
                   to us via Resend (an email delivery service) and lands in our Gmail inbox. We read it, we may reply,
                   and we keep it for up to 12 months before deleting it. We do not share it with anyone.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-800 mb-1">6. Abuse prevention (a scrambled version of your IP)</p>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  To stop automated bots from flooding our question generator or feedback form, we count how many
+                  requests come from each visitor. To do that without storing anyone&apos;s address, we scramble the IP
+                  into a fixed code using one-way maths — the code cannot be turned back into an IP address, and we
+                  never store the address itself. Only the code and a request count are kept, and both are deleted
+                  automatically within an hour. It is never used to identify anyone or to track what a child does.
                 </p>
               </div>
             </div>

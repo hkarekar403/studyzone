@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, tooManyRequests } from '@/lib/rateLimit'
 import { getGenerator } from '@/lib/generatorSingleton'
 import { MOCK_EXAM_STRUCTURE } from '@/lib/questionGenerator'
 
@@ -6,6 +7,8 @@ const VALID_CURRICULA = ['CBSE', 'ICSE', 'IGCSE']
 const VALID_TOTAL_MARKS = [25, 50]
 
 export async function POST(request: NextRequest) {
+  const rl = await checkRateLimit(request, 'mockExam')
+  if (!rl.ok) return tooManyRequests(rl)
   let body
   try {
     body = await request.json()
