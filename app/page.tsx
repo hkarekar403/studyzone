@@ -14,6 +14,8 @@ import SiteFooter from "./components/SiteFooter"
 import BreakReminder from "./components/BreakReminder"
 import QRShareModal from "./components/QRShareModal"
 import WorksheetModal, { type WorksheetConfig } from "./components/WorksheetModal"
+import MockExamModal, { type MockExamConfig } from "./components/MockExamModal"
+import SessionSummaryModal from "./components/SessionSummaryModal"
 import { buildMCQOptions } from "@/lib/questionGenerator"
 import { CLASSES } from "@/lib/topicConfigs"
 
@@ -100,7 +102,6 @@ export default function MathQuiz() {
   const [showQRModal, setShowQRModal] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
   const [sessionEndTime, setSessionEndTime] = useState<Date | null>(null)
-  const [copiedScore, setCopiedScore] = useState(false)
   const [showWorksheetModal, setShowWorksheetModal] = useState(false)
   const [worksheetLoading, setWorksheetLoading] = useState(false)
   const [pdfExporting, setPdfExporting] = useState(false)
@@ -113,10 +114,6 @@ export default function MathQuiz() {
   // Mock exam modal
   const [showMockExamModal, setShowMockExamModal] = useState(false)
   const [mockExamLoading, setMockExamLoading] = useState(false)
-  const [mockExamCurriculum, setMockExamCurriculum] = useState<'CBSE' | 'ICSE' | 'IGCSE'>(curriculum)
-  const [mockExamTopics, setMockExamTopics] = useState<string[]>(['All Topics'])
-  const [mockExamTotalMarks, setMockExamTotalMarks] = useState<25 | 50>(50)
-  const mockExamModalRef = useRef<HTMLDivElement>(null)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -820,6 +817,28 @@ export default function MathQuiz() {
     }
   }
 
+  const startNewSession = () => {
+    setQuestionsGenerated(0)
+    setCorrectAnswers(0)
+    setStreak(0)
+    setSessionRecords([])
+    setTopicCorrect({})
+    setTopicAttempted({})
+    setCurrentQuestion("")
+    setCurrentAnswer("")
+    setCurrentWorking("")
+    setUserAnswer("")
+    setFeedback("")
+    setFeedbackColor("")
+    setQuestionLocked(false)
+    setShowAnswer(false)
+    setCurrentRecord(null)
+    setCurrentAttempts(0)
+    setTimerActive(false)
+    setShowSummary(false)
+    setSessionEndTime(null)
+  }
+
   const getWeaknessAnalysis = () => {
     const strong: string[] = []
     const weak: string[] = []
@@ -1309,14 +1328,14 @@ export default function MathQuiz() {
     doc.save(`mock_exam_answer_key_${examCurriculum}_${safeDateStr}.pdf`)
   }
 
-  const generateMockExam = async (withAnswerKey: boolean) => {
+  const generateMockExam = async (withAnswerKey: boolean, cfg: MockExamConfig) => {
     setMockExamLoading(true)
     try {
-      const topicsParam = mockExamTopics.includes('All Topics') ? [] : mockExamTopics
+      const topicsParam = cfg.topics.includes('All Topics') ? [] : cfg.topics
       const response = await fetch('/api/generate-mock-exam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ curriculum: mockExamCurriculum, topics: topicsParam, totalMarks: mockExamTotalMarks }),
+        body: JSON.stringify({ curriculum: cfg.curriculum, topics: topicsParam, totalMarks: cfg.totalMarks }),
       })
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
@@ -1330,17 +1349,6 @@ export default function MathQuiz() {
     }
   }
 
-  const toggleMockExamTopic = (t: string) => {
-    if (t === 'All Topics') {
-      setMockExamTopics(['All Topics'])
-      return
-    }
-    setMockExamTopics((prev) => {
-      const withoutAll = prev.filter((p) => p !== 'All Topics')
-      const next = withoutAll.includes(t) ? withoutAll.filter((p) => p !== t) : [...withoutAll, t]
-      return next.length === 0 ? ['All Topics'] : next
-    })
-  }
 
 
   const sanitizeSVG = (svg: string): string => {
@@ -1414,7 +1422,6 @@ export default function MathQuiz() {
           }}
           onMockExam={() => {
             quizRef.current?.scrollIntoView({ behavior: 'smooth' })
-            setMockExamCurriculum(curriculum)
             setTimeout(() => setShowMockExamModal(true), 400)
           }}
         />
@@ -2011,7 +2018,7 @@ export default function MathQuiz() {
               </button>
 
               <button
-                onClick={() => { setMockExamCurriculum(curriculum); setShowMockExamModal(true) }}
+                onClick={() => setShowMockExamModal(true)}
                 className="bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-6 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:scale-105 hover:shadow-lg"
               >
                 <FileText className="w-5 h-5" />
@@ -2156,175 +2163,23 @@ export default function MathQuiz() {
       </div>
       </div>
 
-      {/* SESSION SUMMARY MODAL */}
-      {showSummary && (() => {
-        const accuracy = questionsGenerated > 0 ? Math.round((correctAnswers / questionsGenerated) * 100) : 0
-        const passed = accuracy >= 70
-        const endTime = sessionEndTime ?? new Date()
-        const elapsedSecs = Math.round((endTime.getTime() - sessionStartedAt.current.getTime()) / 1000)
-        const mins = Math.floor(elapsedSecs / 60)
-        const secs = elapsedSecs % 60
-        const { strong, weak } = getWeaknessAnalysis()
-
-        const scoreColor = accuracy >= 70 ? 'text-green-600' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'
-        const scoreBg = accuracy >= 70 ? 'bg-green-50 border-green-200' : accuracy >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'
-
-        const handleShare = async () => {
-          const shareText = `I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯`
-          const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }
-          if (nav.share) {
-            try {
-              await nav.share({ title: "My Maths Score on StudyZone", text: shareText, url: "https://studyzone.co.in" })
-              setCopiedScore(true)
-              setTimeout(() => setCopiedScore(false), 2000)
-            } catch (err) {
-              if ((err as DOMException)?.name !== "AbortError") {
-                navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
-                  setCopiedScore(true)
-                  setTimeout(() => setCopiedScore(false), 2000)
-                })
-              }
-            }
-          } else {
-            navigator.clipboard.writeText(`${shareText} studyzone.co.in`).then(() => {
-              setCopiedScore(true)
-              setTimeout(() => setCopiedScore(false), 2000)
-            })
-          }
-        }
-
-        const handleNewSession = () => {
-          setQuestionsGenerated(0)
-          setCorrectAnswers(0)
-          setStreak(0)
-          setSessionRecords([])
-          setTopicCorrect({})
-          setTopicAttempted({})
-          setCurrentQuestion("")
-          setCurrentAnswer("")
-          setCurrentWorking("")
-          setUserAnswer("")
-          setFeedback("")
-          setFeedbackColor("")
-          setQuestionLocked(false)
-          setShowAnswer(false)
-          setCurrentRecord(null)
-          setCurrentAttempts(0)
-          setTimerActive(false)
-          setShowSummary(false)
-          setSessionEndTime(null)
-        }
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8">
-            <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex flex-col gap-6 w-full max-w-md mx-4">
-              {/* Header */}
-              <div className="text-center">
-                <h2 className="font-heading text-3xl font-bold text-gray-800 mb-1">
-                  {passed ? 'Session Complete! 🎉' : 'Good effort! 💪'}
-                </h2>
-                <p className="text-gray-500 text-sm">Here&apos;s how you did today</p>
-              </div>
-
-              {/* Score card */}
-              <div className={`rounded-2xl border-2 p-6 text-center ${scoreBg}`}>
-                <p className={`font-heading text-6xl font-bold ${scoreColor} mb-1`}>
-                  {correctAnswers} / {questionsGenerated}
-                </p>
-                <p className={`text-2xl font-bold ${scoreColor} mb-4`}>{accuracy}%</p>
-                <div className="flex justify-center gap-6 text-sm text-gray-600 flex-wrap">
-                  <span>⏱ {mins}m {secs}s</span>
-                  <span>🔥 Best streak: {streak}</span>
-                </div>
-              </div>
-
-              {/* Curriculum & difficulty badges */}
-              <div className="flex justify-center gap-2 flex-wrap">
-                <span className="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{curriculum}</span>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                  currentDifficulty === 'Easy' ? 'bg-blue-100 text-blue-700' :
-                  currentDifficulty === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                  'bg-red-100 text-red-700'
-                }`}>{difficulty === 'Random' ? `Random (${currentDifficulty})` : currentDifficulty}</span>
-              </div>
-
-              {/* Topic insights */}
-              {(strong.length > 0 || weak.length > 0) && (
-                <div className="flex flex-col gap-2">
-                  {strong.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-bold text-green-700 w-28 flex-shrink-0">💪 Strong:</span>
-                      {strong.map((t) => (
-                        <span key={t} className="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{t}</span>
-                      ))}
-                    </div>
-                  )}
-                  {weak.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-bold text-amber-700 w-28 flex-shrink-0">📚 Needs practice:</span>
-                      {weak.map((t) => (
-                        <span key={t} className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{t}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Buttons */}
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={exportPDF}
-                  disabled={pdfExporting}
-                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {pdfExporting ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      Export PDF
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  {copiedScore ? 'Shared! ✓' : 'Share Score'}
-                </button>
-                {!(navigator as Navigator & { share?: unknown }).share && (
-                  <div className="flex flex-col items-center gap-1">
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(`I scored ${correctAnswers}/${questionsGenerated} (${accuracy}%) in Class 4 ${curriculum} Maths on StudyZone! 🎯 Try it free at https://studyzone.co.in`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Opens WhatsApp in a new tab"
-                      className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-                    >
-                      Share on WhatsApp 💬
-                    </a>
-                    <span className="text-xs text-gray-500 text-center">↗ Opens WhatsApp</span>
-                  </div>
-                )}
-                <button
-                  onClick={handleNewSession}
-                  className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Play className="w-4 h-4" />
-                  New Session
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {showSummary && (
+        <SessionSummaryModal
+          questionsGenerated={questionsGenerated}
+          correctAnswers={correctAnswers}
+          streak={streak}
+          curriculum={curriculum}
+          difficulty={difficulty}
+          currentDifficulty={currentDifficulty}
+          pdfExporting={pdfExporting}
+          sessionStartedAt={sessionStartedAt.current}
+          sessionEndTime={sessionEndTime}
+          weakness={getWeaknessAnalysis()}
+          onExportPDF={exportPDF}
+          onStartNewSession={startNewSession}
+          onClose={() => setShowSummary(false)}
+        />
+      )}
 
       {showWorksheetModal && (
         <WorksheetModal
@@ -2336,165 +2191,14 @@ export default function MathQuiz() {
         />
       )}
 
-      {/* MOCK EXAM MODAL */}
       {showMockExamModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => !mockExamLoading && setShowMockExamModal(false)}
-        >
-          <FocusTrap
-            active={showMockExamModal}
-            focusTrapOptions={{
-              onDeactivate: () => !mockExamLoading && setShowMockExamModal(false),
-              clickOutsideDeactivates: true,
-              escapeDeactivates: !mockExamLoading,
-            }}
-          >
-            <div
-              ref={mockExamModalRef}
-              className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5 w-[380px] max-h-[85vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowMockExamModal(false)}
-                disabled={mockExamLoading}
-                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-                aria-label="Close mock exam dialog"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div>
-                <h2 className="font-heading text-xl font-bold text-gray-800">Generate Mock Examination</h2>
-                <p className="text-sm text-gray-500 mt-1">Competency-weighted exam paper: Sections A–D (VSA/SA1/SA2/LA)</p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Curriculum</label>
-                  <div className="flex gap-2">
-                    {(['CBSE', 'ICSE', 'IGCSE'] as const).map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => setMockExamCurriculum(c)}
-                        disabled={mockExamLoading}
-                        className={`rounded-full px-4 py-2 font-bold text-sm transition disabled:opacity-60 ${
-                          mockExamCurriculum === c
-                            ? 'bg-[#2563eb] text-white'
-                            : 'bg-white border border-[#2563eb] text-[#2563eb]'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Topics</label>
-                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={mockExamTopics.includes('All Topics')}
-                        onChange={() => toggleMockExamTopic('All Topics')}
-                        disabled={mockExamLoading}
-                      />
-                      All Topics
-                    </label>
-                    {availableTopics.filter((t) => t !== 'Explain & Reason').map((t) => (
-                      <label key={t} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={mockExamTopics.includes(t)}
-                          onChange={() => toggleMockExamTopic(t)}
-                          disabled={mockExamLoading}
-                        />
-                        {t}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Total Marks</label>
-                  <div className="flex gap-2">
-                    {([50, 25] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setMockExamTotalMarks(m)}
-                        disabled={mockExamLoading}
-                        className={`flex-1 rounded-full py-2 font-bold text-sm transition disabled:opacity-60 ${
-                          mockExamTotalMarks === m
-                            ? 'bg-violet-600 text-white'
-                            : 'bg-white border border-violet-600 text-violet-600'
-                        }`}
-                      >
-                        {m} marks
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    {mockExamTotalMarks === 50
-                      ? 'A(10×1) + B(5×2) + C(5×3) + D(3×5) = 50 marks · ~50 mins'
-                      : 'A(5×1) + B(3×2) + C(3×3) + D(1×5) = 25 marks · ~25 mins'
-                    }
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => generateMockExam(false)}
-                  disabled={mockExamLoading}
-                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {mockExamLoading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      📝 Question Paper
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => generateMockExam(true)}
-                  disabled={mockExamLoading}
-                  className="w-full py-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {mockExamLoading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      🔑 Question Paper + Answer Key
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => setShowMockExamModal(false)}
-                  disabled={mockExamLoading}
-                  className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </FocusTrap>
-        </div>
+        <MockExamModal
+          initialCurriculum={curriculum}
+          availableTopics={availableTopics}
+          loading={mockExamLoading}
+          onGenerate={generateMockExam}
+          onClose={() => setShowMockExamModal(false)}
+        />
       )}
 
       {showQRModal && <QRShareModal isDarkMode={isDarkMode} onClose={() => setShowQRModal(false)} />}
