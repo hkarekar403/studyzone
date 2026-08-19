@@ -45,3 +45,15 @@ reference/**/*.png
 reference/**/*.jpg
 reference/**/*.jpeg
 reference/rendered_*/
+
+# Internal working notes — kept local, never published.
+# These enumerate unfixed security gaps (see the outstanding-issues tables),
+# so publishing them would hand out a targeted checklist against a live site.
+CLAUDE.md
+CodeReview.md
+Compliance.md
+fixes.md
+FIXES.md
+prompts.md
+PROMPTS.md
+reference/
